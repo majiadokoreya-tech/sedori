@@ -563,4 +563,384 @@ function addItem() {
   const cost = +document.getElementById('f-cost').value || 0;
   const price = +document.getElementById('f-price').value || 0;
   const ship = +document.getElementById('f-ship').value || 0;
-  const misc = +document.getElementById('f
+  const misc = +document.getElementById('f-misc').value || 0;
+  const status = document.getElementById('f-status').value;
+  const actualPrice = +document.getElementById('f-actual-price').value || price;
+
+  const item = {
+    id: Date.now(),
+    name,
+    cat: document.getElementById('f-cat').value,
+    source: document.getElementById('f-source').value,
+    cost, price, ship, misc,
+    status,
+    actualPrice: status === 'sold' ? actualPrice : 0,
+    date: document.getElementById('f-date').value || new Date().toISOString().slice(0,10),
+    soldDate: status === 'sold' ? (document.getElementById('f-sold-date').value || new Date().toISOString().slice(0,10)) : '',
+    memo: document.getElementById('f-memo').value.trim()
+  };
+  items.unshift(item);
+  save();
+  clearForm();
+  updateSummary();
+  showToast('✓ 登録しました');
+}
+
+function clearForm() {
+  ['f-name','f-cost','f-price','f-ship','f-misc','f-memo','f-actual-price'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-status').value = 'unsold';
+  document.getElementById('sold-date-row').style.display = 'none';
+  calcPreview();
+}
+
+// ========== 在庫リスト ==========
+function renderList() {
+  const filterStatus = document.getElementById('filter-status').value;
+  const filterCat = document.getElementById('filter-cat').value;
+  const search = document.getElementById('filter-search').value.trim().toLowerCase();
+
+  let filtered = items.filter(it => {
+    if (filterStatus && it.status !== filterStatus) return false;
+    if (filterCat && it.cat !== filterCat) return false;
+    if (search && !it.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const el = document.getElementById('itemList');
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty"><div class="icon">🔍</div>該当なし</div>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(it => {
+    const usePrice = it.status === 'sold' ? it.actualPrice : it.price;
+    const profit = calcProfit(it.cost, usePrice, it.ship, it.misc);
+    const roi = calcROI(profit, it.cost);
+    const pClass = profit >= 0 ? 'profit' : 'loss';
+    return `
+    <div class="item-card ${it.status}">
+      <div class="item-header">
+        <div class="item-name">${it.name}</div>
+        <span class="badge badge-${it.status}">${it.status === 'sold' ? '売れた' : '在庫中'}</span>
+      </div>
+      <div class="item-meta">
+        <span class="meta-tag">${it.cat}</span>
+        <span class="meta-tag">${it.source}</span>
+        <span class="meta-tag">${it.date}</span>
+        ${it.memo ? `<span class="meta-tag">📝 ${it.memo}</span>` : ''}
+      </div>
+      <div class="item-numbers">
+        <div class="num-box"><div class="nl">仕入れ値</div><div class="nv">${fmt(it.cost)}</div></div>
+        <div class="num-box"><div class="nl">${it.status==='sold'?'売値(実)':'売値(希)'}</div><div class="nv">${fmt(usePrice)}</div></div>
+        <div class="num-box"><div class="nl">送料</div><div class="nv">${fmt(it.ship)}</div></div>
+        <div class="num-box ${pClass}"><div class="nl">利益</div><div class="nv">${fmt(profit)}</div></div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-sm btn-ghost" onclick="openEdit(${it.id})">✏️ 編集</button>
+        ${it.status === 'unsold' ? `<button class="btn btn-sm btn-primary" onclick="markSold(${it.id})" style="flex:1;">売れた！</button>` : ''}
+        <button class="btn btn-sm btn-danger" onclick="deleteItem(${it.id})">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function markSold(id) {
+  const it = items.find(i => i.id === id);
+  if (!it) return;
+  it.status = 'sold';
+  it.soldDate = new Date().toISOString().slice(0,10);
+  it.actualPrice = it.price;
+  save(); renderList(); updateSummary();
+  showToast('🎉 売れた！記録しました');
+}
+
+function deleteItem(id) {
+  if (!confirm('削除しますか？')) return;
+  items = items.filter(i => i.id !== id);
+  save(); renderList(); updateSummary();
+  showToast('削除しました');
+}
+
+// ========== 編集 ==========
+function openEdit(id) {
+  editingId = id;
+  const it = items.find(i => i.id === id);
+  document.getElementById('e-name').value = it.name;
+  document.getElementById('e-cat').value = it.cat;
+  document.getElementById('e-source').value = it.source;
+  document.getElementById('e-cost').value = it.cost;
+  document.getElementById('e-price').value = it.price;
+  document.getElementById('e-ship').value = it.ship;
+  document.getElementById('e-misc').value = it.misc || 0;
+  document.getElementById('e-status').value = it.status;
+  document.getElementById('e-sold-date').value = it.soldDate || '';
+  document.getElementById('e-actual-price').value = it.actualPrice || '';
+  document.getElementById('e-date').value = it.date;
+  document.getElementById('e-memo').value = it.memo || '';
+  toggleEditSoldDate();
+  document.getElementById('editModal').classList.add('open');
+}
+
+function toggleEditSoldDate() {
+  const st = document.getElementById('e-status').value;
+  document.getElementById('e-sold-row').style.display = st === 'sold' ? 'block' : 'none';
+}
+
+function saveEdit() {
+  const it = items.find(i => i.id === editingId);
+  if (!it) return;
+  it.name = document.getElementById('e-name').value.trim();
+  it.cat = document.getElementById('e-cat').value;
+  it.source = document.getElementById('e-source').value;
+  it.cost = +document.getElementById('e-cost').value || 0;
+  it.price = +document.getElementById('e-price').value || 0;
+  it.ship = +document.getElementById('e-ship').value || 0;
+  it.misc = +document.getElementById('e-misc').value || 0;
+  it.status = document.getElementById('e-status').value;
+  it.soldDate = document.getElementById('e-sold-date').value;
+  it.actualPrice = +document.getElementById('e-actual-price').value || it.price;
+  it.date = document.getElementById('e-date').value;
+  it.memo = document.getElementById('e-memo').value.trim();
+  save(); closeModal(); renderList(); updateSummary();
+  showToast('✓ 保存しました');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('open');
+}
+
+// ========== サマリー ==========
+function updateSummary() {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
+
+  let revenue = 0, totalProfit = 0, totalCost = 0;
+  thisMonth.forEach(it => {
+    const p = it.actualPrice || it.price;
+    revenue += p;
+    totalCost += it.cost;
+    totalProfit += calcProfit(it.cost, p, it.ship, it.misc);
+  });
+  const roi = totalCost ? Math.round((totalProfit / totalCost) * 100) : 0;
+  const unsold = items.filter(i => i.status === 'unsold').length;
+
+  document.getElementById('s-profit').textContent = fmt(totalProfit);
+  document.getElementById('s-revenue').textContent = fmt(revenue);
+  document.getElementById('s-unsold').textContent = unsold + '件';
+  document.getElementById('s-roi').textContent = roi + '%';
+}
+
+// ========== 分析 ==========
+let monthChartInstance = null;
+
+function updateStats() {
+  const ym = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
+  document.getElementById('statsMonthLabel').textContent = `${statsYear}年${statsMonth}月`;
+
+  const monthItems = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
+  let rev = 0, profit = 0, cost = 0;
+  monthItems.forEach(it => {
+    const p = it.actualPrice || it.price;
+    rev += p; cost += it.cost;
+    profit += calcProfit(it.cost, p, it.ship, it.misc);
+  });
+  const roi = cost ? Math.round((profit/cost)*100) : 0;
+
+  document.getElementById('st-profit').textContent = fmt(profit);
+  document.getElementById('st-revenue').textContent = fmt(rev);
+  document.getElementById('st-count').textContent = monthItems.length + '件';
+  document.getElementById('st-roi').textContent = roi + '%';
+
+  drawMonthChart();
+  drawCatBars();
+}
+
+function drawMonthChart() {
+  const canvas = document.getElementById('monthChart');
+  const ctx = canvas.getContext('2d');
+
+  // 過去6ヶ月
+  const months = [];
+  const profits = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(statsYear, statsMonth - 1 - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const ym = `${y}-${String(m).padStart(2,'0')}`;
+    const monthItems = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
+    let p = 0;
+    monthItems.forEach(it => { p += calcProfit(it.cost, it.actualPrice||it.price, it.ship, it.misc); });
+    months.push(`${m}月`);
+    profits.push(p);
+  }
+
+  // カスタム棒グラフ描画
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 32;
+  const h = 160;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, w, h);
+
+  const padL = 50, padR = 10, padT = 10, padB = 30;
+  const chartW = w - padL - padR;
+  const chartH = h - padT - padB;
+  const barW = chartW / months.length * 0.6;
+
+  const maxV = Math.max(...profits.map(Math.abs), 1);
+  const minV = Math.min(...profits, 0);
+
+  // ゼロライン
+  const zeroY = padT + chartH * (1 - (0 - minV) / (maxV - minV));
+  ctx.strokeStyle = '#2e3350';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, zeroY); ctx.lineTo(w - padR, zeroY); ctx.stroke();
+
+  // 軸ラベル
+  ctx.fillStyle = '#7c82a8';
+  ctx.font = '10px M PLUS Rounded 1c, sans-serif';
+  ctx.textAlign = 'right';
+  [maxV, 0, minV < 0 ? minV : null].filter(v => v !== null).forEach(v => {
+    const y = padT + chartH * (1 - (v - minV) / (maxV - minV));
+    ctx.fillText(Math.round(v/1000) + 'k', padL - 4, y + 3);
+  });
+
+  // 棒
+  months.forEach((m, i) => {
+    const x = padL + (chartW / months.length) * i + (chartW / months.length - barW) / 2;
+    const v = profits[i];
+    const barH = Math.abs(v) / (maxV - minV + 1) * chartH;
+    const y = v >= 0 ? zeroY - barH : zeroY;
+
+    const grad = ctx.createLinearGradient(x, y, x, y + barH);
+    if (v >= 0) {
+      grad.addColorStop(0, '#4df7a2');
+      grad.addColorStop(1, '#06d6a0');
+    } else {
+      grad.addColorStop(0, '#ff4d6d');
+      grad.addColorStop(1, '#c9184a');
+    }
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, Math.max(barH, 2), [4, 4, 0, 0]);
+    ctx.fill();
+
+    // 値ラベル
+    ctx.fillStyle = v >= 0 ? '#4df7a2' : '#ff4d6d';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    if (Math.abs(v) > 0) {
+      ctx.fillText((v >= 0 ? '+' : '') + Math.round(v/100)/10 + 'k', x + barW/2, v >= 0 ? y - 3 : y + barH + 10);
+    }
+
+    // 月ラベル
+    ctx.fillStyle = '#7c82a8';
+    ctx.font = '10px M PLUS Rounded 1c, sans-serif';
+    ctx.fillText(m, x + barW/2, h - 5);
+  });
+}
+
+function drawCatBars() {
+  const ym = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
+  const monthItems = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
+
+  const catMap = {};
+  monthItems.forEach(it => {
+    const p = calcProfit(it.cost, it.actualPrice||it.price, it.ship, it.misc);
+    catMap[it.cat] = (catMap[it.cat] || 0) + p;
+  });
+
+  const sorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+  const maxP = Math.max(...sorted.map(e => Math.abs(e[1])), 1);
+
+  const el = document.getElementById('catBars');
+  if (!sorted.length) {
+    el.innerHTML = '<div class="empty" style="padding:20px;"><div class="icon">📊</div>データなし</div>';
+    return;
+  }
+
+  el.innerHTML = sorted.map(([cat, profit]) => `
+    <div class="cat-bar-item">
+      <div class="cat-bar-header">
+        <span>${cat}</span>
+        <span>${fmt(profit)}</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${Math.max(Math.abs(profit)/maxP*100,2)}%; background: ${profit<0 ? 'var(--accent)' : 'linear-gradient(90deg, var(--accent2), #06d6a0)'}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function changeStatsMonth(d) {
+  statsMonth += d;
+  if (statsMonth > 12) { statsMonth = 1; statsYear++; }
+  if (statsMonth < 1) { statsMonth = 12; statsYear--; }
+  updateStats();
+}
+
+// ========== カテゴリフィルター更新 ==========
+function updateCatFilter() {
+  const cats = [...new Set(items.map(i => i.cat))];
+  const el = document.getElementById('filter-cat');
+  const cur = el.value;
+  el.innerHTML = '<option value="">全カテゴリ</option>' + cats.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+}
+
+// ========== ページ切り替え ==========
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.tab')[['add','list','stats'].indexOf(name)].classList.add('active');
+  if (name === 'list') { updateCatFilter(); renderList(); }
+  if (name === 'stats') { updateStats(); }
+}
+
+// ========== ステータス連動 ==========
+document.getElementById('f-status').addEventListener('change', function() {
+  document.getElementById('sold-date-row').style.display = this.value === 'sold' ? 'block' : 'none';
+  calcPreview();
+});
+
+// ========== トースト ==========
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ========== 初期化 ==========
+document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('ja-JP', {month:'long',day:'numeric',weekday:'short'});
+updateSummary();
+
+// roundRect polyfill
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    this.beginPath();
+    this.moveTo(x+r,y);
+    this.lineTo(x+w-r,y);
+    this.quadraticCurveTo(x+w,y,x+w,y+r);
+    this.lineTo(x+w,y+h);
+    this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    this.lineTo(x+r,y+h);
+    this.quadraticCurveTo(x,y+h,x,y+h-r);
+    this.lineTo(x,y+r);
+    this.quadraticCurveTo(x,y,x+r,y);
+    this.closePath();
+  };
+}
+</script>
+</body>
+</html>
