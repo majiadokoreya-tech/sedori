@@ -267,17 +267,26 @@
   <button class="tab active" onclick="showPage('add')">➕ 登録</button>
   <button class="tab" onclick="showPage('list')">📦 在庫</button>
   <button class="tab" onclick="showPage('stats')">📊 分析</button>
+  <button class="tab" onclick="showPage('data')">💾 データ</button>
 </div>
 
 <!-- 登録ページ -->
 <div class="page active" id="page-add">
+
+  <!-- 切り替えトグル -->
+  <div style="display:flex; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px; margin-bottom:12px; gap:4px;">
+    <button id="toggle-all" onclick="setSummaryMode('all')" style="flex:1; padding:8px; border:none; border-radius:7px; font-family:inherit; font-size:0.8rem; font-weight:700; background:var(--accent); color:#fff; cursor:pointer;">全体</button>
+    <button id="toggle-sedori" onclick="setSummaryMode('sedori')" style="flex:1; padding:8px; border:none; border-radius:7px; font-family:inherit; font-size:0.8rem; font-weight:700; background:transparent; color:var(--muted); cursor:pointer;">せどり</button>
+    <button id="toggle-fuyohin" onclick="setSummaryMode('fuyohin')" style="flex:1; padding:8px; border:none; border-radius:7px; font-family:inherit; font-size:0.8rem; font-weight:700; background:transparent; color:var(--muted); cursor:pointer;">不用品</button>
+  </div>
+
   <div class="summary-grid">
     <div class="sum-card profit">
-      <div class="label">今月利益</div>
+      <div class="label" id="s-label-profit">今月利益</div>
       <div class="value" id="s-profit">¥0</div>
     </div>
     <div class="sum-card revenue">
-      <div class="label">今月売上</div>
+      <div class="label" id="s-label-revenue">今月売上</div>
       <div class="value" id="s-revenue">¥0</div>
     </div>
     <div class="sum-card items">
@@ -285,13 +294,13 @@
       <div class="value" id="s-unsold">0件</div>
     </div>
     <div class="sum-card roi">
-      <div class="label">今月ROI</div>
+      <div class="label" id="s-label-roi">今月ROI</div>
       <div class="value" id="s-roi">0%</div>
     </div>
   </div>
 
   <div class="form-card">
-    <h2>商品を登録</h2>
+    <h2>仕入れ登録</h2>
     <div class="form-row single">
       <div>
         <label>商品名</label>
@@ -315,6 +324,7 @@
       <div>
         <label>仕入れ先</label>
         <select id="f-source">
+          <option value="不用品">不用品</option>
           <option value="ハードオフ">ハードオフ</option>
           <option value="ブックオフ">ブックオフ</option>
           <option value="メルカリ">メルカリ</option>
@@ -325,62 +335,24 @@
         </select>
       </div>
     </div>
-    <div class="form-row triple">
+    <div class="form-row">
       <div>
         <label>仕入れ値 ¥</label>
-        <input type="number" id="f-cost" placeholder="0" min="0" oninput="calcPreview()" />
+        <input type="number" id="f-cost" placeholder="0" min="0" />
       </div>
-      <div>
-        <label>売値（希望）¥</label>
-        <input type="number" id="f-price" placeholder="0" min="0" oninput="calcPreview()" />
-      </div>
-      <div>
-        <label>送料 ¥</label>
-        <input type="number" id="f-ship" placeholder="0" min="0" oninput="calcPreview()" />
-      </div>
-    </div>
-
-    <div class="calc-preview" id="calcPreview">
-      <div class="calc-row"><span>メルカリ手数料(10%)</span><span id="cv-fee">¥0</span></div>
-      <div class="calc-row"><span>梱包・その他</span><input type="number" id="f-misc" placeholder="0" min="0" style="width:70px;padding:2px 6px;font-size:0.8rem;" oninput="calcPreview()" /></div>
-      <div class="calc-row profit"><span>利益</span><span id="cv-profit">¥0</span></div>
-      <div class="calc-row roi"><span>ROI</span><span id="cv-roi">0%</span></div>
-    </div>
-
-    <div class="form-row">
       <div>
         <label>仕入れ日</label>
         <input type="date" id="f-date" />
       </div>
-      <div>
-        <label>ステータス</label>
-        <select id="f-status">
-          <option value="unsold">未販売</option>
-          <option value="sold">売れた</option>
-        </select>
-      </div>
     </div>
-    <div id="sold-date-row" style="display:none;">
-      <div class="form-row">
-        <div>
-          <label>売れた日</label>
-          <input type="date" id="f-sold-date" />
-        </div>
-        <div>
-          <label>実際の売値 ¥</label>
-          <input type="number" id="f-actual-price" placeholder="0" min="0" oninput="calcPreview()" />
-        </div>
-      </div>
-    </div>
-
     <div class="form-row single">
       <div>
         <label>メモ</label>
-        <input type="text" id="f-memo" placeholder="コンディション、出品URL など" />
+        <input type="text" id="f-memo" placeholder="コンディション、保管場所 など" />
       </div>
     </div>
-
-    <button class="btn btn-primary" onclick="addItem()">登録する</button>
+    <button class="btn btn-primary" onclick="addItem()">仕入れ登録する</button>
+    <button class="btn btn-ghost" onclick="openShippingModal()" style="width:100%; margin-top:8px;">📦 送料を確認する</button>
   </div>
 </div>
 
@@ -388,8 +360,8 @@
 <div class="page" id="page-list">
   <div class="filter-bar">
     <select id="filter-status" onchange="renderList()">
-      <option value="">全て</option>
       <option value="unsold">未販売</option>
+      <option value="">全て</option>
       <option value="sold">売れた</option>
     </select>
     <select id="filter-cat" onchange="renderList()">
@@ -410,6 +382,8 @@
     <button onclick="changeStatsMonth(1)">▶</button>
   </div>
 
+  <!-- 全体サマリー -->
+  <div style="font-size:0.72rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">📊 全体</div>
   <div class="summary-grid" style="margin-bottom:16px;">
     <div class="sum-card profit">
       <div class="label">利益</div>
@@ -429,10 +403,37 @@
     </div>
   </div>
 
+  <!-- せどり・不用品別サマリー -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+    <div style="background:var(--card); border:1px solid var(--border); border-left:3px solid var(--accent2); border-radius:var(--radius); padding:12px;">
+      <div style="font-size:0.7rem; color:var(--accent2); font-weight:700; margin-bottom:8px;">📦 せどり</div>
+      <div style="font-size:0.72rem; color:var(--muted);">利益</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:800; color:var(--accent2);" id="st-sedori-profit">¥0</div>
+      <div style="font-size:0.72rem; color:var(--muted); margin-top:6px;">売上</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; font-weight:700; color:var(--accent3);" id="st-sedori-revenue">¥0</div>
+      <div style="font-size:0.72rem; color:var(--muted); margin-top:4px;"><span id="st-sedori-count">0件</span> / ROI <span id="st-sedori-roi">0%</span></div>
+    </div>
+    <div style="background:var(--card); border:1px solid var(--border); border-left:3px solid #7eb8ff; border-radius:var(--radius); padding:12px;">
+      <div style="font-size:0.7rem; color:#7eb8ff; font-weight:700; margin-bottom:8px;">🏠 不用品</div>
+      <div style="font-size:0.72rem; color:var(--muted);">利益</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:800; color:#7eb8ff;" id="st-fuyohin-profit">¥0</div>
+      <div style="font-size:0.72rem; color:var(--muted); margin-top:6px;">売上</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; font-weight:700; color:var(--accent3);" id="st-fuyohin-revenue">¥0</div>
+      <div style="font-size:0.72rem; color:var(--muted); margin-top:4px;"><span id="st-fuyohin-count">0件</span></div>
+    </div>
+  </div>
+
   <div class="chart-section">
     <h2>月別 利益推移</h2>
     <div class="chart-wrap">
       <canvas id="monthChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>せどり / 不用品 月別比較</h2>
+    <div class="chart-wrap">
+      <canvas id="splitChart" height="140"></canvas>
     </div>
   </div>
 
@@ -446,501 +447,57 @@
   </div>
 </div>
 
-<!-- 編集モーダル -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>商品を編集</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<!-- データ管理ページ -->
+<div class="page" id="page-data">
+
+  <div class="form-card">
+    <h2>💾 バックアップ</h2>
+    <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">データをJSONファイルに保存します。スマホの場合はダウンロードフォルダに保存されます。</p>
+    <button class="btn btn-primary" onclick="exportBackup()" style="margin-bottom:10px;">
+      📥 バックアップを保存（JSON）
+    </button>
+    <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:4px;">
+      <p style="font-size:0.8rem; color:var(--muted); margin-bottom:10px;">⚠️ 復元すると現在のデータは上書きされます</p>
+      <label for="importFile" class="btn btn-ghost btn-primary" style="display:block; text-align:center; cursor:pointer; background:var(--surface); color:var(--text); border:1px dashed var(--border);">
+        📤 バックアップから復元（JSON）
+      </label>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(event)" />
     </div>
-    <div class="form-row single">
-      <div><label>商品名</label><input type="text" id="e-name" /></div>
-    </div>
-    <div class="form-row">
-      <div><label>カテゴリ</label>
-        <select id="e-cat">
-          <option value="レトロゲーム">レトロゲーム</option>
-          <option value="トレカ">トレカ</option>
-          <option value="ブランド品">ブランド品</option>
-          <option value="古着">古着</option>
-          <option value="電子機器">電子機器</option>
-          <option value="本・漫画">本・漫画</option>
-          <option value="おもちゃ">おもちゃ</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
-      <div><label>仕入れ先</label>
-        <select id="e-source">
-          <option value="ハードオフ">ハードオフ</option>
-          <option value="ブックオフ">ブックオフ</option>
-          <option value="メルカリ">メルカリ</option>
-          <option value="ヤフオク">ヤフオク</option>
-          <option value="リサイクルショップ">リサイクルショップ</option>
-          <option value="フリマ">フリマ</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row triple">
-      <div><label>仕入れ値 ¥</label><input type="number" id="e-cost" /></div>
-      <div><label>売値 ¥</label><input type="number" id="e-price" /></div>
-      <div><label>送料 ¥</label><input type="number" id="e-ship" /></div>
-    </div>
-    <div class="form-row">
-      <div><label>梱包他 ¥</label><input type="number" id="e-misc" /></div>
-      <div><label>ステータス</label>
-        <select id="e-status" onchange="toggleEditSoldDate()">
-          <option value="unsold">未販売</option>
-          <option value="sold">売れた</option>
-        </select>
-      </div>
-    </div>
-    <div id="e-sold-row">
-      <div class="form-row">
-        <div><label>売れた日</label><input type="date" id="e-sold-date" /></div>
-        <div><label>実際の売値 ¥</label><input type="number" id="e-actual-price" /></div>
-      </div>
-    </div>
-    <div class="form-row single">
-      <div><label>仕入れ日</label><input type="date" id="e-date" /></div>
-    </div>
-    <div class="form-row single">
-      <div><label>メモ</label><input type="text" id="e-memo" /></div>
-    </div>
-    <button class="btn btn-primary" onclick="saveEdit()">保存する</button>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <div class="form-card">
+    <h2>📋 CSV出力（スプレッドシート用）</h2>
+    <p style="font-size:0.8rem; color:var(--muted); margin-bottom:14px;">Googleスプレッドシートにそのまま貼り付けられます。</p>
 
-<script>
-// ========== データ ==========
-let items = JSON.parse(localStorage.getItem('sedori_items') || '[]');
-let editingId = null;
-let statsYear = new Date().getFullYear();
-let statsMonth = new Date().getMonth() + 1;
-
-function save() { localStorage.setItem('sedori_items', JSON.stringify(items)); }
-function fmt(n) { return '¥' + Math.round(n).toLocaleString(); }
-function fmtN(n) { return Math.round(n).toLocaleString(); }
-
-// ========== 計算 ==========
-function calcProfit(cost, price, ship, misc) {
-  const fee = Math.round(price * 0.1);
-  return price - fee - cost - ship - misc;
-}
-function calcROI(profit, cost) {
-  if (!cost) return 0;
-  return Math.round((profit / cost) * 100);
-}
-
-function calcPreview() {
-  const cost = +document.getElementById('f-cost').value || 0;
-  const status = document.getElementById('f-status').value;
-  let price;
-  if (status === 'sold') {
-    price = +document.getElementById('f-actual-price').value || +document.getElementById('f-price').value || 0;
-  } else {
-    price = +document.getElementById('f-price').value || 0;
-  }
-  const ship = +document.getElementById('f-ship').value || 0;
-  const misc = +document.getElementById('f-misc').value || 0;
-  const fee = Math.round(price * 0.1);
-  const profit = calcProfit(cost, price, ship, misc);
-  const roi = calcROI(profit, cost);
-
-  document.getElementById('cv-fee').textContent = fmt(fee);
-  const pe = document.getElementById('cv-profit');
-  pe.textContent = fmt(profit);
-  pe.parentElement.className = 'calc-row ' + (profit >= 0 ? 'profit' : 'loss');
-  document.getElementById('cv-roi').textContent = roi + '%';
-}
-
-// ========== 登録 ==========
-function addItem() {
-  const name = document.getElementById('f-name').value.trim();
-  if (!name) { showToast('商品名を入力してください'); return; }
-  const cost = +document.getElementById('f-cost').value || 0;
-  const price = +document.getElementById('f-price').value || 0;
-  const ship = +document.getElementById('f-ship').value || 0;
-  const misc = +document.getElementById('f-misc').value || 0;
-  const status = document.getElementById('f-status').value;
-  const actualPrice = +document.getElementById('f-actual-price').value || price;
-
-  const item = {
-    id: Date.now(),
-    name,
-    cat: document.getElementById('f-cat').value,
-    source: document.getElementById('f-source').value,
-    cost, price, ship, misc,
-    status,
-    actualPrice: status === 'sold' ? actualPrice : 0,
-    date: document.getElementById('f-date').value || new Date().toISOString().slice(0,10),
-    soldDate: status === 'sold' ? (document.getElementById('f-sold-date').value || new Date().toISOString().slice(0,10)) : '',
-    memo: document.getElementById('f-memo').value.trim()
-  };
-  items.unshift(item);
-  save();
-  clearForm();
-  updateSummary();
-  showToast('✓ 登録しました');
-}
-
-function clearForm() {
-  ['f-name','f-cost','f-price','f-ship','f-misc','f-memo','f-actual-price'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('f-status').value = 'unsold';
-  document.getElementById('sold-date-row').style.display = 'none';
-  calcPreview();
-}
-
-// ========== 在庫リスト ==========
-function renderList() {
-  const filterStatus = document.getElementById('filter-status').value;
-  const filterCat = document.getElementById('filter-cat').value;
-  const search = document.getElementById('filter-search').value.trim().toLowerCase();
-
-  let filtered = items.filter(it => {
-    if (filterStatus && it.status !== filterStatus) return false;
-    if (filterCat && it.cat !== filterCat) return false;
-    if (search && !it.name.toLowerCase().includes(search)) return false;
-    return true;
-  });
-
-  const el = document.getElementById('itemList');
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty"><div class="icon">🔍</div>該当なし</div>';
-    return;
-  }
-
-  el.innerHTML = filtered.map(it => {
-    const usePrice = it.status === 'sold' ? it.actualPrice : it.price;
-    const profit = calcProfit(it.cost, usePrice, it.ship, it.misc);
-    const roi = calcROI(profit, it.cost);
-    const pClass = profit >= 0 ? 'profit' : 'loss';
-    return `
-    <div class="item-card ${it.status}">
-      <div class="item-header">
-        <div class="item-name">${it.name}</div>
-        <span class="badge badge-${it.status}">${it.status === 'sold' ? '売れた' : '在庫中'}</span>
-      </div>
-      <div class="item-meta">
-        <span class="meta-tag">${it.cat}</span>
-        <span class="meta-tag">${it.source}</span>
-        <span class="meta-tag">${it.date}</span>
-        ${it.memo ? `<span class="meta-tag">📝 ${it.memo}</span>` : ''}
-      </div>
-      <div class="item-numbers">
-        <div class="num-box"><div class="nl">仕入れ値</div><div class="nv">${fmt(it.cost)}</div></div>
-        <div class="num-box"><div class="nl">${it.status==='sold'?'売値(実)':'売値(希)'}</div><div class="nv">${fmt(usePrice)}</div></div>
-        <div class="num-box"><div class="nl">送料</div><div class="nv">${fmt(it.ship)}</div></div>
-        <div class="num-box ${pClass}"><div class="nl">利益</div><div class="nv">${fmt(profit)}</div></div>
-      </div>
-      <div class="item-actions">
-        <button class="btn btn-sm btn-ghost" onclick="openEdit(${it.id})">✏️ 編集</button>
-        ${it.status === 'unsold' ? `<button class="btn btn-sm btn-primary" onclick="markSold(${it.id})" style="flex:1;">売れた！</button>` : ''}
-        <button class="btn btn-sm btn-danger" onclick="deleteItem(${it.id})">削除</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function markSold(id) {
-  const it = items.find(i => i.id === id);
-  if (!it) return;
-  it.status = 'sold';
-  it.soldDate = new Date().toISOString().slice(0,10);
-  it.actualPrice = it.price;
-  save(); renderList(); updateSummary();
-  showToast('🎉 売れた！記録しました');
-}
-
-function deleteItem(id) {
-  if (!confirm('削除しますか？')) return;
-  items = items.filter(i => i.id !== id);
-  save(); renderList(); updateSummary();
-  showToast('削除しました');
-}
-
-// ========== 編集 ==========
-function openEdit(id) {
-  editingId = id;
-  const it = items.find(i => i.id === id);
-  document.getElementById('e-name').value = it.name;
-  document.getElementById('e-cat').value = it.cat;
-  document.getElementById('e-source').value = it.source;
-  document.getElementById('e-cost').value = it.cost;
-  document.getElementById('e-price').value = it.price;
-  document.getElementById('e-ship').value = it.ship;
-  document.getElementById('e-misc').value = it.misc || 0;
-  document.getElementById('e-status').value = it.status;
-  document.getElementById('e-sold-date').value = it.soldDate || '';
-  document.getElementById('e-actual-price').value = it.actualPrice || '';
-  document.getElementById('e-date').value = it.date;
-  document.getElementById('e-memo').value = it.memo || '';
-  toggleEditSoldDate();
-  document.getElementById('editModal').classList.add('open');
-}
-
-function toggleEditSoldDate() {
-  const st = document.getElementById('e-status').value;
-  document.getElementById('e-sold-row').style.display = st === 'sold' ? 'block' : 'none';
-}
-
-function saveEdit() {
-  const it = items.find(i => i.id === editingId);
-  if (!it) return;
-  it.name = document.getElementById('e-name').value.trim();
-  it.cat = document.getElementById('e-cat').value;
-  it.source = document.getElementById('e-source').value;
-  it.cost = +document.getElementById('e-cost').value || 0;
-  it.price = +document.getElementById('e-price').value || 0;
-  it.ship = +document.getElementById('e-ship').value || 0;
-  it.misc = +document.getElementById('e-misc').value || 0;
-  it.status = document.getElementById('e-status').value;
-  it.soldDate = document.getElementById('e-sold-date').value;
-  it.actualPrice = +document.getElementById('e-actual-price').value || it.price;
-  it.date = document.getElementById('e-date').value;
-  it.memo = document.getElementById('e-memo').value.trim();
-  save(); closeModal(); renderList(); updateSummary();
-  showToast('✓ 保存しました');
-}
-
-function closeModal() {
-  document.getElementById('editModal').classList.remove('open');
-}
-
-// ========== サマリー ==========
-function updateSummary() {
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const thisMonth = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
-
-  let revenue = 0, totalProfit = 0, totalCost = 0;
-  thisMonth.forEach(it => {
-    const p = it.actualPrice || it.price;
-    revenue += p;
-    totalCost += it.cost;
-    totalProfit += calcProfit(it.cost, p, it.ship, it.misc);
-  });
-  const roi = totalCost ? Math.round((totalProfit / totalCost) * 100) : 0;
-  const unsold = items.filter(i => i.status === 'unsold').length;
-
-  document.getElementById('s-profit').textContent = fmt(totalProfit);
-  document.getElementById('s-revenue').textContent = fmt(revenue);
-  document.getElementById('s-unsold').textContent = unsold + '件';
-  document.getElementById('s-roi').textContent = roi + '%';
-}
-
-// ========== 分析 ==========
-let monthChartInstance = null;
-
-function updateStats() {
-  const ym = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
-  document.getElementById('statsMonthLabel').textContent = `${statsYear}年${statsMonth}月`;
-
-  const monthItems = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
-  let rev = 0, profit = 0, cost = 0;
-  monthItems.forEach(it => {
-    const p = it.actualPrice || it.price;
-    rev += p; cost += it.cost;
-    profit += calcProfit(it.cost, p, it.ship, it.misc);
-  });
-  const roi = cost ? Math.round((profit/cost)*100) : 0;
-
-  document.getElementById('st-profit').textContent = fmt(profit);
-  document.getElementById('st-revenue').textContent = fmt(rev);
-  document.getElementById('st-count').textContent = monthItems.length + '件';
-  document.getElementById('st-roi').textContent = roi + '%';
-
-  drawMonthChart();
-  drawCatBars();
-}
-
-function drawMonthChart() {
-  const canvas = document.getElementById('monthChart');
-  const ctx = canvas.getContext('2d');
-
-  // 過去6ヶ月
-  const months = [];
-  const profits = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(statsYear, statsMonth - 1 - i, 1);
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const ym = `${y}-${String(m).padStart(2,'0')}`;
-    const monthItems = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
-    let p = 0;
-    monthItems.forEach(it => { p += calcProfit(it.cost, it.actualPrice||it.price, it.ship, it.misc); });
-    months.push(`${m}月`);
-    profits.push(p);
-  }
-
-  // カスタム棒グラフ描画
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.parentElement.clientWidth - 32;
-  const h = 160;
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-  ctx.scale(dpr, dpr);
-
-  ctx.clearRect(0, 0, w, h);
-
-  const padL = 50, padR = 10, padT = 10, padB = 30;
-  const chartW = w - padL - padR;
-  const chartH = h - padT - padB;
-  const barW = chartW / months.length * 0.6;
-
-  const maxV = Math.max(...profits.map(Math.abs), 1);
-  const minV = Math.min(...profits, 0);
-
-  // ゼロライン
-  const zeroY = padT + chartH * (1 - (0 - minV) / (maxV - minV));
-  ctx.strokeStyle = '#2e3350';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(padL, zeroY); ctx.lineTo(w - padR, zeroY); ctx.stroke();
-
-  // 軸ラベル
-  ctx.fillStyle = '#7c82a8';
-  ctx.font = '10px M PLUS Rounded 1c, sans-serif';
-  ctx.textAlign = 'right';
-  [maxV, 0, minV < 0 ? minV : null].filter(v => v !== null).forEach(v => {
-    const y = padT + chartH * (1 - (v - minV) / (maxV - minV));
-    ctx.fillText(Math.round(v/1000) + 'k', padL - 4, y + 3);
-  });
-
-  // 棒
-  months.forEach((m, i) => {
-    const x = padL + (chartW / months.length) * i + (chartW / months.length - barW) / 2;
-    const v = profits[i];
-    const barH = Math.abs(v) / (maxV - minV + 1) * chartH;
-    const y = v >= 0 ? zeroY - barH : zeroY;
-
-    const grad = ctx.createLinearGradient(x, y, x, y + barH);
-    if (v >= 0) {
-      grad.addColorStop(0, '#4df7a2');
-      grad.addColorStop(1, '#06d6a0');
-    } else {
-      grad.addColorStop(0, '#ff4d6d');
-      grad.addColorStop(1, '#c9184a');
-    }
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(x, y, barW, Math.max(barH, 2), [4, 4, 0, 0]);
-    ctx.fill();
-
-    // 値ラベル
-    ctx.fillStyle = v >= 0 ? '#4df7a2' : '#ff4d6d';
-    ctx.font = '9px JetBrains Mono, monospace';
-    ctx.textAlign = 'center';
-    if (Math.abs(v) > 0) {
-      ctx.fillText((v >= 0 ? '+' : '') + Math.round(v/100)/10 + 'k', x + barW/2, v >= 0 ? y - 3 : y + barH + 10);
-    }
-
-    // 月ラベル
-    ctx.fillStyle = '#7c82a8';
-    ctx.font = '10px M PLUS Rounded 1c, sans-serif';
-    ctx.fillText(m, x + barW/2, h - 5);
-  });
-}
-
-function drawCatBars() {
-  const ym = `${statsYear}-${String(statsMonth).padStart(2,'0')}`;
-  const monthItems = items.filter(it => it.status === 'sold' && it.soldDate && it.soldDate.startsWith(ym));
-
-  const catMap = {};
-  monthItems.forEach(it => {
-    const p = calcProfit(it.cost, it.actualPrice||it.price, it.ship, it.misc);
-    catMap[it.cat] = (catMap[it.cat] || 0) + p;
-  });
-
-  const sorted = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
-  const maxP = Math.max(...sorted.map(e => Math.abs(e[1])), 1);
-
-  const el = document.getElementById('catBars');
-  if (!sorted.length) {
-    el.innerHTML = '<div class="empty" style="padding:20px;"><div class="icon">📊</div>データなし</div>';
-    return;
-  }
-
-  el.innerHTML = sorted.map(([cat, profit]) => `
-    <div class="cat-bar-item">
-      <div class="cat-bar-header">
-        <span>${cat}</span>
-        <span>${fmt(profit)}</span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${Math.max(Math.abs(profit)/maxP*100,2)}%; background: ${profit<0 ? 'var(--accent)' : 'linear-gradient(90deg, var(--accent2), #06d6a0)'}"></div>
+    <div style="margin-bottom:12px;">
+      <label>対象期間</label>
+      <div class="form-row" style="margin-top:6px;">
+        <div>
+          <label style="font-size:0.68rem;">開始月</label>
+          <input type="month" id="csv-from" />
+        </div>
+        <div>
+          <label style="font-size:0.68rem;">終了月</label>
+          <input type="month" id="csv-to" />
+        </div>
       </div>
     </div>
-  `).join('');
-}
 
-function changeStatsMonth(d) {
-  statsMonth += d;
-  if (statsMonth > 12) { statsMonth = 1; statsYear++; }
-  if (statsMonth < 1) { statsMonth = 12; statsYear--; }
-  updateStats();
-}
+    <div style="margin-bottom:12px;">
+      <label>出力対象</label>
+      <div style="display:flex; gap:10px; margin-top:6px; flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text);">
+          <input type="radio" name="csv-target" value="sold" checked style="width:auto;"> 売れた商品のみ
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text);">
+          <input type="radio" name="csv-target" value="all" style="width:auto;"> 全商品
+        </label>
+      </div>
+    </div>
 
-// ========== カテゴリフィルター更新 ==========
-function updateCatFilter() {
-  const cats = [...new Set(items.map(i => i.cat))];
-  const el = document.getElementById('filter-cat');
-  const cur = el.value;
-  el.innerHTML = '<option value="">全カテゴリ</option>' + cats.map(c => `<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-}
+    <button class="btn btn-primary" onclick="exportCSV()">📊 CSVダウンロード</button>
 
-// ========== ページ切り替え ==========
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.querySelectorAll('.tab')[['add','list','stats'].indexOf(name)].classList.add('active');
-  if (name === 'list') { updateCatFilter(); renderList(); }
-  if (name === 'stats') { updateStats(); }
-}
-
-// ========== ステータス連動 ==========
-document.getElementById('f-status').addEventListener('change', function() {
-  document.getElementById('sold-date-row').style.display = this.value === 'sold' ? 'block' : 'none';
-  calcPreview();
-});
-
-// ========== トースト ==========
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-// ========== 初期化 ==========
-document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
-document.getElementById('headerDate').textContent = new Date().toLocaleDateString('ja-JP', {month:'long',day:'numeric',weekday:'short'});
-updateSummary();
-
-// roundRect polyfill
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
-    this.beginPath();
-    this.moveTo(x+r,y);
-    this.lineTo(x+w-r,y);
-    this.quadraticCurveTo(x+w,y,x+w,y+r);
-    this.lineTo(x+w,y+h);
-    this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-    this.lineTo(x+r,y+h);
-    this.quadraticCurveTo(x,y+h,x,y+h-r);
-    this.lineTo(x,y+r);
-    this.quadraticCurveTo(x,y,x+r,y);
-    this.closePath();
-  };
-}
-</script>
-</body>
-</html>
+    <div style="margin-top:14px; border-top:1px solid var(--border); padding-top:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <label style="margin:0;">プレビュー（先頭5件）</label>
+        <button class="btn btn-sm btn-ghost" onclick="copyCSV()">📋 全件コピー</button
