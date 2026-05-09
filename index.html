@@ -6,7 +6,7 @@
 <title>せどり管理</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
-  :root{--bg:#0f1117;--surface:#1a1d27;--card:#22263a;--border:#2e3350;--accent:#ff4d6d;--accent2:#4df7a2;--accent3:#ffd166;--text:#e8eaf6;--muted:#7c82a8;--radius:14px;}
+  :root{--bg:#f4f4f8;--surface:#ffffff;--card:#ffffff;--border:#e0e0ea;--accent:#ff4d6d;--accent2:#00b87a;--accent3:#e6a000;--text:#1a1a2e;--muted:#8888aa;--radius:14px;}
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:'M PLUS Rounded 1c',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;}
   header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
@@ -101,7 +101,7 @@
   .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
   .modal-header h3{font-size:.98rem;font-weight:800;}
   .modal-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;}
-  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#0f1117;font-weight:700;padding:10px 20px;border-radius:99px;font-size:.82rem;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#1a1a2e;font-weight:700;padding:10px 20px;border-radius:99px;font-size:.82rem;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
   .toast.show{opacity:1;}
   .empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:.88rem;}
   .empty .icon{font-size:2.2rem;margin-bottom:8px;}
@@ -798,8 +798,8 @@ function drawMonthChart(){
   const pL=46,pR=8,pT=12,pB=26,cW=w-pL-pR,cH=h-pT-pB;
   const maxV=Math.max(...profits.map(Math.abs),1),minV=Math.min(...profits,0);
   const zY=pT+cH*(1-(0-minV)/(maxV-minV));
-  ctx.strokeStyle='#2e3350';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pL,zY);ctx.lineTo(w-pR,zY);ctx.stroke();
-  ctx.fillStyle='#7c82a8';ctx.font='10px sans-serif';ctx.textAlign='right';
+  ctx.strokeStyle='#e0e0ea';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pL,zY);ctx.lineTo(w-pR,zY);ctx.stroke();
+  ctx.fillStyle='#8888aa';ctx.font='10px sans-serif';ctx.textAlign='right';
   ctx.fillText(Math.round(maxV/1000)+'k',pL-4,pT+10);
   const colW=cW/months.length, bW=colW*0.6;
   monthChartMeta = []; // リセット
@@ -810,7 +810,7 @@ function drawMonthChart(){
     // タップ判定用にメタ情報を記録（列全体をタップ範囲に）
     monthChartMeta.push({ ym: m.ym, label: m.label, x: pL+colW*i, w: colW });
     if(Math.abs(v)>0){ctx.fillStyle=v>=0?'#4df7a2':'#ff4d6d';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText((v>=0?'+':'')+Math.round(v/100)/10+'k',x+bW/2,v>=0?y-3:y+bH+10);}
-    ctx.fillStyle='#7c82a8';ctx.font='10px sans-serif';ctx.fillText(m.label,x+bW/2,h-4);
+    ctx.fillStyle='#8888aa';ctx.font='10px sans-serif';ctx.fillText(m.label,x+bW/2,h-4);
   });
 }
 function drawSplitChart(){
@@ -821,7 +821,7 @@ function drawSplitChart(){
   const pL=46,pR=8,pT=18,pB=26,cW=w-pL-pR,cH=h-pT-pB;
   const all=[...sP,...fP],maxV=Math.max(...all.map(Math.abs),1),minV=Math.min(...all,0);
   const zY=pT+cH*(1-(0-minV)/(maxV-minV));
-  ctx.strokeStyle='#2e3350';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pL,zY);ctx.lineTo(w-pR,zY);ctx.stroke();
+  ctx.strokeStyle='#e0e0ea';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pL,zY);ctx.lineTo(w-pR,zY);ctx.stroke();
   const colW=cW/months.length,bW=colW*0.35;
   months.forEach((m,i)=>{
     const cx=pL+colW*i+colW/2;
@@ -829,11 +829,11 @@ function drawSplitChart(){
       const bH=Math.abs(v)/(maxV-minV+1)*cH,y=v>=0?zY-bH:zY;
       ctx.globalAlpha=0.85;drawRoundBar(ctx,x,y,bW,bH,c);ctx.globalAlpha=1;
     });
-    ctx.fillStyle='#7c82a8';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(m.label,cx,h-4);
+    ctx.fillStyle='#8888aa';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(m.label,cx,h-4);
   });
   ctx.font='10px sans-serif';ctx.textAlign='left';
-  ctx.fillStyle='#4df7a2';ctx.fillRect(pL,3,8,8);ctx.fillStyle='#7c82a8';ctx.fillText('せどり',pL+11,11);
-  ctx.fillStyle='#7eb8ff';ctx.fillRect(pL+55,3,8,8);ctx.fillStyle='#7c82a8';ctx.fillText('不用品',pL+66,11);
+  ctx.fillStyle='#4df7a2';ctx.fillRect(pL,3,8,8);ctx.fillStyle='#8888aa';ctx.fillText('せどり',pL+11,11);
+  ctx.fillStyle='#7eb8ff';ctx.fillRect(pL+55,3,8,8);ctx.fillStyle='#8888aa';ctx.fillText('不用品',pL+66,11);
 }
 function drawCatBars(){
   const ym=`${statsYear}-${String(statsMonth).padStart(2,'0')}`;
