@@ -836,7 +836,8 @@ function renderSoldList(){
     const isFuy=it.source==='不用品';
     const color=isFuy?'var(--blue)':'var(--accent2)';
     const typeLabel=isFuy?'🏠 不用品':'📦 せどり';
-    return`<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${color};border-radius:var(--radius);padding:12px;margin-bottom:8px;box-shadow:var(--shadow);">
+    const fee=Math.round((it.actualPrice||0)*(it.feeRate||0.10));
+    return`<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${color};border-radius:var(--radius);padding:12px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;" onclick="toggleSoldDetail('sd-${it.id}')">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px;">
         <div style="font-weight:700;font-size:.88rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.name}</div>
         <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:800;color:${profit>=0?color:'var(--accent)'};">${fmt(profit)}</span>
@@ -847,11 +848,46 @@ function renderSoldList(){
         ${it.ship?`<div class="item-num">送料 <span>${fmt(it.ship)}</span></div>`:''}
         <div class="item-num">ROI <span class="${profit>=0?'green':'red'}">${calcROI(profit,it.cost)}%</span></div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
         <span class="meta-tag" style="color:${color};">${typeLabel}</span>
         <span class="meta-tag">${it.cat}</span>
         ${it.platform?`<span class="meta-tag">${PLATFORM_NAME[it.platform]||it.platform}</span>`:''}
         <span class="meta-tag">${it.soldDate}</span>
+        <span class="meta-tag" style="color:var(--muted);">タップで詳細</span>
+      </div>
+      <!-- 詳細（タップで展開） -->
+      <div id="sd-${it.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:.68rem;color:var(--muted);">仕入れ値</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.cost)}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:.68rem;color:var(--muted);">売値</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.actualPrice||0)}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:.68rem;color:var(--muted);">送料</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.ship||0)}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:.68rem;color:var(--muted);">梱包費</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.misc||0)}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:.68rem;color:var(--muted);">手数料</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(fee)}</div>
+          </div>
+          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;border:1px solid ${color};">
+            <div style="font-size:.68rem;color:var(--muted);">利益</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:${profit>=0?color:'var(--accent)'};">${fmt(profit)}</div>
+          </div>
+        </div>
+        ${it.memo?`<div style="font-size:.78rem;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px;">📝 ${it.memo}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openEdit(${it.id})" style="flex:1;">✏️ 編集</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteItem(${it.id})">削除</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1035,14 +1071,24 @@ function toggleShipPicker(){
 }
 function renderShipPickerTab(type){
   if(type==='quick'){
-    document.getElementById('quick-ship-btns').innerHTML=QUICK_SHIP.map(r=>`<button onclick="selectShip(${r.price})" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-size:.75rem;cursor:pointer;text-align:center;"><div>${r.name}</div><div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;">¥${r.price}</div></button>`).join('');return;
+    document.getElementById('quick-ship-btns').innerHTML=QUICK_SHIP.map(r=>`<button onclick="selectShip(${r.price},'${r.name}')" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-size:.75rem;cursor:pointer;text-align:center;"><div>${r.name}</div><div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;">¥${r.price}</div></button>`).join('');return;
   }
-  document.getElementById(`sptab-content-${type}`).innerHTML=SHIPPING_DATA[type].map((r,i)=>`<div onclick="selectShip(${r.price})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${i%2===0?'transparent':'rgba(0,0,0,.02)'}"><div><div style="font-size:.8rem;font-weight:600;">${r.name}</div><div style="font-size:.68rem;color:var(--muted);">${r.size}</div></div><div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;font-size:.85rem;">¥${r.price.toLocaleString()}</div></div>`).join('');
+  document.getElementById(`sptab-content-${type}`).innerHTML=SHIPPING_DATA[type].map((r,i)=>`<div onclick="selectShip(${r.price},'${r.name}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${i%2===0?'transparent':'rgba(0,0,0,.02)'}"><div><div style="font-size:.8rem;font-weight:600;">${r.name}</div><div style="font-size:.68rem;color:var(--muted);">${r.size}</div></div><div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;font-size:.85rem;">¥${r.price.toLocaleString()}</div></div>`).join('');
 }
-function selectShip(price){
+function toggleSoldDetail(id){
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+function selectShip(price,name){
   document.getElementById('sm-ship').value=price;
+  if(name&&name.includes('mini')){
+    document.getElementById('sm-misc').value=20;
+    showToast(`送料 ¥${price} ＋ 封筒代 ¥20 を自動入力`);
+  } else {
+    showToast(`送料 ¥${price.toLocaleString()} を選択`);
+  }
   document.getElementById('ship-picker').style.display='none';
-  calcSoldPreview();showToast(`送料 ¥${price.toLocaleString()} を選択`);
+  calcSoldPreview();
 }
 function switchShipTab(type){
   ['quick','mercari','yuyu','other'].forEach(t=>{
