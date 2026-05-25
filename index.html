@@ -1053,16 +1053,60 @@ function jumpToMonth(){
 
 // ========== 送料ピッカー ==========
 const QUICK_SHIP=[
-  {name:'ネコポス',price:210},{name:'宅急便コンパクト',price:450},
-  {name:'ゆうパケット',price:230},{name:'ゆうパケットポスト',price:215},
-  {name:'ゆうパケットプラス',price:455},{name:'クリックポスト',price:185},
-  {name:'レターパックライト',price:430},{name:'レターパックプラス',price:600},
-  {name:'宅急便60',price:750},{name:'ゆうパック60',price:750},
+  {name:'ネコポス',price:210,misc:0},
+  {name:'宅急便コンパクト',price:450,misc:70},
+  {name:'ゆうパケット',price:230,misc:0},
+  {name:'ゆうパケットポスト(シール)',price:215,misc:5},
+  {name:'ゆうパケットポストmini',price:160,misc:20},
+  {name:'ゆうパケットプラス',price:455,misc:65},
+  {name:'クリックポスト',price:185,misc:0},
+  {name:'レターパックライト',price:430,misc:0},
+  {name:'レターパックプラス',price:600,misc:0},
+  {name:'宅急便60',price:750,misc:0},
+  {name:'ゆうパック60',price:750,misc:0},
 ];
 const SHIPPING_DATA={
-  mercari:[{name:'ネコポス',size:'3辺60cm以内・長辺34cm以内',price:210},{name:'宅急便コンパクト',size:'専用BOX',price:450},{name:'宅急便 60',size:'2kgまで',price:750},{name:'宅急便 80',size:'5kgまで',price:850},{name:'宅急便 100',size:'10kgまで',price:1050},{name:'宅急便 120',size:'15kgまで',price:1200},{name:'宅急便 140',size:'20kgまで',price:1450},{name:'宅急便 160',size:'25kgまで',price:1700},{name:'宅急便 170',size:'30kgまで',price:2100},{name:'宅急便 180',size:'30kgまで',price:2500}],
-  yuyu:[{name:'ゆうパケットポストmini',size:'内寸21.1×16.8cm・2kgまで',price:160},{name:'ゆうパケットポスト',size:'3辺60cm以内・2kgまで',price:215},{name:'ゆうパケット',size:'34×23×3cm・1kgまで',price:230},{name:'ゆうパケットプラス',size:'17×24×7cm・2kgまで',price:455},{name:'ゆうパック 60',size:'25kgまで',price:750},{name:'ゆうパック 80',size:'25kgまで',price:870},{name:'ゆうパック 100',size:'25kgまで',price:1070},{name:'ゆうパック 120',size:'25kgまで',price:1200},{name:'ゆうパック 140',size:'25kgまで',price:1450},{name:'ゆうパック 160',size:'25kgまで',price:1700},{name:'ゆうパック 170',size:'25kgまで',price:1900}],
-  other:[{name:'定形郵便',size:'50gまで',price:110},{name:'クリックポスト',size:'1kgまで',price:185},{name:'スマートレター',size:'1kgまで',price:210},{name:'ゆうメール 150g',size:'34×25×3cm以内',price:190},{name:'ゆうメール 250g',size:'34×25×3cm以内',price:230},{name:'ゆうメール 1kg',size:'34×25×3cm以内',price:380},{name:'定形外(規格内) 50g',size:'34×25×3cm以内',price:140},{name:'定形外(規格内) 100g',size:'34×25×3cm以内',price:180},{name:'定形外(規格内) 250g',size:'34×25×3cm以内',price:320},{name:'定形外(規格内) 500g',size:'34×25×3cm以内',price:510},{name:'定形外(規格内) 1kg',size:'34×25×3cm以内',price:750},{name:'レターパックライト',size:'4kgまで',price:430},{name:'レターパックプラス',size:'4kgまで',price:600}]
+  mercari:[
+    {name:'ネコポス',size:'3辺60cm以内・長辺34cm以内',price:210,misc:0},
+    {name:'宅急便コンパクト',size:'専用BOX ¥70',price:450,misc:70},
+    {name:'宅急便 60',size:'2kgまで',price:750,misc:0},
+    {name:'宅急便 80',size:'5kgまで',price:850,misc:0},
+    {name:'宅急便 100',size:'10kgまで',price:1050,misc:0},
+    {name:'宅急便 120',size:'15kgまで',price:1200,misc:0},
+    {name:'宅急便 140',size:'20kgまで',price:1450,misc:0},
+    {name:'宅急便 160',size:'25kgまで',price:1700,misc:0},
+    {name:'宅急便 170',size:'30kgまで',price:2100,misc:0},
+    {name:'宅急便 180',size:'30kgまで',price:2500,misc:0},
+  ],
+  yuyu:[
+    {name:'ゆうパケットポストmini',size:'専用封筒 ¥20',price:160,misc:20},
+    {name:'ゆうパケットポスト(シール)',size:'専用シール ¥5',price:215,misc:5},
+    {name:'ゆうパケットポスト(専用箱)',size:'専用箱 ¥65',price:215,misc:65},
+    {name:'ゆうパケット',size:'34×23×3cm・1kgまで',price:230,misc:0},
+    {name:'ゆうパケットプラス',size:'専用箱 ¥65・2kgまで',price:455,misc:65},
+    {name:'ゆうパック 60',size:'25kgまで',price:750,misc:0},
+    {name:'ゆうパック 80',size:'25kgまで',price:870,misc:0},
+    {name:'ゆうパック 100',size:'25kgまで',price:1070,misc:0},
+    {name:'ゆうパック 120',size:'25kgまで',price:1200,misc:0},
+    {name:'ゆうパック 140',size:'25kgまで',price:1450,misc:0},
+    {name:'ゆうパック 160',size:'25kgまで',price:1700,misc:0},
+    {name:'ゆうパック 170',size:'25kgまで',price:1900,misc:0},
+  ],
+  other:[
+    {name:'定形郵便',size:'50gまで',price:110,misc:0},
+    {name:'クリックポスト',size:'1kgまで',price:185,misc:0},
+    {name:'スマートレター',size:'1kgまで',price:210,misc:0},
+    {name:'ゆうメール 150g',size:'34×25×3cm以内',price:190,misc:0},
+    {name:'ゆうメール 250g',size:'34×25×3cm以内',price:230,misc:0},
+    {name:'ゆうメール 1kg',size:'34×25×3cm以内',price:380,misc:0},
+    {name:'定形外(規格内) 50g',size:'34×25×3cm以内',price:140,misc:0},
+    {name:'定形外(規格内) 100g',size:'34×25×3cm以内',price:180,misc:0},
+    {name:'定形外(規格内) 250g',size:'34×25×3cm以内',price:320,misc:0},
+    {name:'定形外(規格内) 500g',size:'34×25×3cm以内',price:510,misc:0},
+    {name:'定形外(規格内) 1kg',size:'34×25×3cm以内',price:750,misc:0},
+    {name:'レターパックライト',size:'4kgまで',price:430,misc:0},
+    {name:'レターパックプラス',size:'4kgまで',price:600,misc:0},
+  ]
 };
 function toggleShipPicker(){
   const p=document.getElementById('ship-picker');
@@ -1071,20 +1115,34 @@ function toggleShipPicker(){
 }
 function renderShipPickerTab(type){
   if(type==='quick'){
-    document.getElementById('quick-ship-btns').innerHTML=QUICK_SHIP.map(r=>`<button onclick="selectShip(${r.price},'${r.name}')" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-size:.75rem;cursor:pointer;text-align:center;"><div>${r.name}</div><div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;">¥${r.price}</div></button>`).join('');return;
+    document.getElementById('quick-ship-btns').innerHTML=QUICK_SHIP.map(r=>`<button onclick="selectShip(${r.price},${r.misc},'${r.name}')" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-size:.75rem;cursor:pointer;text-align:center;min-width:80px;">
+      <div>${r.name}</div>
+      <div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;">¥${r.price}</div>
+      ${r.misc>0?`<div style="font-size:.65rem;color:var(--muted);">資材 +¥${r.misc}</div>`:''}
+    </button>`).join('');return;
   }
-  document.getElementById(`sptab-content-${type}`).innerHTML=SHIPPING_DATA[type].map((r,i)=>`<div onclick="selectShip(${r.price},'${r.name}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${i%2===0?'transparent':'rgba(0,0,0,.02)'}"><div><div style="font-size:.8rem;font-weight:600;">${r.name}</div><div style="font-size:.68rem;color:var(--muted);">${r.size}</div></div><div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;font-size:.85rem;">¥${r.price.toLocaleString()}</div></div>`).join('');
+  document.getElementById(`sptab-content-${type}`).innerHTML=SHIPPING_DATA[type].map((r,i)=>`
+    <div onclick="selectShip(${r.price},${r.misc},'${r.name}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${i%2===0?'transparent':'rgba(0,0,0,.02)'}">
+      <div>
+        <div style="font-size:.8rem;font-weight:600;">${r.name}</div>
+        <div style="font-size:.68rem;color:var(--muted);">${r.size}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;font-size:.85rem;">¥${r.price.toLocaleString()}</div>
+        ${r.misc>0?`<div style="font-size:.65rem;color:var(--muted);">資材 +¥${r.misc}</div>`:''}
+      </div>
+    </div>`).join('');
 }
 function toggleSoldDetail(id){
   const el=document.getElementById(id);
   if(el)el.style.display=el.style.display==='none'?'block':'none';
 }
-function selectShip(price,name){
+function selectShip(price,misc,name){
   document.getElementById('sm-ship').value=price;
-  if(name&&name.includes('mini')){
-    document.getElementById('sm-misc').value=20;
-    showToast(`送料 ¥${price} ＋ 封筒代 ¥20 を自動入力`);
-  } else {
+  if(misc>0){
+    document.getElementById('sm-misc').value=misc;
+    showToast(`送料 ¥${price} ＋ 資材代 ¥${misc} を自動入力`);
+  }else{
     showToast(`送料 ¥${price.toLocaleString()} を選択`);
   }
   document.getElementById('ship-picker').style.display='none';
