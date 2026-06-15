@@ -14,7 +14,7 @@
 body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px;font-size:15px}
 header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
 h1{font-size:1.1rem;font-weight:900}h1 span{color:var(--accent)}
-.header-mini{font-size:.72rem;color:var(--muted);font-weight:700;text-align:right}.tabs{position:sticky;top:49px;z-index:19;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-bottom:1px solid var(--border)}
+.header-mini{font-size:.72rem;color:var(--muted);font-weight:700;text-align:right}.tabs{position:sticky;top:49px;z-index:19;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-bottom:1px solid var(--border)}
 .tab{border:none;background:#fff;color:var(--muted);font-weight:800;font-size:.72rem;padding:10px 2px;border-bottom:3px solid transparent}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .page{display:none;padding:12px}.page.active{display:block}.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
 .section-title{font-size:.85rem;color:var(--muted);font-weight:900;letter-spacing:.04em;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summary-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:11px;box-shadow:var(--shadow)}
@@ -30,7 +30,6 @@ label{display:block;font-size:.72rem;color:var(--muted);font-weight:800;margin:0
 <header><h1>せどり<span>管理</span></h1><div class="header-mini" id="todayMini"></div></header>
 <nav class="tabs">
 <button class="tab active" data-page="home" onclick="showPage('home')">ホーム</button>
-<button class="tab" data-page="entry" onclick="showPage('entry')">登録</button>
 <button class="tab" data-page="stock" onclick="showPage('stock')">在庫</button>
 <button class="tab" data-page="analysis" onclick="showPage('analysis')">分析</button>
 <button class="tab" data-page="data" onclick="showPage('data')">データ</button>
@@ -55,22 +54,10 @@ label{display:block;font-size:.72rem;color:var(--muted);font-weight:800;margin:0
   </div>
 </section>
 
-<section id="entry" class="page">
-  <div class="card">
-    <div class="section-title">仕入れ登録</div>
-    <div class="quick-row" id="quickSources"></div>
-    <div id="lastCarry" class="mini-note" style="display:none"></div>
-    <div class="form-row single"><div><label>商品名</label><input id="fName" placeholder="例：Switch ソフト"></div></div>
-    <div class="form-row"><div><label>仕入れ値 ¥</label><input id="fCost" type="number" inputmode="numeric"></div><div><label>仕入れ日</label><input id="fDate" type="date"></div></div>
-    <div class="form-row"><div><label>カテゴリ</label><select id="fCat"></select></div><div><label>仕入れ先</label><select id="fSource" onchange="highlightQuickSource()"></select></div></div>
-    <div class="form-row single"><div><label>メモ</label><textarea id="fMemo" placeholder="型番・状態・付属品など"></textarea></div></div>
-    <button class="btn btn-primary" onclick="addItem()">仕入れ登録する</button>
-    <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="openShipping()">送料を確認する</button>
-  </div>
-</section>
 
 <section id="stock" class="page">
   <div class="mode-toggle" id="stockModeToggle"><button class="active" onclick="setStockMode('sedori',this)">せどり</button><button onclick="setStockMode('fuyohin',this)">不用品</button></div>
+  <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="openAddModal()">＋ 商品追加</button>
   <div class="filter-bar">
     <select id="filterStatus" onchange="renderStock()"><option value="unsold">未販売</option><option value="all">全て</option><option value="sold">売れた</option></select>
     <select id="filterCat" onchange="renderStock()"><option value="">全カテゴリ</option></select>
@@ -100,7 +87,7 @@ label{display:block;font-size:.72rem;color:var(--muted);font-weight:800;margin:0
 </section>
 </main>
 
-<button class="fixed-add" onclick="showPage('entry')">＋登録</button>
+<button class="fixed-add" onclick="openAddModal()">＋商品追加</button>
 <div class="toast" id="toast"></div>
 
 <div class="modal" id="soldModal"><div class="modal-inner"><div class="modal-head"><h3>売れた！</h3><button class="close" onclick="closeModal('soldModal')">×</button></div>
@@ -118,6 +105,18 @@ label{display:block;font-size:.72rem;color:var(--muted);font-weight:800;margin:0
   <div class="form-row"><div><label>仕入れ日</label><input id="eDate" type="date"></div><div><label>ステータス</label><select id="eStatus" onchange="toggleEditSold()"><option value="unsold">未販売</option><option value="sold">売れた</option></select></div></div>
   <div id="editSoldArea"><div class="form-row"><div><label>売れた日</label><input id="eSoldDate" type="date"></div><div><label>実際の売値 ¥</label><input id="ePrice" type="number" oninput="calcEditPreview()"></div></div><div class="form-row single"><div><label>販売先</label><select id="ePlatform" onchange="calcEditPreview()"><option value="mercari">メルカリ（10%）</option><option value="yahoo-flea">ヤフフリ（5%）</option><option value="yahoo-auction">ヤフオク（10%）</option><option value="other">その他（10%）</option></select></div></div><div class="calc-box" id="editPreview"></div></div>
   <div class="form-row single"><div><label>メモ</label><textarea id="eMemo"></textarea></div></div><button class="btn btn-primary" onclick="saveEdit()">保存する</button>
+</div></div>
+
+<div class="modal" id="addModal"><div class="modal-inner"><div class="modal-head"><h3>商品追加</h3><button class="close" onclick="closeModal('addModal')">×</button></div>
+  <div class="mini-note" id="addModeNote"></div>
+  <div class="quick-row" id="quickSources"></div>
+  <div id="lastCarry" class="mini-note" style="display:none"></div>
+  <div class="form-row single"><div><label>商品名</label><input id="fName" placeholder="例：Switch ソフト"></div></div>
+  <div class="form-row"><div><label>仕入れ値 ¥</label><input id="fCost" type="number" inputmode="numeric"></div><div><label>仕入れ日</label><input id="fDate" type="date"></div></div>
+  <div class="form-row"><div><label>カテゴリ</label><select id="fCat"></select></div><div><label>仕入れ先</label><select id="fSource" onchange="highlightQuickSource()"></select></div></div>
+  <div class="form-row single"><div><label>メモ</label><textarea id="fMemo" placeholder="型番・状態・付属品など"></textarea></div></div>
+  <button class="btn btn-primary" onclick="addItem()">商品を追加する</button>
+  <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="openShipping()">送料を確認する</button>
 </div></div>
 
 <div class="modal" id="shipModal"><div class="modal-inner"><div class="modal-head"><h3>送料早見表</h3><button class="close" onclick="closeModal('shipModal')">×</button></div><div id="shipTable"></div><div class="mini-note">送料は変わる場合があります。実際の発送前に各サービスで確認してください。</div></div></div>
@@ -162,7 +161,8 @@ function setQuickSource(s){$('fSource').value=s;highlightQuickSource()}
 function highlightQuickSource(){document.querySelectorAll('.quick-src').forEach(b=>b.classList.toggle('btn-primary',b.textContent===$('fSource').value))}
 function updateLastCarry(){const last=JSON.parse(localStorage.getItem('sedori_last_entry')||'null');if(!last){$('lastCarry').style.display='none';return}$('lastCarry').style.display='block';$('lastCarry').innerHTML=`前回: ${last.source} / ${last.cat} <button class="btn btn-sm btn-ghost" onclick="applyLastCarry()">引き継ぐ</button>`}
 function applyLastCarry(){const last=JSON.parse(localStorage.getItem('sedori_last_entry')||'null');if(!last)return;$('fCat').value=last.cat;$('fSource').value=last.source;$('fMemo').value=last.memo||'';highlightQuickSource();toast('前回内容を引き継ぎました')}
-function addItem(){const name=$('fName').value.trim();if(!name){toast('商品名を入力してください');return}const item={id:Date.now(),name,cat:$('fCat').value,source:$('fSource').value,cost:Number($('fCost').value)||0,price:0,actualPrice:0,ship:0,misc:0,status:'unsold',platform:'mercari',feeRate:.10,date:$('fDate').value||today(),soldDate:'',memo:$('fMemo').value.trim()};items.unshift(item);localStorage.setItem('sedori_last_entry',JSON.stringify({cat:item.cat,source:item.source,memo:item.memo}));save();$('fName').value='';$('fCost').value='';$('fMemo').value='';$('fDate').value=today();renderAll();toast('仕入れ登録しました')}
+function openAddModal(){const sourceDefault=stockMode==='fuyohin'?'不用品':($('fSource').value==='不用品'?'ハードオフ':($('fSource').value||'ハードオフ'));$('fSource').value=sourceDefault;$('fDate').value=$('fDate').value||today();$('addModeNote').textContent=(stockMode==='fuyohin'?'不用品':'せどり')+'として在庫に追加します。';highlightQuickSource();updateLastCarry();$('addModal').classList.add('open');setTimeout(()=>$('fName').focus(),80)}
+function addItem(){const name=$('fName').value.trim();if(!name){toast('商品名を入力してください');return}const item={id:Date.now(),name,cat:$('fCat').value,source:$('fSource').value,cost:Number($('fCost').value)||0,price:0,actualPrice:0,ship:0,misc:0,status:'unsold',platform:'mercari',feeRate:.10,date:$('fDate').value||today(),soldDate:'',memo:$('fMemo').value.trim()};items.unshift(item);localStorage.setItem('sedori_last_entry',JSON.stringify({cat:item.cat,source:item.source,memo:item.memo}));save();$('fName').value='';$('fCost').value='';$('fMemo').value='';$('fDate').value=today();closeModal('addModal');showPage('stock');renderAll();toast('商品を追加しました')}
 function updateFilters(){const cats=[...new Set(items.map(i=>i.cat).filter(Boolean))];const opts='<option value="">全カテゴリ</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');const cur=$('filterCat').value;$('filterCat').innerHTML=opts;$('filterCat').value=cur;if($('filterCat').value!==cur)$('filterCat').value='';const months=[...new Set(soldItems('all').map(i=>(i.soldDate||'').slice(0,7)).filter(Boolean))].sort().reverse();const cm=$('soldMonthFilter').value;$('soldMonthFilter').innerHTML='<option value="all">全期間</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('');$('soldMonthFilter').value=cm||'all'}
 function renderStock(){const st=$('filterStatus').value,cat=$('filterCat').value,q=$('filterSearch').value.trim().toLowerCase();let arr=items.filter(i=>matchMode(i,stockMode)&&(st==='all'||i.status===st)&&(!cat||i.cat===cat)&&(!q||((i.name||'')+(i.memo||'')).toLowerCase().includes(q)));const inv=inventoryItems(stockMode), sold=soldItems(stockMode);const label=stockMode==='sedori'?'せどり':'不用品';$('stockSummary').innerHTML=card(label+' 未販売',inv.length+'件','blue')+card(label+' 売れた',sold.length+'件','green');$('stockList').innerHTML=arr.length?arr.map(itemHtml).join(''):'<div class="empty">商品がありません</div>'}
 function itemHtml(it){const sold=it.status==='sold';return `<div class="item"><div class="item-top"><div><div class="item-name">${escapeHtml(it.name)}</div><span class="badge ${sold?'sold':'unsold'}">${sold?'売れた':'未販売'}</span><span class="badge">${it.cat}</span><span class="badge">${it.source}</span></div><div style="text-align:right;font-weight:900" class="${sold?(profitOf(it)>=0?'green':'red'):'blue'}">${sold?yen(profitOf(it)):yen(it.cost)}</div></div><div class="item-meta">仕入れ日: ${it.date||'-'}${sold?' / 売れた日: '+(it.soldDate||'-')+' / 売上: '+yen(it.actualPrice||it.price):''}<br>${it.memo?escapeHtml(it.memo):''}</div><div class="item-actions">${sold?'':`<button class="btn btn-sm btn-green" onclick="openSold(${it.id})">売れた</button>`}<button class="btn btn-sm btn-ghost" onclick="openEdit(${it.id})">編集</button><button class="btn btn-sm btn-danger" onclick="deleteItem(${it.id})">削除</button></div></div>`}
