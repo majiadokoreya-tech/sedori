@@ -2,1283 +2,202 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>せどり管理</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 :root{
-  --bg:#f5f6fa;--surface:#ffffff;--card:#ffffff;--border:#e8e8f0;
-  --accent:#ff4d6d;--accent2:#00b87a;--accent3:#f0a500;
-  --blue:#4a90e2;--text:#1a1a2e;--muted:#9090b0;--radius:14px;
-  --shadow:0 2px 12px rgba(0,0,0,.07);
+  --bg:#f5f6fa;--card:#fff;--text:#1a1a2e;--muted:#7f8193;--border:#e4e6ef;
+  --accent:#ff4d6d;--green:#00a878;--orange:#f0a500;--blue:#3f7ee8;--red:#e94b5f;
+  --shadow:0 4px 16px rgba(20,20,40,.07);--radius:16px;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'M PLUS Rounded 1c',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px;}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);}
-header h1{font-size:1.1rem;font-weight:800;}header h1 span{color:var(--accent);}
-.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:49px;z-index:99;}
-.tab{flex:1;padding:11px 4px;text-align:center;font-size:.73rem;font-weight:700;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;}
-.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.page{display:none;padding:14px;}.page.active{display:block;}
-/* サマリー */
-.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);}
-.sum-card .label{font-size:.7rem;color:var(--muted);margin-bottom:3px;}
-.sum-card .value{font-size:1.2rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
-.sum-card.profit .value{color:var(--accent2);}
-.sum-card.revenue .value{color:var(--accent3);}
-.sum-card.items .value{color:var(--blue);}
-.sum-card.roi .value{color:var(--accent);}
-/* トグル */
-.mode-toggle{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px;margin-bottom:12px;gap:3px;}
-.mode-btn{flex:1;padding:7px;border:none;border-radius:7px;font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:var(--muted);}
-.mode-btn.active{background:var(--accent);color:#fff;}
-/* フォーム */
-.form-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:var(--shadow);}
-.form-card h2{font-size:.8rem;font-weight:700;margin-bottom:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-.form-row.single{grid-template-columns:1fr;}.form-row.triple{grid-template-columns:1fr 1fr 1fr;}
-label{font-size:.7rem;color:var(--muted);display:block;margin-bottom:3px;}
-input,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:.88rem;padding:9px 10px;transition:border-color .2s;-webkit-appearance:none;}
-input:focus,select:focus{outline:none;border-color:var(--accent);}
-input[type=number]{font-family:'JetBrains Mono',monospace;}
-/* 計算プレビュー */
-.calc-preview{background:var(--bg);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin:8px 0;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
-.calc-row{display:flex;justify-content:space-between;align-items:center;}
-.calc-row span:first-child{font-size:.72rem;color:var(--muted);}
-.calc-row span:last-child{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:600;}
-.calc-row.profit span:last-child{color:var(--accent2);font-size:.95rem;}
-.calc-row.loss span:last-child{color:var(--accent);font-size:.95rem;}
-.calc-row.roi span:last-child{color:var(--accent3);}
-/* ボタン */
-.btn{padding:11px 18px;border:none;border-radius:10px;font-family:inherit;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .2s;}
-.btn-primary{background:var(--accent);color:#fff;width:100%;margin-top:6px;}
-.btn-primary:active{opacity:.85;transform:scale(.98);}
-.btn-sm{padding:6px 11px;font-size:.72rem;border-radius:6px;}
-.btn-ghost{background:var(--bg);color:var(--muted);border:1px solid var(--border);}
-.btn-danger{background:rgba(255,77,109,.1);color:var(--accent);border:1px solid rgba(255,77,109,.3);}
-/* フィルター */
-.filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
-.filter-bar select,.filter-bar input{flex:1;min-width:90px;padding:8px 10px;font-size:.8rem;}
-/* 在庫リスト */
-.item-list{display:flex;flex-direction:column;gap:8px;}
-.item-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;border-left:3px solid var(--accent3);box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .2s;}
-.item-card:active{box-shadow:none;}
-.item-card.sold{border-left-color:var(--accent2);}
-.item-header{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px;}
-.item-name{font-weight:700;font-size:.9rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.badge{font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;}
-.badge-sold{background:rgba(0,184,122,.12);color:var(--accent2);border:1px solid rgba(0,184,122,.3);}
-.badge-unsold{background:rgba(240,165,0,.12);color:var(--accent3);border:1px solid rgba(240,165,0,.3);}
-.item-nums{display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
-.item-num{font-size:.72rem;color:var(--muted);}
-.item-num span{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);font-size:.82rem;}
-.item-num span.green{color:var(--accent2);}
-.item-num span.red{color:var(--accent);}
-.item-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
-.meta-tag{font-size:.67rem;color:var(--muted);background:var(--bg);border-radius:4px;padding:2px 6px;}
-.item-actions{display:flex;gap:6px;}
-/* 詳細展開 */
-.item-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
-.item-detail.open{display:block;}
-/* グラフ */
-.chart-section{margin-bottom:18px;}
-.chart-section h2{font-size:.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
-.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
-canvas{width:100%!important;}
-.cat-bar-wrap{display:flex;flex-direction:column;gap:10px;}
-.cat-bar-header{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:3px;}
-.cat-bar-header span:last-child{font-family:'JetBrains Mono',monospace;color:var(--accent2);font-weight:600;}
-.bar-track{background:var(--bg);border-radius:99px;height:7px;overflow:hidden;}
-.bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent2),#00d68f);}
-/* 月選択 */
-.month-selector{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:12px;box-shadow:var(--shadow);}
-.month-selector button{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;}
-.month-selector span{flex:1;text-align:center;font-weight:700;font-size:.88rem;}
-/* せどり・不用品カード */
-.split-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.split-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;}
-.split-card.active-card{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12);}
-.split-card.sedori{border-left:3px solid var(--accent2);}
-.split-card.fuyohin{border-left:3px solid var(--blue);}
-.split-card .sc-title{font-size:.68rem;font-weight:700;margin-bottom:6px;}
-.split-card.sedori .sc-title{color:var(--accent2);}
-.split-card.fuyohin .sc-title{color:var(--blue);}
-.split-card .sc-profit{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:800;}
-.split-card.sedori .sc-profit{color:var(--accent2);}
-.split-card.fuyohin .sc-profit{color:var(--blue);}
-.split-card .sc-sub{font-size:.68rem;color:var(--muted);margin-top:4px;}
-/* 売れた履歴 */
-.sold-section{margin-top:18px;}
-.sold-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;cursor:pointer;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);}
-.sold-section-header h2{font-size:.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:0;}
-.sold-list{display:flex;flex-direction:column;gap:8px;}
-/* 今月の調子 */
-.kondition-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;}
-.kondition-emoji{font-size:1.8rem;}
-.kondition-text .k-title{font-size:.82rem;font-weight:800;color:var(--text);}
-.kondition-text .k-sub{font-size:.72rem;color:var(--muted);margin-top:2px;}
-/* 在庫総額バー */
-.stock-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;}
-.stock-bar .sb-label{font-size:.72rem;color:var(--muted);}
-.stock-bar .sb-value{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:800;color:var(--blue);}
-/* モーダル */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:18px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border:1px solid var(--border);}
-.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
-.modal-header h3{font-size:.98rem;font-weight:800;}
-.modal-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;}
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--accent2);color:#fff;font-weight:700;padding:10px 20px;border-radius:99px;font-size:.82rem;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
-.toast.show{opacity:1;}
-.empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:.88rem;}
-.empty .icon{font-size:2.2rem;margin-bottom:8px;}
-@media(max-width:360px){.summary-grid{grid-template-columns:1fr;}.split-cards{grid-template-columns:1fr;}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px;font-size:15px}
+header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+h1{font-size:1.1rem;font-weight:900}h1 span{color:var(--accent)}
+.header-mini{font-size:.72rem;color:var(--muted);font-weight:700;text-align:right}.tabs{position:sticky;top:49px;z-index:19;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-bottom:1px solid var(--border)}
+.tab{border:none;background:#fff;color:var(--muted);font-weight:800;font-size:.72rem;padding:10px 2px;border-bottom:3px solid transparent}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.page{display:none;padding:12px}.page.active{display:block}.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.section-title{font-size:.85rem;color:var(--muted);font-weight:900;letter-spacing:.04em;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summary-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:11px;box-shadow:var(--shadow)}
+.summary-card .label{font-size:.69rem;color:var(--muted);font-weight:800}.summary-card .value{font-size:1.15rem;font-weight:900;margin-top:2px;font-variant-numeric:tabular-nums}.green{color:var(--green)}.orange{color:var(--orange)}.blue{color:var(--blue)}.red{color:var(--red)}.muted{color:var(--muted)}
+.mode-toggle{display:flex;gap:4px;background:#eef0f6;border:1px solid var(--border);padding:4px;border-radius:12px;margin-bottom:10px}.mode-toggle button{flex:1;border:none;background:transparent;border-radius:9px;padding:8px 4px;font-weight:900;color:var(--muted)}.mode-toggle button.active{background:var(--accent);color:#fff}
+label{display:block;font-size:.72rem;color:var(--muted);font-weight:800;margin:0 0 4px 2px}input,select,textarea{width:100%;border:1px solid var(--border);background:#f8f9fc;border-radius:11px;padding:10px;font-size:16px;font-family:inherit;color:var(--text)}textarea{min-height:64px;resize:vertical}input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:#fff}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.form-row.single{grid-template-columns:1fr}.form-row.triple{grid-template-columns:1fr 1fr 1fr}
+.btn{border:none;border-radius:12px;padding:11px 12px;font-weight:900;font-family:inherit;font-size:.9rem}.btn-primary{background:var(--accent);color:#fff;width:100%}.btn-green{background:var(--green);color:#fff}.btn-blue{background:var(--blue);color:#fff}.btn-ghost{background:#f3f4f8;color:var(--text);border:1px solid var(--border)}.btn-danger{background:#fff0f2;color:var(--red);border:1px solid #ffd2d8}.btn-sm{padding:7px 9px;font-size:.76rem;border-radius:9px}.quick-row{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;margin-bottom:10px}.quick-row button{white-space:nowrap}
+.filter-bar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.filter-bar .wide{grid-column:1/3}.item-list{display:flex;flex-direction:column;gap:9px}.item{background:#fff;border:1px solid var(--border);border-radius:15px;padding:12px;box-shadow:var(--shadow)}.item-top{display:flex;justify-content:space-between;gap:8px}.item-name{font-weight:900;line-height:1.35}.badge{display:inline-block;font-size:.68rem;font-weight:900;border-radius:999px;padding:3px 7px;background:#f1f2f7;color:var(--muted);margin:4px 4px 0 0}.badge.sold{background:#e9fff7;color:var(--green)}.badge.unsold{background:#fff4df;color:#b37500}.item-meta{font-size:.76rem;color:var(--muted);line-height:1.65;margin-top:6px}.item-actions{display:flex;gap:7px;margin-top:9px}.item-actions button{flex:1}.calc-box{background:#f8f9fc;border:1px solid var(--border);border-radius:13px;padding:10px;margin:8px 0;display:grid;grid-template-columns:1fr 1fr;gap:7px}.calc-row{display:flex;justify-content:space-between;font-size:.78rem}.calc-row b{font-variant-numeric:tabular-nums}.bar-wrap{display:flex;flex-direction:column;gap:8px}.bar-line{display:grid;grid-template-columns:72px 1fr 82px;gap:8px;align-items:center;font-size:.78rem}.bar-bg{height:12px;background:#eef0f6;border-radius:999px;overflow:hidden}.bar{height:100%;background:var(--accent);border-radius:999px}.table{width:100%;border-collapse:collapse;font-size:.78rem}.table th,.table td{border-bottom:1px solid var(--border);padding:8px 4px;text-align:right}.table th:first-child,.table td:first-child{text-align:left}.table th{color:var(--muted);font-size:.7rem}.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.month-nav b{font-size:1rem}.empty{text-align:center;color:var(--muted);padding:22px 8px;font-weight:800}.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1f2230;color:#fff;border-radius:999px;padding:10px 16px;font-weight:900;font-size:.82rem;z-index:50;opacity:0;pointer-events:none;transition:.25s}.toast.show{opacity:1}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none;align-items:flex-end}.modal.open{display:flex}.modal-inner{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:16px}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.modal-head h3{font-size:1rem}.close{border:none;background:#f1f2f7;border-radius:50%;width:34px;height:34px;font-weight:900}.danger-zone{border:1px dashed #ffb5bf;background:#fff7f8}.mini-note{font-size:.72rem;color:var(--muted);line-height:1.5;margin-top:6px}.progress{height:9px;background:#eceef5;border-radius:999px;overflow:hidden;margin-top:7px}.progress div{height:100%;background:var(--green);border-radius:999px}.fixed-add{position:fixed;right:14px;bottom:18px;z-index:22;background:var(--accent);color:#fff;border:none;border-radius:999px;padding:14px 16px;font-weight:900;box-shadow:0 8px 22px rgba(255,77,109,.35)}
+@media(min-width:760px){body{max-width:760px;margin:0 auto}.modal{align-items:center}.modal-inner{max-width:720px;margin:auto;border-radius:22px}.fixed-add{left:calc(50% + 290px);right:auto}}
 </style>
 </head>
 <body>
-<header>
-  <h1>せどり<span>管理</span></h1>
-  <div style="font-size:.72rem;color:var(--muted);" id="headerDate"></div>
-</header>
-<div class="tabs">
-  <button class="tab active" onclick="showPage('add')">➕ 登録</button>
-  <button class="tab" onclick="showPage('list')">📦 在庫</button>
-  <button class="tab" onclick="showPage('stats')">📊 分析</button>
-  <button class="tab" onclick="showPage('data')">💾 データ</button>
-</div>
+<header><h1>せどり<span>管理</span></h1><div class="header-mini" id="todayMini"></div></header>
+<nav class="tabs">
+<button class="tab active" data-page="home" onclick="showPage('home')">ホーム</button>
+<button class="tab" data-page="entry" onclick="showPage('entry')">登録</button>
+<button class="tab" data-page="stock" onclick="showPage('stock')">在庫</button>
+<button class="tab" data-page="analysis" onclick="showPage('analysis')">分析</button>
+<button class="tab" data-page="data" onclick="showPage('data')">データ</button>
+</nav>
 
-<!-- 登録 -->
-<div class="page active" id="page-add">
-  <div class="mode-toggle">
-    <button class="mode-btn active" id="toggle-all" onclick="setSummaryMode('all')">全体</button>
-    <button class="mode-btn" id="toggle-sedori" onclick="setSummaryMode('sedori')">せどり</button>
-    <button class="mode-btn" id="toggle-fuyohin" onclick="setSummaryMode('fuyohin')">不用品</button>
+<main>
+<section id="home" class="page active">
+  <div class="mode-toggle"><button class="active" onclick="setMode('all',this)">全体</button><button onclick="setMode('sedori',this)">せどり</button><button onclick="setMode('fuyohin',this)">不用品</button></div>
+  <div class="grid2" id="homeSummary"></div>
+  <div class="card">
+    <div class="section-title">今月の目標</div>
+    <div class="form-row"><div><label>目標利益 ¥</label><input id="goalInput" type="number" inputmode="numeric"></div><div style="display:flex;align-items:end"><button class="btn btn-primary" onclick="saveGoal()">設定</button></div></div>
+    <div id="goalView"></div>
   </div>
-
-  <!-- 今月の調子 -->
-  <div class="kondition-bar" id="kondition-bar">
-    <div class="kondition-emoji" id="kondition-emoji">😐</div>
-    <div class="kondition-text">
-      <div class="k-title" id="kondition-title">目標を設定してください</div>
-      <div class="k-sub" id="kondition-sub">登録 → 目標設定から</div>
-    </div>
-    <div style="text-align:right;">
-      <div style="font-size:.68rem;color:var(--muted);">今月利益</div>
-      <div style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:.95rem;" id="kondition-profit">¥0</div>
-    </div>
+  <div class="card">
+    <div class="section-title">今までの売上・利益</div>
+    <div class="grid2" id="lifetimeSummary"></div>
   </div>
-
-  <div class="summary-grid">
-    <div class="sum-card profit"><div class="label" id="s-label-profit">今月利益</div><div class="value" id="s-profit">¥0</div></div>
-    <div class="sum-card revenue"><div class="label" id="s-label-revenue">今月売上</div><div class="value" id="s-revenue">¥0</div></div>
-    <div class="sum-card items"><div class="label">在庫数</div><div class="value" id="s-unsold">0件</div></div>
-    <div class="sum-card roi"><div class="label" id="s-label-roi">今月ROI</div><div class="value" id="s-roi">0%</div></div>
+  <div class="card">
+    <div class="section-title">最近売れた商品 <button class="btn btn-sm btn-ghost" onclick="showPage('analysis')">もっと見る</button></div>
+    <div id="recentSold"></div>
   </div>
+</section>
 
-  <!-- 在庫総額 -->
-  <div class="stock-bar">
-    <div>
-      <div class="sb-label">在庫仕入れ総額</div>
-      <div class="sb-value" id="stock-total">¥0</div>
-    </div>
-    <div style="text-align:right;">
-      <div class="sb-label">平均仕入れ値</div>
-      <div class="sb-value" id="stock-avg">¥0</div>
-    </div>
-  </div>
-
-  <div class="form-card">
-    <h2>仕入れ登録</h2>
-    <div style="margin-bottom:12px;">
-      <label style="margin-bottom:6px;display:block;">よく使う仕入れ先</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        <button class="quick-src-btn" onclick="setQuickSource('不用品')" style="padding:7px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;">🏠 不用品</button>
-        <button class="quick-src-btn" onclick="setQuickSource('ハードオフ')" style="padding:7px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;">🎮 ハードオフ</button>
-        <button class="quick-src-btn" onclick="setQuickSource('ブックオフ')" style="padding:7px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;">📚 ブックオフ</button>
-        <button class="quick-src-btn" onclick="setQuickSource('メルカリ')" style="padding:7px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;">🛒 メルカリ</button>
-        <button class="quick-src-btn" onclick="setQuickSource('フリマ')" style="padding:7px 12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s;">🏪 フリマ</button>
-      </div>
-    </div>
-    <div id="last-carry-bar" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:10px;flex-direction:row;justify-content:space-between;align-items:center;">
-      <span style="font-size:.75rem;color:var(--muted);">前回: <span id="last-carry-label" style="color:var(--text);font-weight:700;"></span></span>
-      <button onclick="applyLastCarry()" style="padding:4px 10px;border:none;border-radius:6px;background:var(--accent);color:#fff;font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;">引き継ぐ</button>
-    </div>
-    <div class="form-row single"><div><label>商品名</label><input type="text" id="f-name" placeholder="例：ポケモンカード 旧裏 リザードン"/></div></div>
-    <div class="form-row">
-      <div><label>仕入れ値 ¥</label><input type="number" id="f-cost" placeholder="0" min="0"/></div>
-      <div><label>仕入れ日</label><input type="date" id="f-date"/></div>
-    </div>
-    <div class="form-row">
-      <div><label>カテゴリ</label>
-        <select id="f-cat"><option>レトロゲーム</option><option>トレカ</option><option>ブランド品</option><option>古着</option><option>電子機器</option><option>本・漫画</option><option>おもちゃ</option><option>その他</option></select>
-      </div>
-      <div><label>仕入れ先</label>
-        <select id="f-source"><option>不用品</option><option>ハードオフ</option><option>ブックオフ</option><option>メルカリ</option><option>ヤフオク</option><option>リサイクルショップ</option><option>フリマ</option><option>その他</option></select>
-      </div>
-    </div>
-    <div class="form-row single"><div><label>メモ</label><input type="text" id="f-memo" placeholder="コンディション、保管場所など"/></div></div>
+<section id="entry" class="page">
+  <div class="card">
+    <div class="section-title">仕入れ登録</div>
+    <div class="quick-row" id="quickSources"></div>
+    <div id="lastCarry" class="mini-note" style="display:none"></div>
+    <div class="form-row single"><div><label>商品名</label><input id="fName" placeholder="例：Switch ソフト"></div></div>
+    <div class="form-row"><div><label>仕入れ値 ¥</label><input id="fCost" type="number" inputmode="numeric"></div><div><label>仕入れ日</label><input id="fDate" type="date"></div></div>
+    <div class="form-row"><div><label>カテゴリ</label><select id="fCat"></select></div><div><label>仕入れ先</label><select id="fSource" onchange="highlightQuickSource()"></select></div></div>
+    <div class="form-row single"><div><label>メモ</label><textarea id="fMemo" placeholder="型番・状態・付属品など"></textarea></div></div>
     <button class="btn btn-primary" onclick="addItem()">仕入れ登録する</button>
-    <button class="btn btn-ghost" onclick="openShippingModal()" style="width:100%;margin-top:8px;text-align:center;">📦 送料を確認する</button>
-    <!-- 目標設定 -->
-    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
-      <label>今月の目標利益 ¥</label>
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <input type="number" id="f-goal" placeholder="例：30000" min="0" style="flex:1;"/>
-        <button onclick="saveGoal()" style="padding:9px 14px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-family:inherit;font-size:.82rem;font-weight:700;cursor:pointer;">設定</button>
-      </div>
-    </div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="openShipping()">送料を確認する</button>
   </div>
-</div>
+</section>
 
-<!-- 在庫 -->
-<div class="page" id="page-list">
+<section id="stock" class="page">
+  <div class="mode-toggle" id="stockModeToggle"><button class="active" onclick="setStockMode('sedori',this)">せどり</button><button onclick="setStockMode('fuyohin',this)">不用品</button></div>
   <div class="filter-bar">
-    <select id="filter-status" onchange="renderList()"><option value="unsold">未販売</option><option value="">全て</option><option value="sold">売れた</option></select>
-    <select id="filter-cat" onchange="renderList()"><option value="">全カテゴリ</option></select>
-    <input type="text" id="filter-search" placeholder="🔍 検索" oninput="renderList()" style="flex:2;"/>
+    <select id="filterStatus" onchange="renderStock()"><option value="unsold">未販売</option><option value="all">全て</option><option value="sold">売れた</option></select>
+    <select id="filterCat" onchange="renderStock()"><option value="">全カテゴリ</option></select>
+    <input id="filterSearch" class="wide" placeholder="商品名・メモ検索" oninput="renderStock()">
   </div>
-  <div class="item-list" id="itemList"><div class="empty"><div class="icon">📦</div>まだ商品がありません</div></div>
-</div>
+  <div class="grid2" id="stockSummary" style="margin-bottom:10px"></div>
+  <div id="stockList" class="item-list"></div>
+</section>
 
-<!-- 分析 -->
-<div class="page" id="page-stats">
-  <div class="month-selector">
-    <button onclick="changeStatsMonth(-1)">◀</button>
-    <span id="statsMonthLabel"></span>
-    <button onclick="changeStatsMonth(1)">▶</button>
+<section id="analysis" class="page">
+  <div class="mode-toggle" id="analysisModeToggle"><button class="active" onclick="setAnalysisMode('sedori',this)">せどり</button><button onclick="setAnalysisMode('fuyohin',this)">不用品</button></div>
+  <div class="card">
+    <div class="month-nav"><button class="btn btn-sm btn-ghost" onclick="moveMonth(-1)">◀</button><b id="analysisMonth"></b><button class="btn btn-sm btn-ghost" onclick="moveMonth(1)">▶</button></div>
+    <div class="grid2" id="monthSummary"></div>
   </div>
-  <div style="font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">📊 全体</div>
-  <div class="summary-grid" style="margin-bottom:12px;">
-    <div class="sum-card profit"><div class="label">利益</div><div class="value" id="st-profit">¥0</div></div>
-    <div class="sum-card revenue"><div class="label">売上</div><div class="value" id="st-revenue">¥0</div></div>
-    <div class="sum-card items"><div class="label">販売数</div><div class="value" id="st-count">0件</div></div>
-    <div class="sum-card roi"><div class="label">ROI</div><div class="value" id="st-roi">0%</div></div>
-  </div>
-  <!-- せどり・不用品カード（タップで履歴切り替え） -->
-  <div class="split-cards">
-    <div class="split-card sedori active-card" id="sc-sedori" onclick="setSoldFilter('sedori')">
-      <div class="sc-title">📦 せどり <span id="sc-sedori-arrow" style="float:right;">▼</span></div>
-      <div class="sc-profit" id="st-sedori-profit">¥0</div>
-      <div class="sc-sub">売上 <span id="st-sedori-revenue" style="color:var(--accent3);font-family:'JetBrains Mono',monospace;">¥0</span></div>
-      <div class="sc-sub"><span id="st-sedori-count">0件</span> / ROI <span id="st-sedori-roi">0%</span></div>
-    </div>
-    <div class="split-card fuyohin" id="sc-fuyohin" onclick="setSoldFilter('fuyohin')">
-      <div class="sc-title">🏠 不用品 <span id="sc-fuyohin-arrow" style="float:right;"></span></div>
-      <div class="sc-profit" id="st-fuyohin-profit">¥0</div>
-      <div class="sc-sub">売上 <span id="st-fuyohin-revenue" style="color:var(--accent3);font-family:'JetBrains Mono',monospace;">¥0</span></div>
-      <div class="sc-sub"><span id="st-fuyohin-count">0件</span></div>
-    </div>
-  </div>
-  <div class="chart-section"><h2>月別 利益推移 <span style="font-size:.68rem;font-weight:400;">（タップで詳細）</span></h2><div class="chart-wrap"><canvas id="monthChart" height="150" onclick="onMonthChartClick(event)" style="cursor:pointer;"></canvas></div></div>
-  <div class="chart-section"><h2>せどり / 不用品 比較</h2><div class="chart-wrap"><canvas id="splitChart" height="130"></canvas></div></div>
-  <div class="chart-section"><h2>カテゴリ別 利益</h2><div class="chart-wrap"><div class="cat-bar-wrap" id="catBars"><div class="empty" style="padding:16px;"><div class="icon">📊</div>データなし</div></div></div></div>
-  <!-- 売れた履歴 -->
-  <div class="sold-section">
-    <div class="sold-section-header" onclick="toggleSoldList()">
-      <h2 id="soldListTitle">🎉 売れた履歴（全て）</h2>
-      <span id="soldToggleIcon" style="color:var(--muted);font-size:.8rem;">▼</span>
-    </div>
-    <div id="soldListWrap" style="display:none;">
-      <div class="filter-bar" style="margin-bottom:10px;">
-        <select id="sold-filter-cat" onchange="renderSoldList()"><option value="">全カテゴリ</option></select>
-        <input type="text" id="sold-filter-search" placeholder="🔍 検索" oninput="renderSoldList()" style="flex:2;"/>
-      </div>
-      <div class="sold-list" id="soldList"></div>
-    </div>
-  </div>
-</div>
+  <div class="card"><div class="section-title">月別 売上・利益</div><div id="monthlyBars" class="bar-wrap"></div></div>
+  <div class="card"><div class="section-title">年別 売上・利益</div><div id="yearTable"></div></div>
+  <div class="card"><div class="section-title">カテゴリ別 利益</div><div id="catBars" class="bar-wrap"></div></div>
+  <div class="card"><div class="section-title">販売先別 売上</div><div id="platformBars" class="bar-wrap"></div></div>
+  <div class="card"><div class="section-title">売れた履歴</div><div class="filter-bar"><select id="soldMonthFilter" class="wide" onchange="renderSoldHistory()"><option value="all">全期間</option></select></div><div id="soldHistory" class="item-list"></div></div>
+</section>
 
-<!-- データ -->
-<div class="page" id="page-data">
-  <div class="form-card">
-    <h2>💾 バックアップ</h2>
-    <p style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">データをJSONファイルに保存します。</p>
-    <button class="btn btn-primary" onclick="exportBackup()" style="margin-bottom:10px;">📥 バックアップを保存（JSON）</button>
-    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
-      <p style="font-size:.78rem;color:var(--muted);margin-bottom:8px;">⚠️ 復元すると現在のデータは上書きされます</p>
-      <label for="importFile" style="display:block;text-align:center;cursor:pointer;background:var(--bg);color:var(--text);border:1px dashed var(--border);padding:11px;border-radius:10px;font-weight:700;font-size:.88rem;">📤 バックアップから復元（JSON）</label>
-      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importBackup(event)"/>
-    </div>
-  </div>
-  <div class="form-card">
-    <h2>📋 CSV出力</h2>
-    <div class="form-row"><div><label>開始月</label><input type="month" id="csv-from"/></div><div><label>終了月</label><input type="month" id="csv-to"/></div></div>
-    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;"><input type="radio" name="csv-target" value="sold" checked style="width:auto;"> 売れた商品のみ</label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;"><input type="radio" name="csv-target" value="all" style="width:auto;"> 全商品</label>
-    </div>
-    <button class="btn btn-primary" onclick="exportCSV()">📊 CSVダウンロード</button>
-    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <label style="margin:0;font-size:.72rem;color:var(--muted);">プレビュー（先頭5件）</label>
-        <button class="btn btn-sm btn-ghost" onclick="copyCSV()">📋 全件コピー</button>
-      </div>
-      <div id="csv-preview" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--muted);white-space:pre;min-height:50px;max-height:160px;overflow-y:auto;"></div>
-    </div>
-  </div>
-  <div class="form-card">
-    <h2>🗑️ データ管理</h2>
-    <p style="font-size:.78rem;color:var(--muted);margin-bottom:12px;">全データ件数: <span id="total-count" style="color:var(--text);font-weight:700;">0件</span></p>
-    <button class="btn btn-danger btn-primary" onclick="clearAllData()" style="background:rgba(255,77,109,.1);">全データを削除</button>
-  </div>
-</div>
+<section id="data" class="page">
+  <div class="card"><div class="section-title">バックアップ</div><button class="btn btn-blue" style="width:100%" onclick="downloadBackup()">バックアップを保存（JSON）</button><label style="margin-top:12px">バックアップから復元</label><input type="file" accept="application/json" onchange="restoreBackup(event)"><div class="mini-note">復元すると現在のデータは上書きされます。</div></div>
+  <div class="card"><div class="section-title">CSV出力</div><div class="form-row"><div><label>開始月</label><input id="csvStart" type="month"></div><div><label>終了月</label><input id="csvEnd" type="month"></div></div><div class="mode-toggle"><button class="active" id="csvSoldOnly" onclick="setCsvMode(true)">売れた商品のみ</button><button id="csvAll" onclick="setCsvMode(false)">全商品</button></div><button class="btn btn-primary" onclick="downloadCSV()">CSVダウンロード</button><button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="copyCSV()">全件コピー</button><div id="csvPreview" class="mini-note"></div></div>
+  <div class="card danger-zone"><div class="section-title">データ管理</div><div id="dataCount" class="mini-note"></div><button class="btn btn-danger" style="width:100%;margin-top:10px" onclick="deleteAll()">全データを削除</button></div>
+</section>
+</main>
 
-<!-- 月詳細モーダル -->
-<div class="modal-overlay" id="monthDetailModal">
-  <div class="modal" id="monthDetailContent" ontouchstart="detailSwipeStart(event)" ontouchend="detailSwipeEnd(event)">
-    <div class="modal-header"><h3 id="month-detail-title">月詳細</h3><button class="modal-close" onclick="closeMonthDetail()">✕</button></div>
-    <div class="summary-grid" style="margin-bottom:12px;">
-      <div class="sum-card profit"><div class="label">利益</div><div class="value" id="md-profit">¥0</div></div>
-      <div class="sum-card revenue"><div class="label">売上</div><div class="value" id="md-revenue">¥0</div></div>
-      <div class="sum-card items"><div class="label">販売数</div><div class="value" id="md-count">0件</div></div>
-      <div class="sum-card roi"><div class="label">ROI</div><div class="value" id="md-roi">0%</div></div>
-    </div>
-    <div class="split-cards" style="margin-bottom:12px;">
-      <div class="split-card sedori"><div class="sc-title">📦 せどり</div><div class="sc-profit" id="md-sedori-profit">¥0</div><div class="sc-sub"><span id="md-sedori-count">0件</span></div></div>
-      <div class="split-card fuyohin"><div class="sc-title">🏠 不用品</div><div class="sc-profit" id="md-fuyohin-profit">¥0</div><div class="sc-sub"><span id="md-fuyohin-count">0件</span></div></div>
-    </div>
-    <div style="font-size:.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">売れた商品</div>
-    <div class="sold-list" id="md-sold-list"></div>
-    <button class="btn btn-ghost" onclick="jumpToMonth()" style="width:100%;margin-top:12px;">この月に移動</button>
-  </div>
-</div>
-
-<!-- 送料モーダル -->
-<div class="modal-overlay" id="shippingModal">
-  <div class="modal" style="max-height:85vh;overflow-y:auto;">
-    <div class="modal-header"><h3>📦 送料早見表</h3><button class="modal-close" onclick="closeShippingModal()">✕</button></div>
-    <div style="display:flex;gap:5px;margin-bottom:12px;">
-      <button class="btn btn-sm" id="stab-mercari" onclick="switchShippingTab('mercari')" style="flex:1;background:var(--accent);color:#fff;border-radius:8px;border:none;">らくらく</button>
-      <button class="btn btn-sm" id="stab-yuyu" onclick="switchShippingTab('yuyu')" style="flex:1;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:8px;">ゆうゆう</button>
-      <button class="btn btn-sm" id="stab-other" onclick="switchShippingTab('other')" style="flex:1;background:var(--bg);color:var(--muted);border:1px solid var(--border);border-radius:8px;">普通郵便等</button>
-    </div>
-    <div id="stab-content-mercari"><table style="width:100%;border-collapse:collapse;font-size:.8rem;"><thead><tr style="background:var(--bg);"><th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">種別</th><th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">サイズ</th><th style="padding:6px 8px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">送料</th></tr></thead><tbody id="shipping-table-mercari"></tbody></table></div>
-    <div id="stab-content-yuyu" style="display:none;"><table style="width:100%;border-collapse:collapse;font-size:.8rem;"><thead><tr style="background:var(--bg);"><th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">種別</th><th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">サイズ</th><th style="padding:6px 8px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">送料</th></tr></thead><tbody id="shipping-table-yuyu"></tbody></table></div>
-    <div id="stab-content-other" style="display:none;"><table style="width:100%;border-collapse:collapse;font-size:.8rem;"><thead><tr style="background:var(--bg);"><th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">種別</th><th style="padding:6px 8px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">サイズ</th><th style="padding:6px 8px;text-align:right;color:var(--muted);border-bottom:1px solid var(--border);">送料</th></tr></thead><tbody id="shipping-table-other"></tbody></table></div>
-    <div style="font-size:.65rem;color:var(--muted);margin-top:10px;">※2026年3月時点</div>
-  </div>
-</div>
-
-<!-- 売れた！モーダル -->
-<div class="modal-overlay" id="soldModal">
-  <div class="modal">
-    <div class="modal-header"><h3>🎉 売れた！</h3><button class="modal-close" onclick="closeSoldModal()">✕</button></div>
-    <div id="sold-item-name" style="font-size:.88rem;color:var(--muted);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:8px;"></div>
-    <div class="form-row single" style="margin-bottom:8px;"><div><label>販売先</label>
-      <select id="sm-platform" onchange="calcSoldPreview()">
-        <option value="mercari">メルカリ（手数料10%）</option>
-        <option value="yahoo-flea">ヤフフリ（手数料5%）</option>
-        <option value="yahoo-auction">ヤフオク（手数料10%）</option>
-      </select>
-    </div></div>
-    <div class="form-row">
-      <div><label>売値 ¥ <span style="color:var(--accent);">*必須</span></label><input type="number" id="sm-price" placeholder="0" min="0" oninput="calcSoldPreview()"/></div>
-      <div><label>売れた日</label><input type="date" id="sm-date"/></div>
-    </div>
-    <div style="margin-bottom:10px;">
-      <label>送料 ¥</label>
-      <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
-        <input type="number" id="sm-ship" placeholder="0" min="0" oninput="calcSoldPreview()" style="flex:1;"/>
-        <button class="btn btn-sm btn-ghost" onclick="toggleShipPicker()" style="white-space:nowrap;">📦 選ぶ</button>
-      </div>
-      <div id="ship-picker" style="display:none;margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-        <div style="display:flex;">
-          <button id="sptab-quick" onclick="switchShipTab('quick')" style="flex:1;padding:8px;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;">よく使う</button>
-          <button id="sptab-mercari" onclick="switchShipTab('mercari')" style="flex:1;padding:8px;border:none;background:var(--bg);color:var(--muted);font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;">らくらく</button>
-          <button id="sptab-yuyu" onclick="switchShipTab('yuyu')" style="flex:1;padding:8px;border:none;background:var(--bg);color:var(--muted);font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;">ゆうゆう</button>
-          <button id="sptab-other" onclick="switchShipTab('other')" style="flex:1;padding:8px;border:none;background:var(--bg);color:var(--muted);font-family:inherit;font-size:.75rem;font-weight:700;cursor:pointer;">普通郵便</button>
-        </div>
-        <div id="sptab-content-quick" style="padding:8px;"><div style="display:flex;flex-wrap:wrap;gap:6px;" id="quick-ship-btns"></div></div>
-        <div id="sptab-content-mercari" style="display:none;max-height:180px;overflow-y:auto;"></div>
-        <div id="sptab-content-yuyu" style="display:none;max-height:180px;overflow-y:auto;"></div>
-        <div id="sptab-content-other" style="display:none;max-height:180px;overflow-y:auto;"></div>
-      </div>
-    </div>
-    <div class="form-row single"><div><label>梱包費 ¥</label><input type="number" id="sm-misc" placeholder="0" min="0" oninput="calcSoldPreview()"/></div></div>
-    <div class="calc-preview" style="margin:8px 0;">
-      <div class="calc-row"><span id="sm-fee-label">手数料(10%)</span><span id="sm-fee">¥0</span></div>
-      <div class="calc-row"><span>仕入れ値</span><span id="sm-cost-disp">¥0</span></div>
-      <div class="calc-row profit"><span>利益</span><span id="sm-profit">¥0</span></div>
-      <div class="calc-row roi"><span>ROI</span><span id="sm-roi">0%</span></div>
-    </div>
-    <button class="btn btn-primary" onclick="confirmSold()">記録する</button>
-  </div>
-</div>
-
-<!-- 編集モーダル -->
-<div class="modal-overlay" id="editModal">
-  <div class="modal">
-    <div class="modal-header"><h3>商品を編集</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div class="form-row single"><div><label>商品名</label><input type="text" id="e-name"/></div></div>
-    <div class="form-row">
-      <div><label>カテゴリ</label><select id="e-cat"><option>レトロゲーム</option><option>トレカ</option><option>ブランド品</option><option>古着</option><option>電子機器</option><option>本・漫画</option><option>おもちゃ</option><option>その他</option></select></div>
-      <div><label>仕入れ先</label><select id="e-source"><option>不用品</option><option>ハードオフ</option><option>ブックオフ</option><option>メルカリ</option><option>ヤフオク</option><option>リサイクルショップ</option><option>フリマ</option><option>その他</option></select></div>
-    </div>
-    <div class="form-row triple">
-      <div><label>仕入れ値 ¥</label><input type="number" id="e-cost" oninput="calcEditPreview()"/></div>
-      <div><label>送料 ¥</label><input type="number" id="e-ship" oninput="calcEditPreview()"/></div>
-      <div><label>梱包費 ¥</label><input type="number" id="e-misc" oninput="calcEditPreview()"/></div>
-    </div>
-    <div class="form-row"><div><label>仕入れ日</label><input type="date" id="e-date"/></div><div><label>ステータス</label><select id="e-status" onchange="toggleEditSoldDate()"><option value="unsold">未販売</option><option value="sold">売れた</option></select></div></div>
-    <div id="e-sold-row" style="display:none;">
-      <div class="form-row"><div><label>売れた日</label><input type="date" id="e-sold-date"/></div><div><label>実際の売値 ¥</label><input type="number" id="e-actual-price" oninput="calcEditPreview()"/></div></div>
-      <div class="form-row single"><div><label>販売先</label><select id="e-platform" onchange="calcEditPreview()"><option value="mercari">メルカリ（10%）</option><option value="yahoo-flea">ヤフフリ（5%）</option><option value="yahoo-auction">ヤフオク（10%）</option></select></div></div>
-      <div class="calc-preview" style="margin:6px 0;">
-        <div class="calc-row"><span id="e-fee-label">手数料</span><span id="e-fee">¥0</span></div>
-        <div class="calc-row"><span>仕入れ値</span><span id="e-cost-disp">¥0</span></div>
-        <div class="calc-row profit"><span>利益</span><span id="e-profit">¥0</span></div>
-        <div class="calc-row roi"><span>ROI</span><span id="e-roi">0%</span></div>
-      </div>
-    </div>
-    <div class="form-row single"><div><label>メモ</label><input type="text" id="e-memo"/></div></div>
-    <button class="btn btn-primary" onclick="saveEdit()">保存する</button>
-  </div>
-</div>
-
+<button class="fixed-add" onclick="showPage('entry')">＋登録</button>
 <div class="toast" id="toast"></div>
 
+<div class="modal" id="soldModal"><div class="modal-inner"><div class="modal-head"><h3>売れた！</h3><button class="close" onclick="closeModal('soldModal')">×</button></div>
+  <input type="hidden" id="soldId">
+  <div class="form-row"><div><label>販売先</label><select id="sPlatform" onchange="calcSoldPreview()"><option value="mercari">メルカリ（10%）</option><option value="yahoo-flea">ヤフフリ（5%）</option><option value="yahoo-auction">ヤフオク（10%）</option><option value="other">その他（10%）</option></select></div><div><label>売れた日</label><input id="sDate" type="date"></div></div>
+  <div class="form-row triple"><div><label>売値 ¥</label><input id="sPrice" type="number" inputmode="numeric" oninput="calcSoldPreview()"></div><div><label>送料 ¥</label><input id="sShip" type="number" inputmode="numeric" oninput="calcSoldPreview()"></div><div><label>梱包費 ¥</label><input id="sMisc" type="number" inputmode="numeric" oninput="calcSoldPreview()"></div></div>
+  <div class="quick-row"><button class="btn btn-sm btn-ghost" onclick="setShip(210)">ネコポス210</button><button class="btn btn-sm btn-ghost" onclick="setShip(230)">ゆうパケット230</button><button class="btn btn-sm btn-ghost" onclick="setShip(750)">宅急便750</button><button class="btn btn-sm btn-ghost" onclick="setShip(0)">送料0</button></div>
+  <div class="calc-box" id="soldPreview"></div><button class="btn btn-green" style="width:100%" onclick="saveSold()">記録する</button>
+</div></div>
+
+<div class="modal" id="editModal"><div class="modal-inner"><div class="modal-head"><h3>商品を編集</h3><button class="close" onclick="closeModal('editModal')">×</button></div>
+  <input type="hidden" id="eId"><div class="form-row single"><div><label>商品名</label><input id="eName"></div></div>
+  <div class="form-row"><div><label>カテゴリ</label><select id="eCat"></select></div><div><label>仕入れ先</label><select id="eSource"></select></div></div>
+  <div class="form-row triple"><div><label>仕入れ値 ¥</label><input id="eCost" type="number" oninput="calcEditPreview()"></div><div><label>送料 ¥</label><input id="eShip" type="number" oninput="calcEditPreview()"></div><div><label>梱包費 ¥</label><input id="eMisc" type="number" oninput="calcEditPreview()"></div></div>
+  <div class="form-row"><div><label>仕入れ日</label><input id="eDate" type="date"></div><div><label>ステータス</label><select id="eStatus" onchange="toggleEditSold()"><option value="unsold">未販売</option><option value="sold">売れた</option></select></div></div>
+  <div id="editSoldArea"><div class="form-row"><div><label>売れた日</label><input id="eSoldDate" type="date"></div><div><label>実際の売値 ¥</label><input id="ePrice" type="number" oninput="calcEditPreview()"></div></div><div class="form-row single"><div><label>販売先</label><select id="ePlatform" onchange="calcEditPreview()"><option value="mercari">メルカリ（10%）</option><option value="yahoo-flea">ヤフフリ（5%）</option><option value="yahoo-auction">ヤフオク（10%）</option><option value="other">その他（10%）</option></select></div></div><div class="calc-box" id="editPreview"></div></div>
+  <div class="form-row single"><div><label>メモ</label><textarea id="eMemo"></textarea></div></div><button class="btn btn-primary" onclick="saveEdit()">保存する</button>
+</div></div>
+
+<div class="modal" id="shipModal"><div class="modal-inner"><div class="modal-head"><h3>送料早見表</h3><button class="close" onclick="closeModal('shipModal')">×</button></div><div id="shipTable"></div><div class="mini-note">送料は変わる場合があります。実際の発送前に各サービスで確認してください。</div></div></div>
+
 <script>
+const CATS=['レトロゲーム','トレカ','ブランド品','古着','電子機器','本・漫画','おもちゃ','その他'];
+const SOURCES=['不用品','ハードオフ','ブックオフ','メルカリ','ヤフオク','リサイクルショップ','フリマ','その他'];
+const PLATFORM_FEE={mercari:.10,'yahoo-flea':.05,'yahoo-auction':.10,other:.10};
+const PLATFORM_NAME={mercari:'メルカリ','yahoo-flea':'ヤフフリ','yahoo-auction':'ヤフオク',other:'その他'};
 let items=JSON.parse(localStorage.getItem('sedori_items')||'[]');
-let editingId=null,statsYear=new Date().getFullYear(),statsMonth=new Date().getMonth()+1;
-let summaryMode='all',soldListOpen=false,lastShip=0,soldTargetId=null;
-let lastEntry=JSON.parse(localStorage.getItem('sedori_last_entry')||'null');
-let swipeStartX=0,swipeStartY=0,monthChartMeta=[],monthDetailYm='';
-let soldFilter='all'; // 'all' | 'sedori' | 'fuyohin'
-
-function save(){localStorage.setItem('sedori_items',JSON.stringify(items));}
-function fmt(n){return '¥'+Math.round(n).toLocaleString();}
-
-const PLATFORM_FEE={'mercari':0.10,'yahoo-flea':0.05,'yahoo-auction':0.10};
-const PLATFORM_NAME={'mercari':'メルカリ','yahoo-flea':'ヤフフリ','yahoo-auction':'ヤフオク'};
-
-function calcProfit(cost,price,ship,misc,feeRate){
-  const r=feeRate!==undefined?feeRate:0.10;
-  return price-Math.round(price*r)-cost-ship-misc;
-}
-function calcROI(p,c){return c?Math.round((p/c)*100):0;}
-function calcMonthItems(ym,mode){
-  return items.filter(it=>{
-    if(it.status!=='sold')return false;
-    if(!it.soldDate||!it.soldDate.startsWith(ym))return false;
-    if(mode==='fuyohin')return it.source==='不用品';
-    if(mode==='sedori')return it.source!=='不用品';
-    return true;
-  });
-}
-
-// ========== 目標設定 ==========
-function saveGoal(){
-  const g=+document.getElementById('f-goal').value||0;
-  localStorage.setItem('sedori_goal',g);
-  updateSummary();showToast('✓ 目標を設定しました');
-}
-function getGoal(){return +localStorage.getItem('sedori_goal')||0;}
-
-// ========== クイック登録 ==========
-function setQuickSource(source){
-  document.getElementById('f-source').value=source;
-  document.querySelectorAll('.quick-src-btn').forEach(b=>{
-    const hit=b.textContent.trim().includes(source);
-    b.style.background=hit?'var(--accent)':'var(--bg)';
-    b.style.color=hit?'#fff':'var(--text)';
-    b.style.borderColor=hit?'var(--accent)':'var(--border)';
-  });
-}
-function applyLastCarry(){
-  if(!lastEntry)return;
-  document.getElementById('f-cat').value=lastEntry.cat;
-  document.getElementById('f-source').value=lastEntry.source;
-  if(lastEntry.memo)document.getElementById('f-memo').value=lastEntry.memo;
-  setQuickSource(lastEntry.source);
-  showToast('✓ 前回の内容を引き継ぎました');
-}
-function updateLastCarryBar(){
-  lastEntry=JSON.parse(localStorage.getItem('sedori_last_entry')||'null');
-  const bar=document.getElementById('last-carry-bar');
-  if(lastEntry){
-    bar.style.display='flex';
-    document.getElementById('last-carry-label').textContent=`${lastEntry.source} / ${lastEntry.cat}${lastEntry.memo?' / '+lastEntry.memo:''}`;
-  }else{bar.style.display='none';}
-}
-
-// ========== 登録 ==========
-function addItem(){
-  const name=document.getElementById('f-name').value.trim();
-  if(!name){showToast('商品名を入力してください');return;}
-  const cat=document.getElementById('f-cat').value;
-  const source=document.getElementById('f-source').value;
-  const memo=document.getElementById('f-memo').value.trim();
-  items.unshift({id:Date.now(),name,cat,source,
-    cost:+document.getElementById('f-cost').value||0,
-    price:0,ship:0,misc:0,status:'unsold',actualPrice:0,platform:'',feeRate:0,
-    date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
-    soldDate:'',memo});
-  localStorage.setItem('sedori_last_entry',JSON.stringify({cat,source,memo}));
-  save();clearForm();updateSummary();updateLastCarryBar();
-  showToast('✓ 仕入れ登録しました');
-}
-function clearForm(){
-  ['f-name','f-cost','f-memo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-}
-
-// ========== 在庫リスト ==========
-function renderList(){
-  const fs=document.getElementById('filter-status').value;
-  const fc=document.getElementById('filter-cat').value;
-  const fq=document.getElementById('filter-search').value.trim().toLowerCase();
-  let filtered=items.filter(it=>{
-    if(fs&&it.status!==fs)return false;
-    if(fc&&it.cat!==fc)return false;
-    if(fq&&!it.name.toLowerCase().includes(fq))return false;
-    return true;
-  });
-  const el=document.getElementById('itemList');
-  if(!filtered.length){el.innerHTML='<div class="empty"><div class="icon">🔍</div>該当なし</div>';return;}
-  el.innerHTML=filtered.map(it=>{
-    const up=it.status==='sold'?it.actualPrice:0;
-    const hs=it.status==='sold'&&up>0;
-    const pr=hs?calcProfit(it.cost,up,it.ship,it.misc,it.feeRate):null;
-    const pc=pr!==null?(pr>=0?'green':'red'):'';
-    return`<div class="item-card ${it.status}" onclick="toggleItemDetail(${it.id})">
-      <div class="item-header">
-        <div class="item-name">${it.name}</div>
-        <span class="badge badge-${it.status}">${it.status==='sold'?'売れた':'在庫中'}</span>
-      </div>
-      <div class="item-nums">
-        <div class="item-num">仕入 <span>${fmt(it.cost)}</span></div>
-        ${hs?`<div class="item-num">売値 <span>${fmt(up)}</span></div>`:''}
-        ${pr!==null?`<div class="item-num">利益 <span class="${pc}">${fmt(pr)}</span></div>`:''}
-      </div>
-      <div class="item-meta">
-        <span class="meta-tag">${it.cat}</span>
-        <span class="meta-tag">${it.source}</span>
-        ${it.platform?`<span class="meta-tag">${PLATFORM_NAME[it.platform]||it.platform}</span>`:''}
-        <span class="meta-tag">${it.date}</span>
-        ${it.memo?`<span class="meta-tag">📝 ${it.memo}</span>`:''}
-      </div>
-      <!-- 詳細（タップで展開） -->
-      <div class="item-detail" id="detail-${it.id}">
-        <div class="item-nums" style="margin-bottom:8px;">
-          ${it.ship?`<div class="item-num">送料 <span>${fmt(it.ship)}</span></div>`:''}
-          ${it.misc?`<div class="item-num">梱包費 <span>${fmt(it.misc)}</span></div>`:''}
-          ${hs?`<div class="item-num">ROI <span class="${pc}">${calcROI(pr,it.cost)}%</span></div>`:''}
-          ${it.soldDate?`<div class="item-num">売却日 <span>${it.soldDate}</span></div>`:''}
-        </div>
-        <div class="item-actions">
-          <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openEdit(${it.id})">✏️ 編集</button>
-          ${it.status==='unsold'?`<button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openSoldModal(${it.id})" style="flex:1;">🎉 売れた！</button>`:''}
-          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteItem(${it.id})">削除</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleItemDetail(id){
-  const d=document.getElementById('detail-'+id);
-  if(d)d.classList.toggle('open');
-}
-
-function updateCatFilter(){
-  const cats=[...new Set(items.map(i=>i.cat))];
-  const el=document.getElementById('filter-cat'),cur=el.value;
-  el.innerHTML='<option value="">全カテゴリ</option>'+cats.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-}
-
-// ========== サマリー ==========
-function setSummaryMode(mode){
-  summaryMode=mode;
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('toggle-'+mode).classList.add('active');
-  updateSummary();
-}
-function updateSummary(){
-  const now=new Date();
-  const ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const list=calcMonthItems(ym,summaryMode);
-  let rev=0,tp=0,tc=0;
-  list.forEach(it=>{const p=it.actualPrice||0;rev+=p;tc+=it.cost;tp+=calcProfit(it.cost,p,it.ship,it.misc,it.feeRate);});
-  const roi=tc?Math.round((tp/tc)*100):0;
-  const ua=items.filter(i=>i.status==='unsold');
-  const unsold=summaryMode==='fuyohin'?ua.filter(i=>i.source==='不用品').length
-    :summaryMode==='sedori'?ua.filter(i=>i.source!=='不用品').length:ua.length;
-  const lbl=summaryMode==='fuyohin'?'不用品 今月':summaryMode==='sedori'?'せどり 今月':'今月';
-  const g=id=>document.getElementById(id);
-  if(g('s-label-profit'))g('s-label-profit').textContent=lbl+'利益';
-  if(g('s-label-revenue'))g('s-label-revenue').textContent=lbl+'売上';
-  if(g('s-label-roi'))g('s-label-roi').textContent=lbl+'ROI';
-  if(g('s-profit'))g('s-profit').textContent=fmt(tp);
-  if(g('s-revenue'))g('s-revenue').textContent=fmt(rev);
-  if(g('s-unsold'))g('s-unsold').textContent=unsold+'件';
-  if(g('s-roi'))g('s-roi').textContent=roi+'%';
-  const unsoldItems=items.filter(i=>i.status==='unsold');
-  const total=unsoldItems.reduce((s,i)=>s+i.cost,0);
-  const avg=unsoldItems.length?Math.round(total/unsoldItems.length):0;
-  if(g('stock-total'))g('stock-total').textContent=fmt(total);
-  if(g('stock-avg'))g('stock-avg').textContent=fmt(avg);
-  updateKondition(tp);
-}
-
-function updateKondition(profit){
-  const goal=getGoal();
-  const g=id=>document.getElementById(id);
-  if(!g('kondition-profit'))return;
-  g('kondition-profit').textContent=fmt(profit);
-  const eEl=g('kondition-emoji');
-  const tEl=g('kondition-title');
-  const sEl=g('kondition-sub');
-  if(!eEl||!tEl||!sEl)return;
-  if(!goal){
-    eEl.textContent='🎯';tEl.textContent='目標未設定';sEl.textContent='登録フォームから目標利益を設定';return;
-  }
-  const pct=Math.round((profit/goal)*100);
-  if(profit<0){eEl.textContent='😰';tEl.textContent='赤字です…';sEl.textContent='目標まで'+fmt(goal-profit)+'必要';}
-  else if(pct>=100){eEl.textContent='🎉';tEl.textContent='目標達成！';sEl.textContent=`${fmt(goal)}の目標をクリア！`;}
-  else if(pct>=70){eEl.textContent='😊';tEl.textContent=`目標の${pct}%達成`;sEl.textContent='あと'+fmt(goal-profit)+'で達成！';}
-  else if(pct>=30){eEl.textContent='😐';tEl.textContent=`目標の${pct}%達成`;sEl.textContent='もう一踏ん張り！';}
-  else{eEl.textContent='😓';tEl.textContent=`目標の${pct}%達成`;sEl.textContent='目標まで'+fmt(goal-profit)+'必要';}
-}
-
-// ========== 売れた！モーダル ==========
-function openSoldModal(id){
-  soldTargetId=id;
-  const it=items.find(i=>i.id===id);
-  document.getElementById('sold-item-name').textContent=it.name;
-  document.getElementById('sm-platform').value=it.platform||'mercari';
-  document.getElementById('sm-price').value='';
-  document.getElementById('sm-ship').value=lastShip||'';
-  document.getElementById('sm-misc').value='';
-  document.getElementById('sm-date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('ship-picker').style.display='none';
-  renderShipPickerTab('quick');renderShipPickerTab('mercari');
-  renderShipPickerTab('yuyu');renderShipPickerTab('other');
-  calcSoldPreview();
-  document.getElementById('soldModal').classList.add('open');
-  setTimeout(()=>document.getElementById('sm-price').focus(),100);
-}
-function calcSoldPreview(){
-  const it=items.find(i=>i.id===soldTargetId);if(!it)return;
-  const price=+document.getElementById('sm-price').value||0;
-  const ship=+document.getElementById('sm-ship').value||0;
-  const misc=+document.getElementById('sm-misc').value||0;
-  const pl=document.getElementById('sm-platform').value;
-  const fr=PLATFORM_FEE[pl]||0.10;
-  const profit=calcProfit(it.cost,price,ship,misc,fr);
-  document.getElementById('sm-fee-label').textContent=`${PLATFORM_NAME[pl]}手数料(${Math.round(fr*100)}%)`;
-  document.getElementById('sm-fee').textContent=fmt(Math.round(price*fr));
-  document.getElementById('sm-cost-disp').textContent=fmt(it.cost);
-  const pe=document.getElementById('sm-profit');
-  pe.textContent=fmt(profit);pe.parentElement.className='calc-row '+(profit>=0?'profit':'loss');
-  document.getElementById('sm-roi').textContent=calcROI(profit,it.cost)+'%';
-}
-function confirmSold(){
-  const price=+document.getElementById('sm-price').value||0;
-  if(!price){showToast('売値を入力してください');return;}
-  const it=items.find(i=>i.id===soldTargetId);if(!it)return;
-  const pl=document.getElementById('sm-platform').value;
-  it.status='sold';it.actualPrice=price;it.platform=pl;it.feeRate=PLATFORM_FEE[pl]||0.10;
-  it.ship=+document.getElementById('sm-ship').value||0;
-  it.misc=+document.getElementById('sm-misc').value||0;
-  it.soldDate=document.getElementById('sm-date').value||new Date().toISOString().slice(0,10);
-  lastShip=it.ship;
-  save();closeSoldModal();renderList();updateSummary();
-  showToast(`🎉 ${PLATFORM_NAME[pl]}で売れた！`);
-}
-function closeSoldModal(){document.getElementById('soldModal').classList.remove('open');}
-
-function deleteItem(id){
-  if(!confirm('削除しますか？'))return;
-  items=items.filter(i=>i.id!==id);
-  save();renderList();updateSummary();showToast('削除しました');
-}
-
-// ========== 編集 ==========
-function openEdit(id){
-  editingId=id;
-  const it=items.find(i=>i.id===id);
-  document.getElementById('e-name').value=it.name;
-  document.getElementById('e-cat').value=it.cat;
-  document.getElementById('e-source').value=it.source;
-  document.getElementById('e-cost').value=it.cost;
-  document.getElementById('e-ship').value=it.ship||0;
-  document.getElementById('e-misc').value=it.misc||0;
-  document.getElementById('e-status').value=it.status;
-  document.getElementById('e-sold-date').value=it.soldDate||'';
-  document.getElementById('e-actual-price').value=it.actualPrice||'';
-  document.getElementById('e-platform').value=it.platform||'mercari';
-  document.getElementById('e-date').value=it.date;
-  document.getElementById('e-memo').value=it.memo||'';
-  toggleEditSoldDate();
-  if(it.status==='sold')calcEditPreview();
-  document.getElementById('editModal').classList.add('open');
-}
-function calcEditPreview(){
-  const cost=+document.getElementById('e-cost').value||0;
-  const price=+document.getElementById('e-actual-price').value||0;
-  const ship=+document.getElementById('e-ship').value||0;
-  const misc=+document.getElementById('e-misc').value||0;
-  const pl=document.getElementById('e-platform').value;
-  const fr=PLATFORM_FEE[pl]||0.10;
-  const profit=calcProfit(cost,price,ship,misc,fr);
-  document.getElementById('e-fee-label').textContent=`${PLATFORM_NAME[pl]}手数料(${Math.round(fr*100)}%)`;
-  document.getElementById('e-fee').textContent=fmt(Math.round(price*fr));
-  document.getElementById('e-cost-disp').textContent=fmt(cost);
-  const pe=document.getElementById('e-profit');
-  pe.textContent=fmt(profit);pe.parentElement.className='calc-row '+(profit>=0?'profit':'loss');
-  document.getElementById('e-roi').textContent=calcROI(profit,cost)+'%';
-}
-function toggleEditSoldDate(){
-  const st=document.getElementById('e-status').value;
-  document.getElementById('e-sold-row').style.display=st==='sold'?'block':'none';
-  if(st==='sold')calcEditPreview();
-}
-function saveEdit(){
-  const it=items.find(i=>i.id===editingId);if(!it)return;
-  it.name=document.getElementById('e-name').value.trim();
-  it.cat=document.getElementById('e-cat').value;
-  it.source=document.getElementById('e-source').value;
-  it.cost=+document.getElementById('e-cost').value||0;
-  it.ship=+document.getElementById('e-ship').value||0;
-  it.misc=+document.getElementById('e-misc').value||0;
-  it.status=document.getElementById('e-status').value;
-  it.soldDate=document.getElementById('e-sold-date').value;
-  it.actualPrice=+document.getElementById('e-actual-price').value||0;
-  it.platform=document.getElementById('e-platform').value;
-  it.feeRate=PLATFORM_FEE[it.platform]||0.10;
-  it.date=document.getElementById('e-date').value;
-  it.memo=document.getElementById('e-memo').value.trim();
-  save();closeModal();renderList();updateSummary();showToast('✓ 保存しました');
-}
-function closeModal(){document.getElementById('editModal').classList.remove('open');}
-
-// ========== 分析 ==========
-function setSoldFilter(mode){
-  soldFilter=mode;
-  // カードのアクティブ状態
-  const g=id=>document.getElementById(id);
-  if(g('sc-sedori'))g('sc-sedori').classList.toggle('active-card',mode==='sedori');
-  if(g('sc-fuyohin'))g('sc-fuyohin').classList.toggle('active-card',mode==='fuyohin');
-  if(g('sc-sedori-arrow'))g('sc-sedori-arrow').textContent=mode==='sedori'?'▼':'';
-  if(g('sc-fuyohin-arrow'))g('sc-fuyohin-arrow').textContent=mode==='fuyohin'?'▼':'';
-  // 履歴タイトル更新
-  const labels={'all':'全て','sedori':'せどり','fuyohin':'不用品'};
-  if(g('soldListTitle'))g('soldListTitle').textContent=`🎉 売れた履歴（${labels[mode]}）`;
-  // 履歴を自動で開く
-  if(!soldListOpen){
-    soldListOpen=true;
-    if(g('soldListWrap'))g('soldListWrap').style.display='block';
-    if(g('soldToggleIcon'))g('soldToggleIcon').textContent='▲';
-  }
-  renderSoldList();
-  // 履歴セクションまでスクロール
-  if(g('soldListWrap'))g('soldListWrap').scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function updateStats(){
-  const ym=`${statsYear}-${String(statsMonth).padStart(2,'0')}`;
-  const g=id=>document.getElementById(id);
-  if(g('statsMonthLabel'))g('statsMonthLabel').textContent=`${statsYear}年${statsMonth}月`;
-  const all=calcMonthItems(ym,'all');
-  let rev=0,pr=0,co=0;
-  all.forEach(it=>{const p=it.actualPrice||0;rev+=p;co+=it.cost;pr+=calcProfit(it.cost,p,it.ship,it.misc,it.feeRate);});
-  if(g('st-profit'))g('st-profit').textContent=fmt(pr);
-  if(g('st-revenue'))g('st-revenue').textContent=fmt(rev);
-  if(g('st-count'))g('st-count').textContent=all.length+'件';
-  if(g('st-roi'))g('st-roi').textContent=(co?Math.round((pr/co)*100):0)+'%';
-  const sed=calcMonthItems(ym,'sedori');
-  let sr=0,sp=0,sc=0;
-  sed.forEach(it=>{const p=it.actualPrice||0;sr+=p;sc+=it.cost;sp+=calcProfit(it.cost,p,it.ship,it.misc,it.feeRate);});
-  if(g('st-sedori-profit'))g('st-sedori-profit').textContent=fmt(sp);
-  if(g('st-sedori-revenue'))g('st-sedori-revenue').textContent=fmt(sr);
-  if(g('st-sedori-count'))g('st-sedori-count').textContent=sed.length+'件';
-  if(g('st-sedori-roi'))g('st-sedori-roi').textContent=(sc?Math.round((sc&&sp?Math.round((sp/sc)*100):0)):0)+'%';
-  const fuy=calcMonthItems(ym,'fuyohin');
-  let fRev=0,fp=0;
-  fuy.forEach(it=>{const p=it.actualPrice||0;fRev+=p;fp+=calcProfit(it.cost,p,it.ship,it.misc,it.feeRate);});
-  if(g('st-fuyohin-profit'))g('st-fuyohin-profit').textContent=fmt(fp);
-  if(g('st-fuyohin-revenue'))g('st-fuyohin-revenue').textContent=fmt(fRev);
-  if(g('st-fuyohin-count'))g('st-fuyohin-count').textContent=fuy.length+'件';
-  try{drawMonthChart();}catch(e){console.error('drawMonthChart',e);}
-  try{drawSplitChart();}catch(e){console.error('drawSplitChart',e);}
-  try{drawCatBars();}catch(e){console.error('drawCatBars',e);}
-  if(soldListOpen)try{renderSoldList();}catch(e){console.error('renderSoldList',e);}
-}
-
-function toggleSoldList(){
-  soldListOpen=!soldListOpen;
-  document.getElementById('soldListWrap').style.display=soldListOpen?'block':'none';
-  document.getElementById('soldToggleIcon').textContent=soldListOpen?'▲':'▼';
-  if(soldListOpen)renderSoldList();
-}
-
-function renderSoldList(){
-  const ym=`${statsYear}-${String(statsMonth).padStart(2,'0')}`;
-  const cf=document.getElementById('sold-filter-cat').value;
-  const sf=document.getElementById('sold-filter-search').value.trim().toLowerCase();
-  const cats=[...new Set(items.filter(i=>i.status==='sold').map(i=>i.cat))];
-  const ce=document.getElementById('sold-filter-cat'),cc=ce.value;
-  ce.innerHTML='<option value="">全カテゴリ</option>'+cats.map(c=>`<option value="${c}"${c===cc?' selected':''}>${c}</option>`).join('');
-  let filtered=items.filter(it=>{
-    if(it.status!=='sold')return false;
-    if(!it.soldDate||!it.soldDate.startsWith(ym))return false;
-    if(soldFilter==='sedori'&&it.source==='不用品')return false;
-    if(soldFilter==='fuyohin'&&it.source!=='不用品')return false;
-    if(cf&&it.cat!==cf)return false;
-    if(sf&&!it.name.toLowerCase().includes(sf))return false;
-    return true;
-  }).sort((a,b)=>b.soldDate>a.soldDate?1:-1);
-  const el=document.getElementById('soldList');
-  if(!filtered.length){el.innerHTML='<div class="empty" style="padding:20px;"><div class="icon">📋</div>この月は売れた商品なし</div>';return;}
-  el.innerHTML=filtered.map(it=>{
-    const profit=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);
-    const isFuy=it.source==='不用品';
-    const color=isFuy?'var(--blue)':'var(--accent2)';
-    const typeLabel=isFuy?'🏠 不用品':'📦 せどり';
-    const fee=Math.round((it.actualPrice||0)*(it.feeRate||0.10));
-    return`<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${color};border-radius:var(--radius);padding:12px;margin-bottom:8px;box-shadow:var(--shadow);cursor:pointer;" onclick="toggleSoldDetail('sd-${it.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px;">
-        <div style="font-weight:700;font-size:.88rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.name}</div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:800;color:${profit>=0?color:'var(--accent)'};">${fmt(profit)}</span>
-      </div>
-      <div style="display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-        <div class="item-num">仕入 <span>${fmt(it.cost)}</span></div>
-        <div class="item-num">売値 <span>${fmt(it.actualPrice||0)}</span></div>
-        ${it.ship?`<div class="item-num">送料 <span>${fmt(it.ship)}</span></div>`:''}
-        <div class="item-num">ROI <span class="${profit>=0?'green':'red'}">${calcROI(profit,it.cost)}%</span></div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
-        <span class="meta-tag" style="color:${color};">${typeLabel}</span>
-        <span class="meta-tag">${it.cat}</span>
-        ${it.platform?`<span class="meta-tag">${PLATFORM_NAME[it.platform]||it.platform}</span>`:''}
-        <span class="meta-tag">${it.soldDate}</span>
-        <span class="meta-tag" style="color:var(--muted);">タップで詳細</span>
-      </div>
-      <!-- 詳細（タップで展開） -->
-      <div id="sd-${it.id}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:.68rem;color:var(--muted);">仕入れ値</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.cost)}</div>
-          </div>
-          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:.68rem;color:var(--muted);">売値</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.actualPrice||0)}</div>
-          </div>
-          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:.68rem;color:var(--muted);">送料</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.ship||0)}</div>
-          </div>
-          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:.68rem;color:var(--muted);">梱包費</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(it.misc||0)}</div>
-          </div>
-          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:.68rem;color:var(--muted);">手数料</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">${fmt(fee)}</div>
-          </div>
-          <div style="background:var(--bg);border-radius:8px;padding:8px;text-align:center;border:1px solid ${color};">
-            <div style="font-size:.68rem;color:var(--muted);">利益</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:${profit>=0?color:'var(--accent)'};">${fmt(profit)}</div>
-          </div>
-        </div>
-        ${it.memo?`<div style="font-size:.78rem;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px;">📝 ${it.memo}</div>`:''}
-        <div style="display:flex;gap:6px;margin-top:8px;">
-          <button class="btn btn-sm btn-ghost" onclick="event.stopPropagation();openEdit(${it.id})" style="flex:1;">✏️ 編集</button>
-          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteItem(${it.id})">削除</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ========== グラフ ==========
-function getPast6Months(){
-  const r=[];
-  for(let i=5;i>=0;i--){
-    const d=new Date(statsYear,statsMonth-1-i,1);
-    r.push({label:`${d.getMonth()+1}月`,ym:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`});
-  }
-  return r;
-}
-function canvasSetup(id,h){
-  const canvas=document.getElementById(id),ctx=canvas.getContext('2d');
-  const dpr=window.devicePixelRatio||1,w=canvas.parentElement.clientWidth-28;
-  canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+'px';canvas.style.height=h+'px';
-  ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);return{ctx,w,h};
-}
-function drawBar(ctx,x,y,w,h,color){
-  const g=ctx.createLinearGradient(x,y,x,y+h);g.addColorStop(0,color);g.addColorStop(1,color+'88');
-  ctx.fillStyle=g;ctx.fillRect(x,y,Math.max(w,1),Math.max(h,2));
-}
-function drawMonthChart(){
-  const months=getPast6Months();
-  const profits=months.map(m=>{let p=0;calcMonthItems(m.ym,'all').forEach(it=>{p+=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);});return p;});
-  const{ctx,w,h}=canvasSetup('monthChart',150);
-  const pL=46,pR=8,pT=12,pB=26,cW=w-pL-pR,cH=h-pT-pB;
-  const maxV=Math.max(...profits.map(Math.abs),1),minV=Math.min(...profits,0);
-  const zY=pT+cH*(1-(0-minV)/(maxV-minV));
-  ctx.strokeStyle='#e8e8f0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pL,zY);ctx.lineTo(w-pR,zY);ctx.stroke();
-  ctx.fillStyle='#9090b0';ctx.font='10px sans-serif';ctx.textAlign='right';
-  ctx.fillText(Math.round(maxV/1000)+'k',pL-4,pT+10);
-  const colW=cW/months.length,bW=colW*0.6;
-  monthChartMeta=[];
-  months.forEach((m,i)=>{
-    const x=pL+colW*i+(colW-bW)/2,v=profits[i];
-    const bH=Math.abs(v)/(maxV-minV+1)*cH,y=v>=0?zY-bH:zY;
-    drawBar(ctx,x,y,bW,bH,v>=0?'#00b87a':'#ff4d6d');
-    monthChartMeta.push({ym:m.ym,label:m.label,x:pL+colW*i,w:colW});
-    if(Math.abs(v)>0){ctx.fillStyle=v>=0?'#00b87a':'#ff4d6d';ctx.font='9px sans-serif';ctx.textAlign='center';ctx.fillText((v>=0?'+':'')+Math.round(v/100)/10+'k',x+bW/2,v>=0?y-3:y+bH+10);}
-    ctx.fillStyle='#9090b0';ctx.font='10px sans-serif';ctx.fillText(m.label,x+bW/2,h-4);
-  });
-}
-function drawSplitChart(){
-  const months=getPast6Months();
-  const sP=months.map(m=>{let p=0;calcMonthItems(m.ym,'sedori').forEach(it=>{p+=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);});return p;});
-  const fP=months.map(m=>{let p=0;calcMonthItems(m.ym,'fuyohin').forEach(it=>{p+=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);});return p;});
-  const{ctx,w,h}=canvasSetup('splitChart',130);
-  const pL=46,pR=8,pT=18,pB=26,cW=w-pL-pR,cH=h-pT-pB;
-  const all=[...sP,...fP],maxV=Math.max(...all.map(Math.abs),1),minV=Math.min(...all,0);
-  const zY=pT+cH*(1-(0-minV)/(maxV-minV));
-  ctx.strokeStyle='#e8e8f0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pL,zY);ctx.lineTo(w-pR,zY);ctx.stroke();
-  const colW=cW/months.length,bW=colW*0.35;
-  months.forEach((m,i)=>{
-    const cx=pL+colW*i+colW/2;
-    [[sP[i],'#00b87a',cx-bW-1],[fP[i],'#4a90e2',cx+1]].forEach(([v,c,x])=>{
-      const bH=Math.abs(v)/(maxV-minV+1)*cH,y=v>=0?zY-bH:zY;
-      ctx.globalAlpha=0.85;drawBar(ctx,x,y,bW,bH,c);ctx.globalAlpha=1;
-    });
-    ctx.fillStyle='#9090b0';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(m.label,cx,h-4);
-  });
-  ctx.font='10px sans-serif';ctx.textAlign='left';
-  ctx.fillStyle='#00b87a';ctx.fillRect(pL,3,8,8);ctx.fillStyle='#9090b0';ctx.fillText('せどり',pL+11,11);
-  ctx.fillStyle='#4a90e2';ctx.fillRect(pL+55,3,8,8);ctx.fillStyle='#9090b0';ctx.fillText('不用品',pL+66,11);
-}
-function drawCatBars(){
-  const ym=`${statsYear}-${String(statsMonth).padStart(2,'0')}`;
-  const cm={};calcMonthItems(ym,'all').forEach(it=>{const p=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);cm[it.cat]=(cm[it.cat]||0)+p;});
-  const sorted=Object.entries(cm).sort((a,b)=>b[1]-a[1]);
-  const maxP=Math.max(...sorted.map(e=>Math.abs(e[1])),1);
-  const el=document.getElementById('catBars');
-  if(!sorted.length){el.innerHTML='<div class="empty" style="padding:16px;"><div class="icon">📊</div>データなし</div>';return;}
-  el.innerHTML=sorted.map(([cat,p])=>`<div><div class="cat-bar-header"><span>${cat}</span><span>${fmt(p)}</span></div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(Math.abs(p)/maxP*100,2)}%;background:${p<0?'var(--accent)':'linear-gradient(90deg,var(--accent2),#00d68f)'}"></div></div></div>`).join('');
-}
-function changeStatsMonth(d){
-  statsMonth+=d;if(statsMonth>12){statsMonth=1;statsYear++;}if(statsMonth<1){statsMonth=12;statsYear--;}
-  updateStats();
-}
-
-// ========== スワイプ ==========
-function initSwipe(){
-  const sp=document.getElementById('page-stats');
-  sp.addEventListener('touchstart',e=>{swipeStartX=e.touches[0].clientX;swipeStartY=e.touches[0].clientY;},{passive:true});
-  sp.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-swipeStartX;
-    const dy=e.changedTouches[0].clientY-swipeStartY;
-    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5)changeStatsMonth(dx<0?1:-1);
-  },{passive:true});
-}
-function detailSwipeStart(e){swipeStartX=e.touches[0].clientX;swipeStartY=e.touches[0].clientY;}
-function detailSwipeEnd(e){
-  const dx=e.changedTouches[0].clientX-swipeStartX;
-  const dy=e.changedTouches[0].clientY-swipeStartY;
-  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){
-    const[y,m]=monthDetailYm.split('-').map(Number);
-    let nm=m+(dx<0?1:-1),ny=y;
-    if(nm>12){nm=1;ny++;}if(nm<1){nm=12;ny--;}
-    openMonthDetail(`${ny}-${String(nm).padStart(2,'0')}`,`${ny}年${nm}月`);
-  }
-}
-function onMonthChartClick(e){
-  if(!monthChartMeta.length)return;
-  const canvas=document.getElementById('monthChart');
-  const rect=canvas.getBoundingClientRect();
-  const dpr=window.devicePixelRatio||1;
-  const clickX=(e.clientX-rect.left)*(canvas.width/rect.width)/dpr;
-  const hit=monthChartMeta.find(m=>clickX>=m.x&&clickX<=m.x+m.w);
-  if(!hit)return;
-  openMonthDetail(hit.ym,hit.label);
-}
-function openMonthDetail(ym,label){
-  monthDetailYm=ym;
-  const[y,m]=ym.split('-').map(Number);
-  document.getElementById('month-detail-title').textContent=`${y}年${m}月`;
-  const all=calcMonthItems(ym,'all');
-  let rev=0,pr=0,co=0;
-  all.forEach(it=>{const p=it.actualPrice||0;rev+=p;co+=it.cost;pr+=calcProfit(it.cost,p,it.ship,it.misc,it.feeRate);});
-  document.getElementById('md-profit').textContent=fmt(pr);
-  document.getElementById('md-revenue').textContent=fmt(rev);
-  document.getElementById('md-count').textContent=all.length+'件';
-  document.getElementById('md-roi').textContent=(co?Math.round((pr/co)*100):0)+'%';
-  const sed=calcMonthItems(ym,'sedori');
-  let sp=0,sc=0;sed.forEach(it=>{const p=it.actualPrice||0;sc+=it.cost;sp+=calcProfit(it.cost,p,it.ship,it.misc,it.feeRate);});
-  document.getElementById('md-sedori-profit').textContent=fmt(sp);
-  document.getElementById('md-sedori-count').textContent=sed.length+'件';
-  const fuy=calcMonthItems(ym,'fuyohin');
-  let fp=0;fuy.forEach(it=>{fp+=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);});
-  document.getElementById('md-fuyohin-profit').textContent=fmt(fp);
-  document.getElementById('md-fuyohin-count').textContent=fuy.length+'件';
-  const el=document.getElementById('md-sold-list');
-  if(!all.length){el.innerHTML='<div class="empty" style="padding:16px;"><div class="icon">📋</div>この月は売れた商品なし</div>';}
-  else{
-    const sorted=[...sed,...fuy];
-    el.innerHTML=sorted.map(it=>{
-      const profit=calcProfit(it.cost,it.actualPrice||0,it.ship,it.misc,it.feeRate);
-      const isFuy=it.source==='不用品';
-      const color=isFuy?'var(--blue)':'var(--accent2)';
-      return`<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid ${color};border-radius:var(--radius);padding:10px;margin-bottom:8px;box-shadow:var(--shadow);">
-        <div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:4px;">
-          <div style="font-weight:700;font-size:.85rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.name}</div>
-          <span style="font-family:'JetBrains Mono',monospace;font-size:.85rem;font-weight:800;color:${profit>=0?color:'var(--accent)'};">${fmt(profit)}</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);">
-          <span>仕入 <b style="color:var(--text);">${fmt(it.cost)}</b></span>
-          <span>売値 <b style="color:var(--text);">${fmt(it.actualPrice||0)}</b></span>
-          <span>ROI <b class="${profit>=0?'green':'red'}">${calcROI(profit,it.cost)}%</b></span>
-          <span style="color:${color};">${isFuy?'🏠 不用品':'📦 せどり'}</span>
-        </div>
-      </div>`;
-    }).join('');
-  }
-  const mc=document.getElementById('monthDetailContent');if(mc)mc.scrollTop=0;
-  document.getElementById('monthDetailModal').classList.add('open');
-}
-function closeMonthDetail(){document.getElementById('monthDetailModal').classList.remove('open');}
-function jumpToMonth(){
-  if(!monthDetailYm)return;
-  const[y,m]=monthDetailYm.split('-').map(Number);
-  statsYear=y;statsMonth=m;closeMonthDetail();updateStats();
-}
-
-// ========== 送料ピッカー ==========
-const QUICK_SHIP=[
-  {name:'ネコポス',price:210,misc:0},
-  {name:'宅急便コンパクト',price:450,misc:70},
-  {name:'ゆうパケット',price:230,misc:0},
-  {name:'ゆうパケットポスト(シール)',price:215,misc:5},
-  {name:'ゆうパケットポストmini',price:160,misc:20},
-  {name:'ゆうパケットプラス',price:455,misc:65},
-  {name:'クリックポスト',price:185,misc:0},
-  {name:'レターパックライト',price:430,misc:0},
-  {name:'レターパックプラス',price:600,misc:0},
-  {name:'宅急便60',price:750,misc:0},
-  {name:'ゆうパック60',price:750,misc:0},
-];
-const SHIPPING_DATA={
-  mercari:[
-    {name:'ネコポス',size:'3辺60cm以内・長辺34cm以内',price:210,misc:0},
-    {name:'宅急便コンパクト',size:'専用BOX ¥70',price:450,misc:70},
-    {name:'宅急便 60',size:'2kgまで',price:750,misc:0},
-    {name:'宅急便 80',size:'5kgまで',price:850,misc:0},
-    {name:'宅急便 100',size:'10kgまで',price:1050,misc:0},
-    {name:'宅急便 120',size:'15kgまで',price:1200,misc:0},
-    {name:'宅急便 140',size:'20kgまで',price:1450,misc:0},
-    {name:'宅急便 160',size:'25kgまで',price:1700,misc:0},
-    {name:'宅急便 170',size:'30kgまで',price:2100,misc:0},
-    {name:'宅急便 180',size:'30kgまで',price:2500,misc:0},
-  ],
-  yuyu:[
-    {name:'ゆうパケットポストmini',size:'専用封筒 ¥20',price:160,misc:20},
-    {name:'ゆうパケットポスト(シール)',size:'専用シール ¥5',price:215,misc:5},
-    {name:'ゆうパケットポスト(専用箱)',size:'専用箱 ¥65',price:215,misc:65},
-    {name:'ゆうパケット',size:'34×23×3cm・1kgまで',price:230,misc:0},
-    {name:'ゆうパケットプラス',size:'専用箱 ¥65・2kgまで',price:455,misc:65},
-    {name:'ゆうパック 60',size:'25kgまで',price:750,misc:0},
-    {name:'ゆうパック 80',size:'25kgまで',price:870,misc:0},
-    {name:'ゆうパック 100',size:'25kgまで',price:1070,misc:0},
-    {name:'ゆうパック 120',size:'25kgまで',price:1200,misc:0},
-    {name:'ゆうパック 140',size:'25kgまで',price:1450,misc:0},
-    {name:'ゆうパック 160',size:'25kgまで',price:1700,misc:0},
-    {name:'ゆうパック 170',size:'25kgまで',price:1900,misc:0},
-  ],
-  other:[
-    {name:'定形郵便',size:'50gまで',price:110,misc:0},
-    {name:'クリックポスト',size:'1kgまで',price:185,misc:0},
-    {name:'スマートレター',size:'1kgまで',price:210,misc:0},
-    {name:'ゆうメール 150g',size:'34×25×3cm以内',price:190,misc:0},
-    {name:'ゆうメール 250g',size:'34×25×3cm以内',price:230,misc:0},
-    {name:'ゆうメール 1kg',size:'34×25×3cm以内',price:380,misc:0},
-    {name:'定形外(規格内) 50g',size:'34×25×3cm以内',price:140,misc:0},
-    {name:'定形外(規格内) 100g',size:'34×25×3cm以内',price:180,misc:0},
-    {name:'定形外(規格内) 250g',size:'34×25×3cm以内',price:320,misc:0},
-    {name:'定形外(規格内) 500g',size:'34×25×3cm以内',price:510,misc:0},
-    {name:'定形外(規格内) 1kg',size:'34×25×3cm以内',price:750,misc:0},
-    {name:'レターパックライト',size:'4kgまで',price:430,misc:0},
-    {name:'レターパックプラス',size:'4kgまで',price:600,misc:0},
-  ]
-};
-function toggleShipPicker(){
-  const p=document.getElementById('ship-picker');
-  p.style.display=p.style.display==='none'?'block':'none';
-  if(p.style.display==='block')switchShipTab('quick');
-}
-function renderShipPickerTab(type){
-  if(type==='quick'){
-    document.getElementById('quick-ship-btns').innerHTML=QUICK_SHIP.map(r=>`<button onclick="selectShip(${r.price},${r.misc},'${r.name}')" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:inherit;font-size:.75rem;cursor:pointer;text-align:center;min-width:80px;">
-      <div>${r.name}</div>
-      <div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;">¥${r.price}</div>
-      ${r.misc>0?`<div style="font-size:.65rem;color:var(--muted);">資材 +¥${r.misc}</div>`:''}
-    </button>`).join('');return;
-  }
-  document.getElementById(`sptab-content-${type}`).innerHTML=SHIPPING_DATA[type].map((r,i)=>`
-    <div onclick="selectShip(${r.price},${r.misc},'${r.name}')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:${i%2===0?'transparent':'rgba(0,0,0,.02)'}">
-      <div>
-        <div style="font-size:.8rem;font-weight:600;">${r.name}</div>
-        <div style="font-size:.68rem;color:var(--muted);">${r.size}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;font-size:.85rem;">¥${r.price.toLocaleString()}</div>
-        ${r.misc>0?`<div style="font-size:.65rem;color:var(--muted);">資材 +¥${r.misc}</div>`:''}
-      </div>
-    </div>`).join('');
-}
-function toggleSoldDetail(id){
-  const el=document.getElementById(id);
-  if(el)el.style.display=el.style.display==='none'?'block':'none';
-}
-function selectShip(price,misc,name){
-  document.getElementById('sm-ship').value=price;
-  if(misc>0){
-    document.getElementById('sm-misc').value=misc;
-    showToast(`送料 ¥${price} ＋ 資材代 ¥${misc} を自動入力`);
-  }else{
-    showToast(`送料 ¥${price.toLocaleString()} を選択`);
-  }
-  document.getElementById('ship-picker').style.display='none';
-  calcSoldPreview();
-}
-function switchShipTab(type){
-  ['quick','mercari','yuyu','other'].forEach(t=>{
-    document.getElementById(`sptab-content-${t}`).style.display=t===type?'block':'none';
-    const btn=document.getElementById(`sptab-${t}`);
-    btn.style.background=t===type?'var(--accent)':'var(--bg)';
-    btn.style.color=t===type?'#fff':'var(--muted)';
-  });
-}
-function openShippingModal(){['mercari','yuyu','other'].forEach(t=>renderShippingTable(t));document.getElementById('shippingModal').classList.add('open');}
-function closeShippingModal(){document.getElementById('shippingModal').classList.remove('open');}
-function renderShippingTable(type){
-  document.getElementById(`shipping-table-${type}`).innerHTML=SHIPPING_DATA[type].map((r,i)=>`<tr style="background:${i%2===0?'transparent':'rgba(0,0,0,.02)'}"><td style="padding:6px 8px;border-bottom:1px solid var(--border);font-weight:600;">${r.name}</td><td style="padding:6px 8px;border-bottom:1px solid var(--border);color:var(--muted);font-size:.72rem;">${r.size}</td><td style="padding:6px 8px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;color:var(--accent3);font-weight:700;">¥${r.price.toLocaleString()}</td></tr>`).join('');
-}
-function switchShippingTab(type){
-  ['mercari','yuyu','other'].forEach(t=>{
-    document.getElementById(`stab-content-${t}`).style.display=t===type?'block':'none';
-    const btn=document.getElementById(`stab-${t}`);
-    btn.style.background=t===type?'var(--accent)':'var(--bg)';
-    btn.style.color=t===type?'#fff':'var(--muted)';
-    btn.style.border=t===type?'none':'1px solid var(--border)';
-  });
-}
-
-// ========== データ管理 ==========
-function initDataPage(){
-  document.getElementById('total-count').textContent=items.length+'件';
-  const now=new Date(),ym=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const fe=document.getElementById('csv-from'),te=document.getElementById('csv-to');
-  if(!fe.value)fe.value=ym;if(!te.value)te.value=ym;
-  updateCsvPreview();
-}
-function exportBackup(){
-  const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),items},null,2)],{type:'application/json'});
-  const a=document.createElement('a'),d=new Date();
-  a.href=URL.createObjectURL(blob);a.download=`sedori_backup_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
-  a.click();URL.revokeObjectURL(a.href);showToast('📥 バックアップを保存しました');
-}
-function importBackup(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    try{
-      const data=JSON.parse(ev.target.result);
-      const imported=data.items||(Array.isArray(data)?data:null);
-      if(!imported){showToast('❌ ファイル形式が違います');return;}
-      if(!confirm(`${imported.length}件を復元します。現在のデータは上書きされます。`))return;
-      items=imported;save();updateSummary();initDataPage();showToast(`✓ ${imported.length}件を復元しました`);
-    }catch{showToast('❌ 読み込みに失敗しました');}
-    e.target.value='';
-  };reader.readAsText(file);
-}
-function buildCSVData(){
-  const from=document.getElementById('csv-from').value,to=document.getElementById('csv-to').value;
-  const target=document.querySelector('input[name="csv-target"]:checked').value;
-  let filtered=items.filter(it=>{
-    if(target==='sold'&&it.status!=='sold')return false;
-    const ds=it.status==='sold'?it.soldDate:it.date,ym=ds?ds.slice(0,7):'';
-    if(from&&ym<from)return false;if(to&&ym>to)return false;return true;
-  }).slice().sort((a,b)=>b.date>a.date?1:-1);
-  const header=['商品名','カテゴリ','仕入れ先','仕入れ日','ステータス','売却日','仕入れ値','売値','送料','梱包費','手数料','利益','ROI(%)','メモ'];
-  const rows=filtered.map(it=>{
-    const price=it.actualPrice||0,fr=it.feeRate||0.10;
-    const fee=it.status==='sold'?Math.round(price*fr):0;
-    const profit=it.status==='sold'?calcProfit(it.cost,price,it.ship,it.misc,fr):'';
-    const roi=it.status==='sold'&&it.cost?Math.round((profit/it.cost)*100):'';
-    return[it.name,it.cat,it.source,it.date,it.status==='sold'?'売れた':'在庫中',it.soldDate||'',it.cost,price||'',it.ship||'',it.misc||'',fee||'',profit,roi,it.memo||''];
-  });
-  return{header,rows,filtered};
-}
-function toCSVString(h,r){
-  const e=v=>{const s=String(v);return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s.replace(/"/g,'""')}"`  :s;};
-  return[h,...r].map(row=>row.map(e).join(',')).join('\n');
-}
-function updateCsvPreview(){
-  try{const{header,rows}=buildCSVData();document.getElementById('csv-preview').textContent=toCSVString(header,rows.slice(0,5))+(rows.length>5?`\n...(他${rows.length-5}件)`:'');}catch(e){document.getElementById('csv-preview').textContent='';}
-}
-function exportCSV(){
-  const{header,rows,filtered}=buildCSVData();
-  if(!filtered.length){showToast('該当データがありません');return;}
-  const blob=new Blob(['\uFEFF'+toCSVString(header,rows)],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a'),d=new Date();
-  a.href=URL.createObjectURL(blob);a.download=`sedori_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.csv`;
-  a.click();URL.revokeObjectURL(a.href);showToast(`📊 ${filtered.length}件をCSV出力しました`);
-}
-function copyCSV(){
-  const{header,rows,filtered}=buildCSVData();
-  if(!filtered.length){showToast('該当データがありません');return;}
-  navigator.clipboard.writeText(toCSVString(header,rows)).then(()=>showToast('📋 コピーしました')).catch(()=>showToast('❌ コピーに失敗しました'));
-}
-function clearAllData(){
-  if(!confirm(`全${items.length}件を削除します。先にバックアップを保存してください。`))return;
-  items=[];save();updateSummary();initDataPage();showToast('🗑️ 全データを削除しました');
-}
-
-// ========== ページ切り替え ==========
-function showPage(name){
-  try{
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.getElementById('page-'+name).classList.add('active');
-    document.querySelectorAll('.tab')[['add','list','stats','data'].indexOf(name)].classList.add('active');
-    if(name==='list'){document.getElementById('filter-status').value='unsold';updateCatFilter();renderList();}
-    if(name==='stats')updateStats();
-    if(name==='data')initDataPage();
-  }catch(e){console.error('showPage error',name,e);}
-}
-function showToast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2000);
-}
-
-// ========== 初期化 ==========
-try {
-  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-} catch(e){}
-try {
-  document.getElementById('headerDate').textContent=new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
-} catch(e){}
-try {
-  const goalVal=getGoal();
-  if(goalVal)document.getElementById('f-goal').value=goalVal;
-} catch(e){}
-try { updateSummary(); } catch(e){ console.error('updateSummary',e); }
-try { updateLastCarryBar(); } catch(e){ console.error('updateLastCarryBar',e); }
-try { initSwipe(); } catch(e){ console.error('initSwipe',e); }
-try {
-  const fe2=document.getElementById('csv-from'),te2=document.getElementById('csv-to');
-  if(fe2)fe2.addEventListener('change',updateCsvPreview);
-  if(te2)te2.addEventListener('change',updateCsvPreview);
-  document.querySelectorAll('input[name="csv-target"]').forEach(el=>el.addEventListener('change',updateCsvPreview));
-} catch(e){ console.error('csv init',e); }
+let mode='all';let stockMode='sedori';let analysisMode='sedori';let viewDate=new Date();let csvSoldOnly=true;
+function $(id){return document.getElementById(id)}
+function save(){localStorage.setItem('sedori_items',JSON.stringify(items))}
+function yen(n){return '¥'+Math.round(Number(n)||0).toLocaleString()}
+function pct(n){return (Math.round(Number(n)||0)).toLocaleString()+'%'}
+function today(){return new Date().toISOString().slice(0,10)}
+function ym(d){return d.toISOString().slice(0,7)}
+function isSedori(it){return it.source!=='不用品'}
+function matchMode(it,m=mode){if(m==='sedori')return isSedori(it);if(m==='fuyohin')return !isSedori(it);return true}
+function feeRate(p){return PLATFORM_FEE[p]??.10}
+function fee(price,platform){return Math.round((Number(price)||0)*feeRate(platform))}
+function profitOf(it){if(it.status!=='sold')return 0;const price=Number(it.actualPrice||it.price||0);return price-fee(price,it.platform)-Number(it.cost||0)-Number(it.ship||0)-Number(it.misc||0)}
+function roiOf(it){const c=Number(it.cost||0);return c?Math.round(profitOf(it)/c*100):0}
+function soldItems(m='all'){return items.filter(i=>i.status==='sold'&&matchMode(i,m))}
+function inventoryItems(m='all'){return items.filter(i=>i.status!=='sold'&&matchMode(i,m))}
+function summarize(arr){let sales=0,profit=0,cost=0,ship=0,misc=0,fees=0;arr.forEach(i=>{const price=Number(i.actualPrice||i.price||0);sales+=i.status==='sold'?price:0;profit+=profitOf(i);cost+=Number(i.cost||0);ship+=Number(i.ship||0);misc+=Number(i.misc||0);fees+=i.status==='sold'?fee(price,i.platform):0});return{sales,profit,cost,ship,misc,fees,count:arr.length,roi:cost?Math.round(profit/cost*100):0}}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function fillSelect(id,arr,val){$(id).innerHTML=arr.map(x=>`<option value="${x}">${x}</option>`).join('');if(val)$(id).value=val}
+function init(){fillSelect('fCat',CATS);fillSelect('fSource',SOURCES);fillSelect('eCat',CATS);fillSelect('eSource',SOURCES);$('fDate').value=today();$('sDate').value=today();$('todayMini').textContent=new Date().toLocaleDateString('ja-JP',{month:'numeric',day:'numeric',weekday:'short'});$('goalInput').value=localStorage.getItem('sedori_goal')||'';renderQuickSources();renderAll();}
+function renderAll(){updateFilters();renderHome();renderStock();renderAnalysis();renderData();updateLastCarry()}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.page===id));window.scrollTo({top:0,behavior:'smooth'});renderAll()}
+function setMode(m,btn){mode=m;document.querySelectorAll('#home .mode-toggle button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHome()}
+function setStockMode(m,btn){stockMode=m;document.querySelectorAll('#stockModeToggle button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderStock()}
+function setAnalysisMode(m,btn){analysisMode=m;document.querySelectorAll('#analysisModeToggle button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAnalysis()}
+function card(label,value,cls=''){return `<div class="summary-card"><div class="label">${label}</div><div class="value ${cls}">${value}</div></div>`}
+function renderHome(){const nowYm=ym(new Date());const monthSold=soldItems(mode).filter(i=>(i.soldDate||'').startsWith(nowYm));const ms=summarize(monthSold);const inv=inventoryItems(mode);const invSum=summarize(inv);$('homeSummary').innerHTML=card('今月利益',yen(ms.profit),'green')+card('今月売上',yen(ms.sales),'orange')+card('在庫数',inv.length+'件','blue')+card('今月ROI',pct(ms.roi),'red')+card('在庫仕入れ総額',yen(invSum.cost))+card('平均仕入れ値',yen(inv.length?invSum.cost/inv.length:0));const life=summarize(soldItems(mode));$('lifetimeSummary').innerHTML=card('累計売上',yen(life.sales),'orange')+card('累計利益',yen(life.profit),'green')+card('累計販売数',life.count+'件','blue')+card('累計ROI',pct(life.roi),'red');renderGoal(ms.profit);renderRecentSold()}
+function saveGoal(){localStorage.setItem('sedori_goal',Number($('goalInput').value)||0);renderHome();toast('目標を設定しました')}
+function renderGoal(nowProfit){const g=Number(localStorage.getItem('sedori_goal')||0);if(!g){$('goalView').innerHTML='<div class="mini-note">目標を設定すると達成率が表示されます。</div>';return}const rate=Math.min(100,Math.round(nowProfit/g*100));$('goalView').innerHTML=`<div class="mini-note">${yen(nowProfit)} / ${yen(g)}　達成率 ${rate}%</div><div class="progress"><div style="width:${rate}%"></div></div>`}
+function renderRecentSold(){const arr=soldItems(mode).sort((a,b)=>(b.soldDate||'').localeCompare(a.soldDate||'')).slice(0,5);$('recentSold').innerHTML=arr.length?arr.map(itemHtml).join(''):'<div class="empty">まだ売れた商品がありません</div>'}
+function renderQuickSources(){$('quickSources').innerHTML=SOURCES.map(s=>`<button class="btn btn-sm btn-ghost quick-src" onclick="setQuickSource('${s}')">${s}</button>`).join('')}
+function setQuickSource(s){$('fSource').value=s;highlightQuickSource()}
+function highlightQuickSource(){document.querySelectorAll('.quick-src').forEach(b=>b.classList.toggle('btn-primary',b.textContent===$('fSource').value))}
+function updateLastCarry(){const last=JSON.parse(localStorage.getItem('sedori_last_entry')||'null');if(!last){$('lastCarry').style.display='none';return}$('lastCarry').style.display='block';$('lastCarry').innerHTML=`前回: ${last.source} / ${last.cat} <button class="btn btn-sm btn-ghost" onclick="applyLastCarry()">引き継ぐ</button>`}
+function applyLastCarry(){const last=JSON.parse(localStorage.getItem('sedori_last_entry')||'null');if(!last)return;$('fCat').value=last.cat;$('fSource').value=last.source;$('fMemo').value=last.memo||'';highlightQuickSource();toast('前回内容を引き継ぎました')}
+function addItem(){const name=$('fName').value.trim();if(!name){toast('商品名を入力してください');return}const item={id:Date.now(),name,cat:$('fCat').value,source:$('fSource').value,cost:Number($('fCost').value)||0,price:0,actualPrice:0,ship:0,misc:0,status:'unsold',platform:'mercari',feeRate:.10,date:$('fDate').value||today(),soldDate:'',memo:$('fMemo').value.trim()};items.unshift(item);localStorage.setItem('sedori_last_entry',JSON.stringify({cat:item.cat,source:item.source,memo:item.memo}));save();$('fName').value='';$('fCost').value='';$('fMemo').value='';$('fDate').value=today();renderAll();toast('仕入れ登録しました')}
+function updateFilters(){const cats=[...new Set(items.map(i=>i.cat).filter(Boolean))];const opts='<option value="">全カテゴリ</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');const cur=$('filterCat').value;$('filterCat').innerHTML=opts;$('filterCat').value=cur;if($('filterCat').value!==cur)$('filterCat').value='';const months=[...new Set(soldItems('all').map(i=>(i.soldDate||'').slice(0,7)).filter(Boolean))].sort().reverse();const cm=$('soldMonthFilter').value;$('soldMonthFilter').innerHTML='<option value="all">全期間</option>'+months.map(m=>`<option value="${m}">${m}</option>`).join('');$('soldMonthFilter').value=cm||'all'}
+function renderStock(){const st=$('filterStatus').value,cat=$('filterCat').value,q=$('filterSearch').value.trim().toLowerCase();let arr=items.filter(i=>matchMode(i,stockMode)&&(st==='all'||i.status===st)&&(!cat||i.cat===cat)&&(!q||((i.name||'')+(i.memo||'')).toLowerCase().includes(q)));const inv=inventoryItems(stockMode), sold=soldItems(stockMode);const label=stockMode==='sedori'?'せどり':'不用品';$('stockSummary').innerHTML=card(label+' 未販売',inv.length+'件','blue')+card(label+' 売れた',sold.length+'件','green');$('stockList').innerHTML=arr.length?arr.map(itemHtml).join(''):'<div class="empty">商品がありません</div>'}
+function itemHtml(it){const sold=it.status==='sold';return `<div class="item"><div class="item-top"><div><div class="item-name">${escapeHtml(it.name)}</div><span class="badge ${sold?'sold':'unsold'}">${sold?'売れた':'未販売'}</span><span class="badge">${it.cat}</span><span class="badge">${it.source}</span></div><div style="text-align:right;font-weight:900" class="${sold?(profitOf(it)>=0?'green':'red'):'blue'}">${sold?yen(profitOf(it)):yen(it.cost)}</div></div><div class="item-meta">仕入れ日: ${it.date||'-'}${sold?' / 売れた日: '+(it.soldDate||'-')+' / 売上: '+yen(it.actualPrice||it.price):''}<br>${it.memo?escapeHtml(it.memo):''}</div><div class="item-actions">${sold?'':`<button class="btn btn-sm btn-green" onclick="openSold(${it.id})">売れた</button>`}<button class="btn btn-sm btn-ghost" onclick="openEdit(${it.id})">編集</button><button class="btn btn-sm btn-danger" onclick="deleteItem(${it.id})">削除</button></div></div>`}
+function escapeHtml(s){return String(s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+function openSold(id){const it=items.find(i=>i.id===id);if(!it)return;$('soldId').value=id;$('sPrice').value='';$('sShip').value='';$('sMisc').value='';$('sDate').value=today();$('sPlatform').value='mercari';calcSoldPreview();$('soldModal').classList.add('open')}
+function setShip(n){$('sShip').value=n;calcSoldPreview()}
+function calcSoldPreview(){const it=items.find(i=>i.id===$('soldId').value);const price=Number($('sPrice').value)||0, ship=Number($('sShip').value)||0, misc=Number($('sMisc').value)||0, cost=Number(it?.cost||0), pf=fee(price,$('sPlatform').value), p=price-pf-cost-ship-misc, roi=cost?Math.round(p/cost*100):0;$('soldPreview').innerHTML=`<div class="calc-row"><span>手数料</span><b>${yen(pf)}</b></div><div class="calc-row"><span>仕入れ値</span><b>${yen(cost)}</b></div><div class="calc-row"><span>利益</span><b class="${p>=0?'green':'red'}">${yen(p)}</b></div><div class="calc-row"><span>ROI</span><b>${pct(roi)}</b></div>`}
+function saveSold(){const it=items.find(i=>i.id===$('soldId').value);if(!it)return;const price=Number($('sPrice').value)||0;if(!price){toast('売値を入力してください');return}it.status='sold';it.actualPrice=price;it.price=price;it.ship=Number($('sShip').value)||0;it.misc=Number($('sMisc').value)||0;it.soldDate=$('sDate').value||today();it.platform=$('sPlatform').value;it.feeRate=feeRate(it.platform);save();closeModal('soldModal');renderAll();toast('売れた記録を保存しました')}
+function deleteItem(id){if(!confirm('削除しますか？'))return;items=items.filter(i=>i.id!==id);save();renderAll();toast('削除しました')}
+function openEdit(id){const it=items.find(i=>i.id===id);if(!it)return;$('eId').value=id;$('eName').value=it.name;$('eCat').value=it.cat;$('eSource').value=it.source;$('eCost').value=it.cost||0;$('eShip').value=it.ship||0;$('eMisc').value=it.misc||0;$('eDate').value=it.date||today();$('eStatus').value=it.status||'unsold';$('eSoldDate').value=it.soldDate||today();$('ePrice').value=it.actualPrice||it.price||'';$('ePlatform').value=it.platform||'mercari';$('eMemo').value=it.memo||'';toggleEditSold();$('editModal').classList.add('open')}
+function toggleEditSold(){$('editSoldArea').style.display=$('eStatus').value==='sold'?'block':'none';calcEditPreview()}
+function calcEditPreview(){const price=Number($('ePrice').value)||0,cost=Number($('eCost').value)||0,ship=Number($('eShip').value)||0,misc=Number($('eMisc').value)||0,pf=fee(price,$('ePlatform').value),p=price-pf-cost-ship-misc,roi=cost?Math.round(p/cost*100):0;$('editPreview').innerHTML=`<div class="calc-row"><span>手数料</span><b>${yen(pf)}</b></div><div class="calc-row"><span>仕入れ値</span><b>${yen(cost)}</b></div><div class="calc-row"><span>利益</span><b class="${p>=0?'green':'red'}">${yen(p)}</b></div><div class="calc-row"><span>ROI</span><b>${pct(roi)}</b></div>`}
+function saveEdit(){const it=items.find(i=>i.id===$('eId').value);if(!it)return;it.name=$('eName').value.trim()||it.name;it.cat=$('eCat').value;it.source=$('eSource').value;it.cost=Number($('eCost').value)||0;it.ship=Number($('eShip').value)||0;it.misc=Number($('eMisc').value)||0;it.date=$('eDate').value||today();it.status=$('eStatus').value;it.memo=$('eMemo').value.trim();if(it.status==='sold'){it.soldDate=$('eSoldDate').value||today();it.actualPrice=Number($('ePrice').value)||0;it.price=it.actualPrice;it.platform=$('ePlatform').value;it.feeRate=feeRate(it.platform)}else{it.soldDate='';it.actualPrice=0;it.price=0}save();closeModal('editModal');renderAll();toast('保存しました')}
+function closeModal(id){$(id).classList.remove('open')}
+function moveMonth(n){viewDate.setMonth(viewDate.getMonth()+n);renderAnalysis()}
+function renderAnalysis(){const target=ym(viewDate);const label=analysisMode==='sedori'?'せどり':'不用品';$('analysisMonth').textContent=target+' / '+label;const monthArr=soldItems(analysisMode).filter(i=>(i.soldDate||'').startsWith(target));const ms=summarize(monthArr);$('monthSummary').innerHTML=card('利益',yen(ms.profit),'green')+card('売上',yen(ms.sales),'orange')+card('販売数',ms.count+'件','blue')+card('ROI',pct(ms.roi),'red');renderMonthlyBars();renderYearTable();renderCatBars();renderPlatformBars();renderSoldHistory()}
+function groupBy(arr,keyFn){const m={};arr.forEach(i=>{const k=keyFn(i)||'未設定';(m[k]||(m[k]=[])).push(i)});return m}
+function renderMonthlyBars(){const g=groupBy(soldItems(analysisMode),i=>(i.soldDate||'').slice(0,7));const rows=Object.keys(g).sort().reverse().slice(0,12).map(k=>({k,...summarize(g[k])}));const max=Math.max(1,...rows.map(r=>r.sales));$('monthlyBars').innerHTML=rows.length?rows.map(r=>barLine(r.k,r.sales,max,`${yen(r.sales)} / 利益 ${yen(r.profit)}`)).join(''):'<div class="empty">データなし</div>'}
+function renderYearTable(){const g=groupBy(soldItems(analysisMode),i=>(i.soldDate||'').slice(0,4));const rows=Object.keys(g).sort().reverse().map(k=>({k,...summarize(g[k])}));$('yearTable').innerHTML=rows.length?`<table class="table"><tr><th>年</th><th>売上</th><th>利益</th><th>数</th><th>ROI</th></tr>${rows.map(r=>`<tr><td>${r.k}</td><td>${yen(r.sales)}</td><td>${yen(r.profit)}</td><td>${r.count}</td><td>${pct(r.roi)}</td></tr>`).join('')}</table>`:'<div class="empty">データなし</div>'}
+function renderCatBars(){const g=groupBy(soldItems(analysisMode),i=>i.cat);const rows=Object.keys(g).map(k=>({k,...summarize(g[k])})).sort((a,b)=>b.profit-a.profit);const max=Math.max(1,...rows.map(r=>Math.max(0,r.profit)));$('catBars').innerHTML=rows.length?rows.map(r=>barLine(r.k,Math.max(0,r.profit),max,`${yen(r.profit)} / ${r.count}件`)).join(''):'<div class="empty">データなし</div>'}
+function renderPlatformBars(){const g=groupBy(soldItems(analysisMode),i=>PLATFORM_NAME[i.platform]||'未設定');const rows=Object.keys(g).map(k=>({k,...summarize(g[k])})).sort((a,b)=>b.sales-a.sales);const max=Math.max(1,...rows.map(r=>r.sales));$('platformBars').innerHTML=rows.length?rows.map(r=>barLine(r.k,r.sales,max,`${yen(r.sales)} / 利益 ${yen(r.profit)}`)).join(''):'<div class="empty">データなし</div>'}
+function barLine(label,value,max,right){return `<div class="bar-line"><div>${label}</div><div class="bar-bg"><div class="bar" style="width:${Math.max(3,Math.round(value/max*100))}%"></div></div><div style="text-align:right">${right}</div></div>`}
+function renderSoldHistory(){const m=$('soldMonthFilter').value;let arr=soldItems(analysisMode).filter(i=>m==='all'||(i.soldDate||'').startsWith(m)).sort((a,b)=>(b.soldDate||'').localeCompare(a.soldDate||''));$('soldHistory').innerHTML=arr.length?arr.map(itemHtml).join(''):'<div class="empty">履歴なし</div>'}
+function renderData(){$('dataCount').textContent=`全データ件数: ${items.length}件 / 売れた: ${soldItems('all').length}件 / 未販売: ${inventoryItems('all').length}件`;updateCsvPreview()}
+function makeCSV(){const start=$('csvStart').value,end=$('csvEnd').value;let arr=csvSoldOnly?soldItems('all'):[...items];arr=arr.filter(i=>{const d=(i.status==='sold'?i.soldDate:i.date)||'';const m=d.slice(0,7);return (!start||m>=start)&&(!end||m<=end)});const head=['商品名','カテゴリ','仕入れ先','仕入れ日','状態','売れた日','売上','仕入れ値','送料','梱包費','手数料','利益','ROI','販売先','メモ'];const rows=arr.map(i=>[i.name,i.cat,i.source,i.date,i.status==='sold'?'売れた':'未販売',i.soldDate,i.actualPrice||i.price||0,i.cost||0,i.ship||0,i.misc||0,fee(i.actualPrice||i.price||0,i.platform),profitOf(i),roiOf(i),PLATFORM_NAME[i.platform]||'',i.memo||'']);return [head,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')}
+function setCsvMode(v){csvSoldOnly=v;$('csvSoldOnly').classList.toggle('active',v);$('csvAll').classList.toggle('active',!v);updateCsvPreview()}
+function updateCsvPreview(){if(!$('csvPreview'))return;const csv=makeCSV();$('csvPreview').textContent='プレビュー: '+csv.split('\n').slice(0,3).join(' / ')}
+function downloadCSV(){const blob=new Blob(['\ufeff'+makeCSV()],{type:'text/csv'});downloadBlob(blob,`sedori_${today()}.csv`);toast('CSVを保存しました')}
+function copyCSV(){navigator.clipboard.writeText(makeCSV()).then(()=>toast('CSVをコピーしました')).catch(()=>toast('コピーできませんでした'))}
+function downloadBackup(){const data={version:'2026-06-11',items,goal:localStorage.getItem('sedori_goal')||0,exportedAt:new Date().toISOString()};downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);toast('バックアップを保存しました')}
+function restoreBackup(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const data=JSON.parse(r.result);const next=Array.isArray(data)?data:data.items;if(!Array.isArray(next))throw new Error();if(!confirm('現在のデータを上書きして復元しますか？'))return;items=next;if(data.goal!==undefined)localStorage.setItem('sedori_goal',data.goal);save();renderAll();toast('復元しました')}catch{toast('復元できませんでした')}};r.readAsText(file)}
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function deleteAll(){if(!confirm('全データを削除しますか？'))return;if(!confirm('本当に削除します。バックアップは保存しましたか？'))return;items=[];save();renderAll();toast('全データを削除しました')}
+function openShipping(){const rows=[['ネコポス','小型','210円前後'],['ゆうパケット','小型','230円前後'],['宅急便コンパクト','専用箱','450円前後'],['宅急便/ゆうパック','60サイズ','750円前後〜'],['普通郵便','軽量','重量で変動']];$('shipTable').innerHTML=`<table class="table"><tr><th>種別</th><th>サイズ</th><th>送料</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table>`;$('shipModal').classList.add('open')}
+init();
 </script>
 </body>
 </html>
