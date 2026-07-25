@@ -5,128 +5,161 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>せどり管理</title>
+<meta name="apple-mobile-web-app-title" content="せどり管理">
+<title>せどり利益・楽天ポイント管理</title>
 <style>
 :root{
   --bg:#f5f6f8;--card:#fff;--text:#202124;--muted:#70757a;--line:#e4e6ea;
   --accent:#ff3f68;--green:#078a61;--blue:#2f6fdf;--orange:#d87800;--red:#d93025;
-  --shadow:0 4px 16px rgba(30,35,45,.07);--radius:16px
+  --purple:#7656d6;--yellow:#fff6dc;--shadow:0 4px 16px rgba(30,35,45,.07);--radius:16px
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:82px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:86px}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 header{
-  position:sticky;top:0;z-index:20;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:30;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);
   padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center
 }
-h1{margin:0;font-size:1.15rem;font-weight:900}
+h1{margin:0;font-size:1.08rem;font-weight:950}
 h1 span{color:var(--accent)}
-.save-state{font-size:.72rem;color:var(--muted);font-weight:700}
+.save-state{font-size:.7rem;color:var(--muted);font-weight:750;text-align:right}
 nav{
-  position:sticky;top:54px;z-index:19;background:#fff;border-bottom:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(3,1fr)
+  position:sticky;top:54px;z-index:29;background:#fff;border-bottom:1px solid var(--line);
+  display:grid;grid-template-columns:repeat(4,1fr)
 }
-.tab{border:0;background:#fff;padding:12px 4px;color:var(--muted);font-size:.82rem;font-weight:850;border-bottom:3px solid transparent}
+.tab{border:0;background:#fff;padding:12px 2px;color:var(--muted);font-size:.78rem;font-weight:900;border-bottom:3px solid transparent}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-.page{display:none;padding:12px;max-width:760px;margin:auto}
+.page{display:none;padding:12px;max-width:780px;margin:auto}
 .page.active{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
 .section-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:11px}
-.section-title{font-size:.9rem;font-weight:900}
-.note{font-size:.72rem;color:var(--muted);line-height:1.5}
-.segment{
-  display:grid;background:#e9ebef;border-radius:14px;padding:4px;gap:4px;margin-bottom:10px
-}
+.section-title{font-size:.9rem;font-weight:950}
+.note{font-size:.72rem;color:var(--muted);line-height:1.55}
+.segment{display:grid;background:#e9ebef;border-radius:14px;padding:4px;gap:4px;margin-bottom:10px}
 .segment.two{grid-template-columns:repeat(2,1fr)}
 .segment.three{grid-template-columns:repeat(3,1fr)}
-.segment button{border:0;background:transparent;color:var(--muted);border-radius:11px;padding:10px 4px;font-size:.78rem;font-weight:900}
+.segment button{border:0;background:transparent;color:var(--muted);border-radius:11px;padding:10px 3px;font-size:.76rem;font-weight:900}
 .segment button.active{background:#fff;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .summary{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.summary-card{
-  border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;min-height:82px
-}
-.summary-card .label{font-size:.72rem;color:var(--muted);font-weight:800}
-.summary-card .value{font-size:1.23rem;font-weight:950;margin-top:5px;font-variant-numeric:tabular-nums}
-.summary-card .sub{font-size:.68rem;color:var(--muted);margin-top:5px}
-.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}.red{color:var(--red)}
+.summary-card{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;text-align:left;min-height:82px}
+.summary-card .label{font-size:.7rem;color:var(--muted);font-weight:850}
+.summary-card .value{font-size:1.18rem;font-weight:950;margin-top:5px;font-variant-numeric:tabular-nums}
+.summary-card .sub{font-size:.66rem;color:var(--muted);margin-top:5px;line-height:1.35}
+.green{color:var(--green)}.blue{color:var(--blue)}.orange{color:var(--orange)}.red{color:var(--red)}.purple{color:var(--purple)}
 .btn{border:0;border-radius:12px;padding:11px 13px;font-weight:900;background:#eef0f4;color:var(--text)}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-green{background:var(--green);color:#fff}
 .btn-blue{background:var(--blue);color:#fff}
+.btn-purple{background:var(--purple);color:#fff}
 .btn-danger{background:var(--red);color:#fff}
-.btn-small{padding:8px 10px;font-size:.76rem}
+.btn-small{padding:8px 10px;font-size:.74rem}
+.btn-ghost{background:#f3f4f7}
 .full{width:100%}
 .toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:10px}
 input,select,textarea{
   width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text);
   padding:11px;outline:none
 }
+input[readonly]{background:#f4f5f7;color:#555}
 textarea{min-height:76px;resize:vertical}
-label{display:block;font-size:.72rem;color:var(--muted);font-weight:800;margin-bottom:5px}
+label{display:block;font-size:.71rem;color:var(--muted);font-weight:850;margin-bottom:5px}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .form-grid.one{grid-template-columns:1fr}
+.form-grid.three{grid-template-columns:repeat(3,1fr)}
+.sub-card{background:#f8f9fb;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 .item-list{display:flex;flex-direction:column;gap:9px}
-.item{
-  background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 3px 12px rgba(30,35,45,.05)
-}
+.item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 3px 12px rgba(30,35,45,.05)}
 .item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
-.item-name{font-weight:900;line-height:1.35}
+.item-name{font-weight:950;line-height:1.35}
 .item-price{font-weight:950;white-space:nowrap;font-variant-numeric:tabular-nums}
 .badges{margin-top:5px}
-.badge{display:inline-block;border-radius:999px;padding:4px 8px;background:#f0f1f4;color:var(--muted);font-size:.67rem;font-weight:850;margin:0 4px 4px 0}
+.badge{display:inline-block;border-radius:999px;padding:4px 8px;background:#f0f1f4;color:var(--muted);font-size:.65rem;font-weight:900;margin:0 4px 4px 0}
 .badge.selling{background:#edf3ff;color:var(--blue)}
 .badge.wait{background:#fff3dd;color:var(--orange)}
 .badge.done{background:#e9f8f2;color:var(--green)}
-.item-meta{font-size:.76rem;color:var(--muted);line-height:1.6;margin-top:5px}
+.badge.rakuten{background:#fff0f3;color:#bf1640}
+.badge.normal{background:#edf3ff;color:var(--blue)}
+.badge.limited{background:#f2ecff;color:var(--purple)}
+.item-meta{font-size:.74rem;color:var(--muted);line-height:1.6;margin-top:5px}
 .item-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
 .empty{text-align:center;color:var(--muted);font-weight:800;padding:28px 8px}
 .month-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .month-nav button{border:0;background:#eef0f4;border-radius:10px;padding:8px 12px;font-weight:900}
 .table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse;font-size:.76rem}
+table{width:100%;border-collapse:collapse;font-size:.74rem}
 th,td{border-bottom:1px solid var(--line);padding:9px 5px;text-align:right;white-space:nowrap}
 th:first-child,td:first-child{text-align:left}
-th{color:var(--muted);font-size:.69rem}
-.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:none;align-items:flex-end}
+th{color:var(--muted);font-size:.68rem}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:none;align-items:flex-end}
 .modal.open{display:flex}
-.modal-box{background:#fff;width:100%;max-height:93vh;overflow:auto;border-radius:22px 22px 0 0;padding:17px}
+.modal-box{background:#fff;width:100%;max-height:94vh;overflow:auto;border-radius:22px 22px 0 0;padding:17px}
 .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .modal-head h2{margin:0;font-size:1.02rem}
 .close{border:0;background:#eef0f4;border-radius:50%;width:38px;height:38px;font-weight:900}
 .preview{background:#f7f8fa;border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
-.preview-row{display:flex;justify-content:space-between;gap:8px;font-size:.77rem;padding:3px 0}
+.preview-row{display:flex;justify-content:space-between;gap:8px;font-size:.76rem;padding:4px 0}
 .danger-zone{border:1px dashed #ef9c96;background:#fff8f7}
 .fixed-add{
-  position:fixed;right:15px;bottom:18px;z-index:25;border:0;border-radius:999px;background:var(--accent);
+  position:fixed;right:15px;bottom:18px;z-index:35;border:0;border-radius:999px;background:var(--accent);
   color:#fff;padding:14px 18px;font-weight:950;box-shadow:0 8px 22px rgba(255,63,104,.32)
 }
 .toast{
-  position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:80;background:#24262b;color:#fff;
-  padding:10px 16px;border-radius:999px;font-size:.8rem;font-weight:850;opacity:0;pointer-events:none;transition:.2s
+  position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:90;background:#24262b;color:#fff;
+  padding:10px 16px;border-radius:999px;font-size:.8rem;font-weight:850;opacity:0;pointer-events:none;transition:.2s;
+  max-width:90%;text-align:center
 }
 .toast.show{opacity:1}
 .detail-summary{background:#f7f8fa;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 .detail-summary .big{font-size:1.35rem;font-weight:950;margin-top:4px}
 .filter-box{display:none;margin-bottom:10px}.filter-box.open{display:block}
-@media(min-width:760px){
-  .modal{align-items:center}.modal-box{max-width:720px;margin:auto;border-radius:22px}
-  .fixed-add{left:calc(50% + 292px);right:auto}
+.rakuten-area{display:none}.rakuten-area.open{display:block}
+.point-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;margin-bottom:8px}
+.point-row-top{display:flex;justify-content:space-between;gap:8px}
+.point-row-title{font-size:.78rem;font-weight:950}
+.point-row-amount{font-weight:950}
+.point-actions{display:flex;gap:6px;margin-top:8px}
+.point-actions button{flex:1}
+.warning{border-left:5px solid var(--orange);background:#fff8e8;border-radius:12px;padding:10px;margin-bottom:8px}
+.warning.critical{border-left-color:var(--red);background:#fff1f1}
+.warning-title{font-size:.78rem;font-weight:950}
+.warning-text{font-size:.71rem;color:var(--muted);line-height:1.5;margin-top:3px}
+.progress{height:10px;background:#eceef2;border-radius:999px;overflow:hidden;margin-top:8px}
+.progress>div{height:100%;background:var(--green);border-radius:999px}
+.history-event{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:start}
+.history-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#eef0f4;font-size:.8rem;font-weight:950}
+.history-main{min-width:0}
+.history-title{font-size:.78rem;font-weight:950}
+.history-meta{font-size:.68rem;color:var(--muted);line-height:1.5;margin-top:3px}
+.history-amount{font-weight:950;white-space:nowrap}
+.split-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.compact-actions{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}
+.compact-actions .btn{white-space:nowrap}
+.inline-check{display:flex;align-items:center;gap:8px;margin:5px 0 10px}
+.inline-check input{width:auto}
+.help{background:var(--yellow);border:1px solid #f0df9d;border-radius:12px;padding:10px;font-size:.71rem;line-height:1.55;color:#6f5a00;margin-bottom:10px}
+@media(min-width:780px){
+  .modal{align-items:center}.modal-box{max-width:740px;margin:auto;border-radius:22px}
+  .fixed-add{left:calc(50% + 300px);right:auto}
 }
-@media(max-width:370px){.summary-card .value{font-size:1.08rem}.form-grid{grid-template-columns:1fr}}
+@media(max-width:390px){
+  .summary-card .value{font-size:1.04rem}.form-grid,.form-grid.three{grid-template-columns:1fr}
+  nav{grid-template-columns:repeat(4,1fr)}.tab{font-size:.72rem}
+}
 </style>
 </head>
 <body>
 <header>
-  <h1>せどり<span>管理</span></h1>
-  <div class="save-state" id="saveState">保存済み</div>
+  <h1>せどり<span>利益管理</span></h1>
+  <div class="save-state"><div id="schemaState">データ保護中</div><div id="saveState">保存済み</div></div>
 </header>
 
 <nav>
   <button class="tab active" data-page="stock" onclick="showPage('stock',this)">在庫</button>
   <button class="tab" data-page="analysis" onclick="showPage('analysis',this)">分析</button>
-  <button class="tab" data-page="data" onclick="showPage('data',this)">データ</button>
+  <button class="tab" data-page="points" onclick="showPage('points',this)">ポイント</button>
+  <button class="tab" data-page="data" onclick="showPage('data',this)">設定</button>
 </nav>
 
 <main>
@@ -135,33 +168,39 @@ th{color:var(--muted);font-size:.69rem}
     <button class="active" onclick="setStockType('sedori',this)">せどり</button>
     <button onclick="setStockType('fuyohin',this)">不用品</button>
   </div>
-
   <div class="segment three" id="stockStatusTabs">
     <button class="active" onclick="setStockStatus('selling',this)">販売中</button>
     <button onclick="setStockStatus('waiting',this)">未発送</button>
     <button onclick="setStockStatus('history',this)">販売履歴</button>
   </div>
-
   <div class="toolbar">
-    <input id="searchInput" placeholder="商品名を検索" oninput="renderStock()">
+    <input id="searchInput" placeholder="商品名・注文番号を検索" oninput="renderStock()">
     <button class="btn btn-small" onclick="toggleFilter()">絞り込み</button>
   </div>
-
   <div id="filterBox" class="card filter-box">
     <div class="form-grid">
       <div><label>カテゴリ</label><select id="stockCat" onchange="renderStock()"></select></div>
+      <div><label>仕入れ先区分</label>
+        <select id="stockPurchaseSource" onchange="renderStock()">
+          <option value="all">すべて</option>
+          <option value="secondstreet">セカスト</option>
+          <option value="rakuten">楽天市場</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid one">
       <div><label>並び順</label>
         <select id="stockSort" onchange="renderStock()">
           <option value="new">新しい順</option>
           <option value="old">古い順</option>
-          <option value="profit">利益が高い順</option>
+          <option value="profit">ポイント込確定利益が高い順</option>
           <option value="price">販売価格が高い順</option>
         </select>
       </div>
     </div>
     <button class="btn full" onclick="resetFilter()">絞り込みをリセット</button>
   </div>
-
   <div id="stockCount" class="note" style="margin:2px 2px 9px"></div>
   <div id="stockList" class="item-list"></div>
 </section>
@@ -172,7 +211,6 @@ th{color:var(--muted);font-size:.69rem}
     <button onclick="setAnalysisType('sedori',this)">せどり</button>
     <button onclick="setAnalysisType('fuyohin',this)">不用品</button>
   </div>
-
   <div class="card">
     <div class="month-nav">
       <button onclick="moveMonth(-1)">‹</button>
@@ -181,26 +219,61 @@ th{color:var(--muted);font-size:.69rem}
     </div>
     <div class="summary" id="analysisSummary"></div>
   </div>
-
   <div class="card">
-    <div class="section-head"><div class="section-title">累計</div><div class="note">カードを押すと詳細表示</div></div>
+    <div class="section-head"><div class="section-title">累計</div><div class="note">カードを押すと商品別内訳</div></div>
     <div class="summary" id="totalSummary"></div>
   </div>
-
+  <div class="card" id="budgetCard"></div>
   <div class="card">
     <div class="section-title" style="margin-bottom:10px">月別実績</div>
     <div class="table-wrap" id="monthlyTable"></div>
   </div>
-
   <div class="card">
     <div class="section-title" style="margin-bottom:10px">販売先別</div>
     <div class="table-wrap" id="platformTable"></div>
   </div>
 </section>
 
+<section id="points" class="page">
+  <div class="card">
+    <div class="section-head">
+      <div class="section-title">副業ポイント</div>
+      <div class="compact-actions">
+        <button class="btn btn-small btn-purple" onclick="openPointUsage()">使用を登録</button>
+        <button class="btn btn-small" onclick="openManualPoint()">繰越・調整</button>
+      </div>
+    </div>
+    <div class="summary" id="pointSummary"></div>
+  </div>
+  <div class="card">
+    <div class="section-head"><div class="section-title">警告・確認</div><div id="warningCount" class="note"></div></div>
+    <div id="warningList"></div>
+  </div>
+  <div class="card">
+    <div class="section-head"><div class="section-title">ポイント履歴</div><div id="historyCount" class="note"></div></div>
+    <div class="form-grid three">
+      <div><label>種別</label>
+        <select id="historyType" onchange="renderPointHistory()">
+          <option value="all">すべて</option><option value="normal">通常</option><option value="limited">期間限定</option>
+        </select>
+      </div>
+      <div><label>内容</label>
+        <select id="historyEvent" onchange="renderPointHistory()">
+          <option value="all">すべて</option><option value="planned">獲得予定</option><option value="earned">獲得</option>
+          <option value="used">使用</option><option value="expired">失効</option><option value="canceled">取消</option>
+        </select>
+      </div>
+      <div><label>期間</label><input id="historyMonth" type="month" onchange="renderPointHistory()"></div>
+    </div>
+    <button class="btn btn-small" onclick="clearHistoryFilter()" style="margin-bottom:10px">絞り込み解除</button>
+    <div id="pointHistory" class="item-list"></div>
+  </div>
+</section>
+
 <section id="data" class="page">
   <div class="card">
-    <div class="section-head"><div class="section-title">データ管理</div><div id="dataCount" class="note"></div></div>
+    <div class="section-head"><div class="section-title">バックアップ</div><div id="dataCount" class="note"></div></div>
+    <div class="help">更新前にバックアップを保存してください。既存商品、ポイント明細、使用履歴、設定をまとめて保存します。</div>
     <button class="btn btn-blue full" onclick="downloadBackup()">バックアップを保存</button>
     <label class="btn full" style="display:block;text-align:center;margin-top:8px">
       バックアップを復元
@@ -209,17 +282,37 @@ th{color:var(--muted);font-size:.69rem}
   </div>
 
   <div class="card">
-    <div class="section-title" style="margin-bottom:10px">CSV</div>
+    <div class="section-title" style="margin-bottom:10px">楽天ポイント設定</div>
+    <div class="form-grid">
+      <div><label>SPU倍率</label><input id="setSpu" type="number" min="0" step="0.1"></div>
+      <div><label>買い回り倍率</label><input id="setBuyAround" type="number" min="0" step="0.1"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>月間仕入れ予算</label><input id="setBudget" type="number" min="0" inputmode="numeric"></div>
+      <div><label>ポイント価値（円／pt）</label><input id="setPointValue" type="number" min="0" step="0.01"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>失効警告日数</label><input id="setExpiryDays" type="number" min="1" max="365"></div>
+      <div><label>月間ポイント上限（任意）</label><input id="setMonthlyCap" type="number" min="0" inputmode="numeric" placeholder="0で無効"></div>
+    </div>
+    <button class="btn btn-primary full" onclick="saveSettings()">設定を保存</button>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:10px">CSV出力</div>
     <div class="form-grid">
       <div><label>開始月</label><input id="csvStart" type="month"></div>
       <div><label>終了月</label><input id="csvEnd" type="month"></div>
     </div>
-    <button class="btn btn-green full" onclick="downloadCSV()">CSVを保存</button>
+    <div class="split-buttons">
+      <button class="btn btn-green" onclick="downloadCSV()">商品CSV</button>
+      <button class="btn btn-purple" onclick="downloadPointCSV()">ポイントCSV</button>
+    </div>
   </div>
 
   <div class="card">
     <div class="section-head"><div class="section-title">送料早見表</div><button class="btn btn-small" onclick="openShipping()">開く</button></div>
-    <div class="note">送料は売れた登録時に発送方法から自動入力され、手入力で修正できます。</div>
+    <div class="note">売れた登録時に発送方法から自動入力し、実際の送料へ手入力で修正できます。</div>
   </div>
 
   <div class="card danger-zone">
@@ -243,9 +336,45 @@ th{color:var(--muted);font-size:.69rem}
     <div class="form-grid one"><div><label>商品名</label><input id="aName" placeholder="例：ワンピース"></div></div>
     <div class="form-grid">
       <div><label>カテゴリ</label><select id="aCat"></select></div>
-      <div><label>仕入れ先</label><select id="aSource"></select></div>
+      <div><label>仕入れ先区分</label>
+        <select id="aPurchaseSourceType" onchange="togglePurchaseFields('a')">
+          <option value="secondstreet">セカスト</option><option value="rakuten">楽天市場</option><option value="other">その他</option>
+        </select>
+      </div>
     </div>
-    <div class="form-grid one"><div><label>仕入れ値</label><input id="aCost" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
+    <div id="aSourceWrap" class="form-grid one"><div><label>仕入れ先</label><select id="aSource"></select></div></div>
+    <div id="aSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="aCost" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
+
+    <div id="aRakutenPurchase" class="rakuten-area">
+      <div class="help">商品代金・クーポン・使用ポイントを入力すると、実際の資金支出を自動計算します。獲得ポイントは明細ごとに追加してください。</div>
+      <div class="form-grid">
+        <div><label>楽天注文番号</label><input id="aOrderNo"></div>
+        <div><label>購入日</label><input id="aPurchaseDate" type="date"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>商品代金</label><input id="aProductAmount" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('a')"></div>
+        <div><label>クーポン値引額</label><input id="aCoupon" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('a')"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>使用した通常ポイント</label><input id="aUsedNormal" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('a')"></div>
+        <div><label>使用した期間限定ポイント</label><input id="aUsedLimited" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('a')"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>ポイント使用前仕入原価</label><input id="aBeforeCost" readonly></div>
+        <div><label>カード・現金支払額</label><input id="aCashPaid" readonly></div>
+      </div>
+      <div class="sub-card">
+        <div class="section-head">
+          <div class="section-title">獲得ポイント明細</div>
+          <button class="btn btn-small btn-purple" onclick="openPointEntryEditor('a')">＋ 明細追加</button>
+        </div>
+        <div class="compact-actions" style="margin-bottom:8px">
+          <button class="btn btn-small" onclick="addEstimatedPointDrafts('a')">設定倍率から簡易見積り</button>
+        </div>
+        <div class="note" style="margin-bottom:8px">簡易見積りは上限・対象外・税・送料を考慮しません。楽天の獲得予定画面に合わせて修正してください。</div>
+        <div id="aPointDraftList"></div>
+      </div>
+    </div>
     <div class="form-grid one"><div><label>メモ</label><textarea id="aMemo"></textarea></div></div>
     <div class="note" style="margin-bottom:10px">登録すると自動で「販売中」になります。</div>
     <button class="btn btn-primary full" onclick="addItem()">登録する</button>
@@ -262,10 +391,8 @@ th{color:var(--muted);font-size:.69rem}
       <div><label>売れた日</label><input id="sDate" type="date"></div>
       <div><label>販売先</label>
         <select id="sPlatform" onchange="refreshShipOptions('s');calcSoldPreview()">
-          <option value="mercari">メルカリ</option>
-          <option value="yahoo-flea">Yahoo!フリマ</option>
-          <option value="yahoo-auction">ヤフオク</option>
-          <option value="other">その他</option>
+          <option value="mercari">メルカリ</option><option value="yahoo-flea">Yahoo!フリマ</option>
+          <option value="yahoo-auction">ヤフオク</option><option value="other">その他</option>
         </select>
       </div>
     </div>
@@ -274,13 +401,13 @@ th{color:var(--muted);font-size:.69rem}
       <div><label>発送方法</label><select id="sShipMethod" onchange="applyShipFee('s');calcSoldPreview()"></select></div>
       <div><label>送料</label><input id="sShip" type="number" inputmode="numeric" oninput="calcSoldPreview()"></div>
     </div>
-    <div class="form-grid one"><div><label>梱包費・その他</label><input id="sMisc" type="number" inputmode="numeric" value="0" oninput="calcSoldPreview()"></div></div>
+    <div class="form-grid one"><div><label>その他販売経費</label><input id="sMisc" type="number" inputmode="numeric" value="0" oninput="calcSoldPreview()"></div></div>
     <div class="preview" id="soldPreview"></div>
     <button class="btn btn-green full" onclick="saveSold()">売れた記録を保存</button>
   </div>
 </div>
 
-<!-- 編集 -->
+<!-- 商品編集 -->
 <div class="modal" id="editModal">
   <div class="modal-box">
     <div class="modal-head"><h2>商品を編集</h2><button class="close" onclick="closeModal('editModal')">×</button></div>
@@ -292,27 +419,54 @@ th{color:var(--muted);font-size:.69rem}
     <div class="form-grid one"><div><label>商品名</label><input id="eName"></div></div>
     <div class="form-grid">
       <div><label>カテゴリ</label><select id="eCat"></select></div>
-      <div><label>仕入れ先</label><select id="eSource"></select></div>
-    </div>
-    <div class="form-grid">
-      <div><label>仕入れ値</label><input id="eCost" type="number" inputmode="numeric"></div>
-      <div><label>状態</label>
-        <select id="eStatus" onchange="toggleEditSale()">
-          <option value="listed">販売中</option>
-          <option value="sold">未発送</option>
-          <option value="shipped">発送済み</option>
+      <div><label>仕入れ先区分</label>
+        <select id="ePurchaseSourceType" onchange="togglePurchaseFields('e')">
+          <option value="secondstreet">セカスト</option><option value="rakuten">楽天市場</option><option value="other">その他</option>
         </select>
       </div>
+    </div>
+    <div id="eSourceWrap" class="form-grid one"><div><label>仕入れ先</label><select id="eSource"></select></div></div>
+    <div id="eSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="eCost" type="number" inputmode="numeric"></div></div>
+
+    <div id="eRakutenPurchase" class="rakuten-area">
+      <div class="form-grid">
+        <div><label>楽天注文番号</label><input id="eOrderNo"></div>
+        <div><label>購入日</label><input id="ePurchaseDate" type="date"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>商品代金</label><input id="eProductAmount" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('e')"></div>
+        <div><label>クーポン値引額</label><input id="eCoupon" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('e')"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>使用した通常ポイント</label><input id="eUsedNormal" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('e')"></div>
+        <div><label>使用した期間限定ポイント</label><input id="eUsedLimited" type="number" min="0" inputmode="numeric" oninput="updatePurchaseCash('e')"></div>
+      </div>
+      <div class="form-grid">
+        <div><label>ポイント使用前仕入原価</label><input id="eBeforeCost" readonly></div>
+        <div><label>カード・現金支払額</label><input id="eCashPaid" readonly></div>
+      </div>
+      <div class="sub-card">
+        <div class="section-head"><div class="section-title">獲得ポイント明細</div><button class="btn btn-small btn-purple" onclick="openPointEntryEditor('e')">＋ 明細追加</button></div>
+        <div class="compact-actions" style="margin-bottom:8px"><button class="btn btn-small" onclick="addEstimatedPointDrafts('e')">設定倍率から簡易見積り</button></div>
+        <div id="ePointDraftList"></div>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div><label>状態</label>
+        <select id="eStatus" onchange="toggleEditSale()">
+          <option value="listed">販売中</option><option value="sold">未発送</option><option value="shipped">発送済み</option>
+        </select>
+      </div>
+      <div><label>メモ</label><input id="eMemo"></div>
     </div>
     <div id="editSaleArea" style="display:none">
       <div class="form-grid">
         <div><label>売れた日</label><input id="eSoldDate" type="date"></div>
         <div><label>販売先</label>
           <select id="ePlatform" onchange="refreshShipOptions('e');calcEditPreview()">
-            <option value="mercari">メルカリ</option>
-            <option value="yahoo-flea">Yahoo!フリマ</option>
-            <option value="yahoo-auction">ヤフオク</option>
-            <option value="other">その他</option>
+            <option value="mercari">メルカリ</option><option value="yahoo-flea">Yahoo!フリマ</option>
+            <option value="yahoo-auction">ヤフオク</option><option value="other">その他</option>
           </select>
         </div>
       </div>
@@ -321,12 +475,90 @@ th{color:var(--muted);font-size:.69rem}
         <div><label>発送方法</label><select id="eShipMethod" onchange="applyShipFee('e');calcEditPreview()"></select></div>
         <div><label>送料</label><input id="eShip" type="number" inputmode="numeric" oninput="calcEditPreview()"></div>
       </div>
-      <div class="form-grid one"><div><label>梱包費・その他</label><input id="eMisc" type="number" inputmode="numeric" oninput="calcEditPreview()"></div></div>
+      <div class="form-grid one"><div><label>その他販売経費</label><input id="eMisc" type="number" inputmode="numeric" oninput="calcEditPreview()"></div></div>
       <div class="preview" id="editPreview"></div>
     </div>
-    <div class="form-grid one"><div><label>メモ</label><textarea id="eMemo"></textarea></div></div>
     <button class="btn btn-primary full" onclick="saveEdit()">保存する</button>
     <button class="btn btn-danger full" style="margin-top:9px" onclick="deleteCurrentEdit()">この商品を削除</button>
+  </div>
+</div>
+
+<!-- ポイント明細編集 -->
+<div class="modal" id="pointEntryModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="pointEntryModalTitle">ポイント明細</h2><button class="close" onclick="closeModal('pointEntryModal')">×</button></div>
+    <div class="form-grid">
+      <div><label>ポイント種別</label><select id="pType"><option value="normal">通常</option><option value="limited">期間限定</option></select></div>
+      <div><label>ポイント内訳</label>
+        <select id="pBreakdown">
+          <option value="normal_purchase">通常購入</option><option value="rakuten_card">楽天カード</option><option value="spu">SPU</option>
+          <option value="buyaround">買い回り</option><option value="shop">ショップ個別</option><option value="campaign">キャンペーン</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div><label>獲得予定ポイント</label><input id="pExpected" type="number" min="0" inputmode="numeric"></div>
+      <div><label>確定ポイント</label><input id="pConfirmed" type="number" min="0" inputmode="numeric"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>付与予定日</label><input id="pPlannedDate" type="date"></div>
+      <div><label>実際の付与日</label><input id="pActualDate" type="date"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>有効期限</label><input id="pExpiryDate" type="date"></div>
+      <div><label>状態</label>
+        <select id="pStatus">
+          <option value="planned">予定</option><option value="confirmed">確定</option><option value="used">使用済み</option>
+          <option value="expired">失効</option><option value="canceled">取消</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid one"><div><label>備考</label><textarea id="pNote"></textarea></div></div>
+    <button class="btn btn-purple full" onclick="savePointDraft()">明細を保存</button>
+  </div>
+</div>
+
+<!-- ポイント使用 -->
+<div class="modal" id="pointUsageModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>ポイント使用を登録</h2><button class="close" onclick="closeModal('pointUsageModal')">×</button></div>
+    <div id="usageBalanceNote" class="help"></div>
+    <div class="form-grid">
+      <div><label>使用日</label><input id="uDate" type="date"></div>
+      <div><label>ポイント種別</label><select id="uType" onchange="renderUsageBalance()"><option value="normal">通常</option><option value="limited">期間限定</option></select></div>
+    </div>
+    <div class="form-grid one"><div><label>使用ポイント数</label><input id="uAmount" type="number" min="1" inputmode="numeric"></div></div>
+    <div class="form-grid">
+      <div><label>使用先</label>
+        <select id="uPurpose">
+          <option value="card">副業カード請求</option><option value="business_supplies">副業用品</option>
+          <option value="rakuten_pay">楽天ペイ生活費</option><option value="purchase">仕入れ</option><option value="other">その他</option>
+        </select>
+      </div>
+      <div><label>利用区分</label><select id="uScope"><option value="business">副業利用</option><option value="private">私用利用</option></select></div>
+    </div>
+    <div class="form-grid one"><div><label>関連する仕入れ・支払い</label><select id="uRelatedItem"></select></div></div>
+    <div class="form-grid one"><div><label>備考</label><textarea id="uNote"></textarea></div></div>
+    <button class="btn btn-purple full" onclick="savePointUsage()">使用を保存</button>
+  </div>
+</div>
+
+<!-- 繰越ポイント -->
+<div class="modal" id="manualPointModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>繰越・調整ポイント</h2><button class="close" onclick="closeModal('manualPointModal')">×</button></div>
+    <div class="help">アプリ導入前から保有している副業ポイントや、商品に紐づかない調整ポイントを登録できます。</div>
+    <div class="form-grid">
+      <div><label>ポイント種別</label><select id="mPointType"><option value="normal">通常</option><option value="limited">期間限定</option></select></div>
+      <div><label>ポイント数</label><input id="mPointAmount" type="number" min="1" inputmode="numeric"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>確定日</label><input id="mPointDate" type="date"></div>
+      <div><label>有効期限</label><input id="mPointExpiry" type="date"></div>
+    </div>
+    <div class="form-grid one"><div><label>備考</label><textarea id="mPointNote"></textarea></div></div>
+    <button class="btn btn-purple full" onclick="saveManualPoint()">登録する</button>
   </div>
 </div>
 
@@ -343,17 +575,46 @@ th{color:var(--muted);font-size:.69rem}
   <div class="modal-box">
     <div class="modal-head"><h2>送料早見表</h2><button class="close" onclick="closeModal('shipModal')">×</button></div>
     <div id="shipTable"></div>
-    <div class="note" style="margin-top:10px">料金改定の可能性があるため、発送前には各サービスの画面でも確認してください。送料は手入力で上書きできます。</div>
+    <div class="note" style="margin-top:10px">料金改定の可能性があります。発送前に各サービスの画面でも確認してください。</div>
   </div>
 </div>
 
 <script>
+'use strict';
+
 const $=id=>document.getElementById(id);
+const deepClone=value=>JSON.parse(JSON.stringify(value));
+const STORAGE={
+  items:'sedori_items',
+  points:'sedori_point_entries',
+  usages:'sedori_point_usages',
+  settings:'sedori_settings',
+  schema:'sedori_schema_version'
+};
+const SCHEMA_VERSION=3;
+const DEFAULT_SETTINGS={
+  spuMultiplier:5,
+  buyAroundMultiplier:1,
+  purchaseBudget:50000,
+  pointValue:1,
+  expiryWarningDays:30,
+  monthlyPointCap:0
+};
 const CATS=['レトロゲーム','トレカ','ブランド品','古着','電子機器','本・漫画','おもちゃ','その他'];
-const SOURCES=['不用品','ハードオフ','ブックオフ','メルカリ','ヤフオク','リサイクルショップ','フリマ','その他'];
+const SOURCES=['セカンドストリート','楽天市場','ハードオフ','ブックオフ','メルカリ','ヤフオク','リサイクルショップ','フリマ','不用品','その他'];
+const SOURCE_TYPE_NAME={secondstreet:'セカスト',rakuten:'楽天市場',other:'その他'};
 const PLATFORM_NAME={mercari:'メルカリ','yahoo-flea':'Yahoo!フリマ','yahoo-auction':'ヤフオク',other:'その他'};
 const PLATFORM_FEE={mercari:.10,'yahoo-flea':.05,'yahoo-auction':.10,other:.10};
-
+const POINT_TYPE_NAME={normal:'通常',limited:'期間限定'};
+const POINT_STATUS_NAME={planned:'予定',confirmed:'確定',used:'使用済み',expired:'失効',canceled:'取消'};
+const POINT_BREAKDOWN_NAME={
+  normal_purchase:'通常購入',rakuten_card:'楽天カード',spu:'SPU',buyaround:'買い回り',
+  shop:'ショップ個別',campaign:'キャンペーン',other:'その他'
+};
+const USAGE_PURPOSE_NAME={
+  card:'副業カード請求',business_supplies:'副業用品',rakuten_pay:'楽天ペイ生活費',
+  purchase:'仕入れ',other:'その他'
+};
 const SHIPPING_METHODS=[
  {id:'manual',group:'all',name:'手入力',fee:null},
  {id:'none',group:'all',name:'送料0・手渡し',fee:0},
@@ -391,385 +652,1179 @@ const SHIPPING_METHODS=[
 ];
 
 let items=[];
+let pointEntries=[];
+let pointUsages=[];
+let settings={...DEFAULT_SETTINGS};
 let stockType='sedori';
 let stockStatus='selling';
 let analysisType='all';
 let viewMonth=new Date();
+let addPointDrafts=[];
+let editPointDrafts=[];
+let pointEditorContext={prefix:'a',index:-1};
 
-function today(){return new Date().toISOString().slice(0,10)}
-function monthKey(d){return d.toISOString().slice(0,7)}
-function yen(n){return '¥'+Math.round(Number(n)||0).toLocaleString('ja-JP')}
-function safeNum(v){return Number(v)||0}
-function feeRate(platform){return PLATFORM_FEE[platform] ?? .10}
+function today(){return localDate(new Date())}
+function localDate(date){
+  const d=new Date(date.getTime()-date.getTimezoneOffset()*60000);
+  return d.toISOString().slice(0,10);
+}
+function monthKey(date){return localDate(date).slice(0,7)}
+function safeNum(value){const n=Number(value);return Number.isFinite(n)?n:0}
+function clampZero(value){return Math.max(0,safeNum(value))}
+function yen(value){return '¥'+Math.round(safeNum(value)).toLocaleString('ja-JP')}
+function uid(prefix='id'){return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,9)}`}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
+function parseStorage(key,fallback){
+  try{const value=JSON.parse(localStorage.getItem(key));return value??fallback}catch{return fallback}
+}
+function feeRate(platform){return PLATFORM_FEE[platform]??.10}
 function feeOf(item){
-  const price=safeNum(item.actualPrice || item.price);
-  return Math.floor(price * (item.feeRate ?? feeRate(item.platform)));
+  const sale=safeNum(item.actualPrice||item.price);
+  return Math.floor(sale*(Number.isFinite(Number(item.feeRate))?Number(item.feeRate):feeRate(item.platform)));
 }
-function profitOf(item){
-  return safeNum(item.actualPrice || item.price)-feeOf(item)-safeNum(item.cost)-safeNum(item.ship)-safeNum(item.misc);
-}
-function roiOf(item){
-  return safeNum(item.cost)>0 ? Math.round(profitOf(item)/safeNum(item.cost)*100) : 0;
-}
-function isSold(item){return ['sold','shipped'].includes(item.status) && safeNum(item.actualPrice||item.price)>0}
-function typeMatches(item,type){return type==='all'||item.type===type}
+function isSold(item){return ['sold','shipped'].includes(item.status)&&safeNum(item.actualPrice||item.price)>0}
 function statusText(status){return status==='sold'?'未発送':status==='shipped'?'発送済み':'販売中'}
-function shipName(id){return SHIPPING_METHODS.find(x=>x.id===id)?.name||'手入力'}
+function typeMatches(item,type){return type==='all'||item.type===type}
+function shipName(id){return SHIPPING_METHODS.find(method=>method.id===id)?.name||'手入力'}
+function inferPurchaseSourceType(source){
+  const value=String(source||'').toLowerCase();
+  if(value.includes('楽天'))return 'rakuten';
+  if(value.includes('セカ')||value.includes('second'))return 'secondstreet';
+  return 'other';
+}
+function pointValueYen(points){return safeNum(points)*safeNum(settings.pointValue)}
+
+function pointBeforeCost(item){
+  if(item.purchaseSourceType==='rakuten'){
+    return clampZero(safeNum(item.productAmount)-safeNum(item.couponDiscount));
+  }
+  return clampZero(item.cost);
+}
+function actualCashOut(item){
+  if(item.purchaseSourceType==='rakuten'){
+    return clampZero(pointBeforeCost(item)-safeNum(item.usedNormalPoints)-safeNum(item.usedLimitedPoints));
+  }
+  return clampZero(item.cost);
+}
+function mercariNet(item){
+  return safeNum(item.actualPrice||item.price)-feeOf(item)-safeNum(item.ship)-safeNum(item.misc);
+}
+function itemPointEntries(itemId){return pointEntries.filter(entry=>String(entry.itemId)===String(itemId))}
+function effectiveConfirmedAmount(entry){
+  const confirmed=clampZero(entry.confirmed);
+  const expired=clampZero(entry.expiredAmount);
+  const canceled=clampZero(entry.canceledAmount);
+  return clampZero(confirmed-expired-canceled);
+}
+function expectedPointsForItem(item){
+  return itemPointEntries(item.id).reduce((sum,entry)=>{
+    if(['canceled','expired'].includes(entry.status))return sum;
+    return sum+(clampZero(entry.expected)>0?clampZero(entry.expected):effectiveConfirmedAmount(entry));
+  },0);
+}
+function confirmedPointsForItem(item){
+  return itemPointEntries(item.id).reduce((sum,entry)=>sum+effectiveConfirmedAmount(entry),0);
+}
+function cashFlowOf(item){return mercariNet(item)-actualCashOut(item)}
+function predictedProfitOf(item){return mercariNet(item)-pointBeforeCost(item)+pointValueYen(expectedPointsForItem(item))}
+function confirmedProfitOf(item){return mercariNet(item)-pointBeforeCost(item)+pointValueYen(confirmedPointsForItem(item))}
+function roiOf(item){
+  const base=pointBeforeCost(item);
+  return base>0?Math.round(confirmedProfitOf(item)/base*100):0;
+}
+function availableOfEntry(entry){
+  if(!['confirmed','used'].includes(entry.status))return 0;
+  return clampZero(effectiveConfirmedAmount(entry)-clampZero(entry.usedAmount));
+}
+function availablePointBalance(type,asOfDate='9999-12-31'){
+  return pointEntries
+    .filter(entry=>entry.type===type&&(!entry.actualDate||entry.actualDate<=asOfDate))
+    .reduce((sum,entry)=>sum+availableOfEntry(entry),0);
+}
 
 function toast(text){
-  const el=$('toast'); el.textContent=text; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),1600);
+  const element=$('toast');
+  element.textContent=text;
+  element.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>element.classList.remove('show'),2200);
 }
-function save(){
-  localStorage.setItem('sedori_items',JSON.stringify(items));
-  $('saveState').textContent='保存済み';
+function setSaveState(text){$('saveState').textContent=text}
+function saveAll(){
+  setSaveState('保存中…');
+  localStorage.setItem(STORAGE.items,JSON.stringify(items));
+  localStorage.setItem(STORAGE.points,JSON.stringify(pointEntries));
+  localStorage.setItem(STORAGE.usages,JSON.stringify(pointUsages));
+  localStorage.setItem(STORAGE.settings,JSON.stringify(settings));
+  localStorage.setItem(STORAGE.schema,String(SCHEMA_VERSION));
+  setSaveState('保存済み');
 }
-function load(){
-  try{items=JSON.parse(localStorage.getItem('sedori_items')||'[]')}catch{items=[]}
-  normalizeAll();
+function normalizeItem(raw,index=0){
+  const item={...raw};
+  item.id=item.id||uid(`legacy${index}`);
+  item.name=item.name||'無題';
+  item.type=['sedori','fuyohin'].includes(item.type)?item.type:(item.source==='不用品'?'fuyohin':'sedori');
+  item.cat=item.cat||'その他';
+  item.source=item.source||'その他';
+  item.date=item.date||today();
+  item.memo=item.memo||'';
+  item.status=['listed','sold','shipped'].includes(item.status)?item.status:'listed';
+  item.platform=item.platform||'mercari';
+  item.feeRate=Number.isFinite(Number(item.feeRate))?Number(item.feeRate):feeRate(item.platform);
+  item.actualPrice=clampZero(item.actualPrice!==undefined?item.actualPrice:item.price);
+  item.price=item.actualPrice;
+  item.cost=clampZero(item.cost);
+  item.ship=clampZero(item.ship);
+  item.misc=clampZero(item.misc);
+  item.soldDate=item.soldDate||'';
+  item.shipMethod=item.shipMethod||guessShipMethod(item);
+  item.purchaseSourceType=['secondstreet','rakuten','other'].includes(item.purchaseSourceType)
+    ?item.purchaseSourceType:inferPurchaseSourceType(item.source);
+  item.orderNo=item.orderNo||'';
+  item.purchaseDate=item.purchaseDate||item.date;
+  item.productAmount=clampZero(item.productAmount!==undefined?item.productAmount:item.cost);
+  item.couponDiscount=clampZero(item.couponDiscount);
+  item.usedNormalPoints=clampZero(item.usedNormalPoints);
+  item.usedLimitedPoints=clampZero(item.usedLimitedPoints);
+  item.cashPaid=actualCashOut(item);
+  if(!isSold(item)){
+    item.status='listed';
+    item.actualPrice=0;item.price=0;item.soldDate='';item.ship=0;item.misc=0;
+  }
+  return item;
 }
-function normalizeAll(){
-  const now=Date.now();
-  items=items.map((raw,index)=>{
-    const n={...raw};
-    n.id=n.id || now+index;
-    n.name=n.name || '無題';
-    n.cat=n.cat || 'その他';
-    n.source=n.source || 'その他';
-    n.cost=safeNum(n.cost);
-    n.ship=safeNum(n.ship);
-    n.misc=safeNum(n.misc);
-    n.date=n.date || today();
-    n.platform=n.platform || 'mercari';
-    n.feeRate=Number.isFinite(Number(n.feeRate)) ? Number(n.feeRate) : feeRate(n.platform);
-    n.actualPrice=safeNum(n.actualPrice!==undefined?n.actualPrice:n.price);
-    n.price=n.actualPrice;
-    n.type=(n.type==='sedori'||n.type==='fuyohin')?n.type:(n.source==='不用品'?'fuyohin':'sedori');
-
-    if(isSold(n)){
-      n.status=n.status==='shipped'?'shipped':'sold';
-      n.soldDate=n.soldDate||today();
-    }else{
-      n.status='listed';
-      n.soldDate='';
-      n.actualPrice=0;n.price=0;n.ship=0;n.misc=0;
-    }
-    n.shipMethod=n.shipMethod||guessShipMethod(n);
-    n.memo=n.memo||'';
-    return n;
-  });
-  save();
+function normalizePointEntry(raw){
+  const entry={...raw};
+  entry.id=entry.id||uid('pt');
+  entry.itemId=entry.itemId??'';
+  entry.type=entry.type==='limited'?'limited':'normal';
+  entry.breakdown=POINT_BREAKDOWN_NAME[entry.breakdown]?entry.breakdown:'other';
+  entry.expected=clampZero(entry.expected);
+  entry.confirmed=clampZero(entry.confirmed);
+  entry.plannedDate=entry.plannedDate||'';
+  entry.actualDate=entry.actualDate||'';
+  entry.expiryDate=entry.expiryDate||'';
+  entry.status=POINT_STATUS_NAME[entry.status]?entry.status:'planned';
+  entry.note=entry.note||'';
+  entry.usedAmount=clampZero(entry.usedAmount);
+  entry.expiredAmount=clampZero(entry.expiredAmount);
+  entry.canceledAmount=clampZero(entry.canceledAmount);
+  entry.createdAt=entry.createdAt||new Date().toISOString();
+  if(entry.status==='planned'){
+    entry.confirmed=0;entry.usedAmount=0;entry.expiredAmount=0;entry.canceledAmount=0;
+  }
+  if(entry.status==='used'){
+    entry.usedAmount=Math.max(entry.usedAmount,effectiveConfirmedAmount(entry));
+  }
+  if(entry.status==='expired'&&entry.expiredAmount===0){
+    entry.expiredAmount=clampZero(entry.confirmed-entry.usedAmount);
+  }
+  if(entry.status==='canceled'&&entry.canceledAmount===0){
+    entry.canceledAmount=entry.confirmed>0?clampZero(entry.confirmed-entry.usedAmount):entry.expected;
+  }
+  return entry;
+}
+function normalizeUsage(raw){
+  const usage={...raw};
+  usage.id=usage.id||uid('use');
+  usage.date=usage.date||today();
+  usage.type=usage.type==='limited'?'limited':'normal';
+  usage.amount=clampZero(usage.amount);
+  usage.purpose=USAGE_PURPOSE_NAME[usage.purpose]?usage.purpose:'other';
+  usage.scope=usage.scope==='private'?'private':'business';
+  usage.relatedItemId=usage.relatedItemId??'';
+  usage.note=usage.note||'';
+  usage.autoPurchase=Boolean(usage.autoPurchase);
+  usage.allocations=Array.isArray(usage.allocations)?usage.allocations.map(allocation=>({
+    entryId:allocation.entryId,amount:clampZero(allocation.amount)
+  })):[];
+  usage.createdAt=usage.createdAt||new Date().toISOString();
+  return usage;
 }
 function guessShipMethod(item){
   if(!safeNum(item.ship))return 'manual';
-  const group=(item.platform||'').startsWith('yahoo')?'yahoo':'mercari';
-  return SHIPPING_METHODS.find(x=>(x.group===group||x.group==='all')&&x.fee===safeNum(item.ship))?.id||'manual';
+  const group=String(item.platform||'').startsWith('yahoo')?'yahoo':'mercari';
+  return SHIPPING_METHODS.find(method=>(method.group===group||method.group==='all')&&method.fee===safeNum(item.ship))?.id||'manual';
+}
+function migrateEmbeddedPointDetails(){
+  const existingLegacyKeys=new Set(pointEntries.map(entry=>entry.legacyKey).filter(Boolean));
+  items.forEach(item=>{
+    const details=Array.isArray(item.pointDetails)?item.pointDetails:Array.isArray(item.points)?item.points:[];
+    details.forEach((detail,index)=>{
+      const legacyKey=`${item.id}_${index}`;
+      if(existingLegacyKeys.has(legacyKey))return;
+      pointEntries.push(normalizePointEntry({...detail,itemId:item.id,legacyKey}));
+    });
+    delete item.pointDetails;
+    delete item.points;
+  });
+}
+function applyAutomaticExpiry(){
+  let changed=false;
+  const current=today();
+  pointEntries.forEach(entry=>{
+    if(entry.type!=='limited'||!entry.expiryDate||entry.expiryDate>=current)return;
+    const available=availableOfEntry(entry);
+    if(available>0){
+      entry.expiredAmount=clampZero(entry.expiredAmount)+available;
+      entry.status='expired';
+      changed=true;
+    }
+  });
+  return changed;
+}
+function loadAll(){
+  items=parseStorage(STORAGE.items,[]);
+  pointEntries=parseStorage(STORAGE.points,[]);
+  pointUsages=parseStorage(STORAGE.usages,[]);
+  settings={...DEFAULT_SETTINGS,...parseStorage(STORAGE.settings,{})};
+  if(!Array.isArray(items))items=[];
+  if(!Array.isArray(pointEntries))pointEntries=[];
+  if(!Array.isArray(pointUsages))pointUsages=[];
+  items=items.map(normalizeItem);
+  pointEntries=pointEntries.map(normalizePointEntry);
+  pointUsages=pointUsages.map(normalizeUsage);
+  migrateEmbeddedPointDetails();
+  applyAutomaticExpiry();
+  saveAll();
+  $('schemaState').textContent=`データ形式 v${SCHEMA_VERSION}`;
 }
 function fillSelect(id,values,includeAll=false){
-  $(id).innerHTML=(includeAll?'<option value="all">すべて</option>':'')+values.map(v=>`<option value="${v}">${v}</option>`).join('');
+  $(id).innerHTML=(includeAll?'<option value="all">すべて</option>':'')+values.map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
 }
 function init(){
-  load();
+  loadAll();
   ['aCat','eCat'].forEach(id=>fillSelect(id,CATS));
   ['aSource','eSource'].forEach(id=>fillSelect(id,SOURCES));
   fillSelect('stockCat',CATS,true);
-  $('aDate').value=today();
-  $('sDate').value=today();
+  $('aDate').value=today();$('aPurchaseDate').value=today();$('sDate').value=today();
+  $('uDate').value=today();$('mPointDate').value=today();
+  loadSettingsForm();
   renderAll();
 }
-function renderAll(){renderStock();renderAnalysis();renderData()}
+function renderAll(){
+  applyAutomaticExpiry();
+  renderStock();
+  renderAnalysis();
+  renderPointPage();
+  renderData();
+}
 function showPage(id,button){
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  $(id).classList.add('active'); button?.classList.add('active');
+  document.querySelectorAll('.page').forEach(page=>page.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(tab=>tab.classList.remove('active'));
+  $(id).classList.add('active');
+  const selected=button||document.querySelector(`.tab[data-page="${id}"]`);
+  if(selected)selected.classList.add('active');
   $('addButton').style.display=id==='stock'?'block':'none';
   if(id==='analysis')renderAnalysis();
+  if(id==='points')renderPointPage();
   if(id==='data')renderData();
 }
 function activate(parent,button){
-  document.querySelectorAll(`#${parent} button`).forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll(`#${parent} button`).forEach(element=>element.classList.remove('active'));
   button.classList.add('active');
 }
 function setStockType(type,button){stockType=type;activate('stockTypeTabs',button);renderStock()}
 function setStockStatus(status,button){stockStatus=status;activate('stockStatusTabs',button);renderStock()}
 function setAnalysisType(type,button){analysisType=type;activate('analysisTypeTabs',button);renderAnalysis()}
 function toggleFilter(){$('filterBox').classList.toggle('open')}
-function resetFilter(){$('stockCat').value='all';$('stockSort').value='new';renderStock()}
+function resetFilter(){
+  $('stockCat').value='all';$('stockPurchaseSource').value='all';$('stockSort').value='new';renderStock();
+}
 
 function renderStock(){
   const query=$('searchInput').value.trim().toLowerCase();
   const cat=$('stockCat').value||'all';
+  const purchaseSource=$('stockPurchaseSource').value||'all';
   const sort=$('stockSort').value||'new';
-
-  let arr=items.filter(i=>typeMatches(i,stockType));
-  if(stockStatus==='selling')arr=arr.filter(i=>!isSold(i));
-  if(stockStatus==='waiting')arr=arr.filter(i=>i.status==='sold');
-  if(stockStatus==='history')arr=arr.filter(i=>i.status==='shipped');
-  if(query)arr=arr.filter(i=>(i.name+' '+i.cat+' '+i.source+' '+i.memo).toLowerCase().includes(query));
-  if(cat!=='all')arr=arr.filter(i=>i.cat===cat);
-
-  arr.sort((a,b)=>{
-    if(sort==='old')return (a.date||'').localeCompare(b.date||'');
-    if(sort==='profit')return profitOf(b)-profitOf(a);
+  let list=items.filter(item=>typeMatches(item,stockType));
+  if(stockStatus==='selling')list=list.filter(item=>!isSold(item));
+  if(stockStatus==='waiting')list=list.filter(item=>item.status==='sold');
+  if(stockStatus==='history')list=list.filter(item=>item.status==='shipped');
+  if(query)list=list.filter(item=>(`${item.name} ${item.cat} ${item.source} ${item.memo} ${item.orderNo}`).toLowerCase().includes(query));
+  if(cat!=='all')list=list.filter(item=>item.cat===cat);
+  if(purchaseSource!=='all')list=list.filter(item=>item.purchaseSourceType===purchaseSource);
+  list.sort((a,b)=>{
+    if(sort==='old')return String(a.date).localeCompare(String(b.date));
+    if(sort==='profit')return confirmedProfitOf(b)-confirmedProfitOf(a);
     if(sort==='price')return safeNum(b.actualPrice||b.price)-safeNum(a.actualPrice||a.price);
-    const da=(a.soldDate||a.date||''),db=(b.soldDate||b.date||'');
-    return db.localeCompare(da);
+    return String(b.soldDate||b.date).localeCompare(String(a.soldDate||a.date));
   });
-
-  $('stockCount').textContent=`${arr.length}件`;
-  $('stockList').innerHTML=arr.length?arr.map(itemCard).join(''):'<div class="empty">該当する商品はありません</div>';
+  $('stockCount').textContent=`${list.length}件`;
+  $('stockList').innerHTML=list.length?list.map(itemCard).join(''):'<div class="empty">該当する商品はありません</div>';
 }
-function itemCard(i){
-  const sold=isSold(i);
-  const stateClass=i.status==='sold'?'wait':i.status==='shipped'?'done':'selling';
-  const right=sold?`<div class="item-price ${profitOf(i)>=0?'green':'red'}">${yen(profitOf(i))}</div>`:`<div class="item-price">${yen(i.cost)}</div>`;
+function itemCard(item){
+  const sold=isSold(item);
+  const stateClass=item.status==='sold'?'wait':item.status==='shipped'?'done':'selling';
+  const rakuten=item.purchaseSourceType==='rakuten';
+  const right=sold
+    ?`<div class="item-price ${confirmedProfitOf(item)>=0?'green':'red'}">${yen(confirmedProfitOf(item))}</div>`
+    :`<div class="item-price">${yen(pointBeforeCost(item))}</div>`;
   const meta=sold
-    ? `売上 ${yen(i.actualPrice||i.price)} ／ 送料 ${yen(i.ship)} ／ ${i.soldDate||'-'}`
-    : `仕入れ ${yen(i.cost)} ／ ${i.date||'-'} ／ ${i.source}`;
-  const action=i.status==='listed'
-    ? `<button class="btn btn-green" onclick="openSold('${i.id}')">売れた</button><button class="btn" onclick="openEdit('${i.id}')">編集</button>`
-    : i.status==='sold'
-      ? `<button class="btn btn-blue" onclick="markShipped('${i.id}')">発送済みにする</button><button class="btn" onclick="openEdit('${i.id}')">編集</button>`
-      : `<button class="btn" onclick="openEdit('${i.id}')">編集</button><button class="btn" onclick="openItemDetail('${i.id}')">詳細</button>`;
+    ?`現金収支 ${yen(cashFlowOf(item))} ／ 売上 ${yen(item.actualPrice||item.price)} ／ ${item.soldDate||'-'}`
+    :`仕入原価 ${yen(pointBeforeCost(item))} ／ 資金支出 ${yen(actualCashOut(item))} ／ ${item.purchaseDate||item.date}`;
+  const actions=item.status==='listed'
+    ?`<button class="btn btn-green" onclick="openSold('${item.id}')">売れた</button><button class="btn" onclick="openEdit('${item.id}')">編集</button>`
+    :item.status==='sold'
+      ?`<button class="btn btn-blue" onclick="markShipped('${item.id}')">発送済みにする</button><button class="btn" onclick="openEdit('${item.id}')">編集</button>`
+      :`<button class="btn" onclick="openEdit('${item.id}')">編集</button><button class="btn" onclick="openItemDetail('${item.id}')">詳細</button>`;
   return `<div class="item">
-    <div class="item-top"><div><div class="item-name">${escapeHtml(i.name)}</div><div class="badges"><span class="badge ${stateClass}">${statusText(i.status)}</span><span class="badge">${escapeHtml(i.cat)}</span></div></div>${right}</div>
-    <div class="item-meta">${meta}</div>
-    <div class="item-actions">${action}</div>
+    <div class="item-top">
+      <div><div class="item-name">${escapeHtml(item.name)}</div>
+        <div class="badges">
+          <span class="badge ${stateClass}">${statusText(item.status)}</span>
+          <span class="badge">${escapeHtml(item.cat)}</span>
+          ${rakuten?'<span class="badge rakuten">楽天市場</span>':''}
+        </div>
+      </div>${right}
+    </div>
+    <div class="item-meta">${meta}${rakuten?`<br>予定 ${expectedPointsForItem(item).toLocaleString()}pt ／ 確定 ${confirmedPointsForItem(item).toLocaleString()}pt`:''}</div>
+    <div class="item-actions">${actions}</div>
   </div>`;
 }
-function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]))}
+
+function togglePurchaseFields(prefix){
+  const sourceType=$(prefix+'PurchaseSourceType').value;
+  const rakuten=sourceType==='rakuten';
+  $(prefix+'RakutenPurchase').classList.toggle('open',rakuten);
+  $(prefix+'SimplePurchase').style.display=rakuten?'none':'grid';
+  $(prefix+'SourceWrap').style.display=sourceType==='other'?'grid':'none';
+  if(sourceType==='rakuten')$(prefix+'Source').value='楽天市場';
+  if(sourceType==='secondstreet')$(prefix+'Source').value='セカンドストリート';
+  if(rakuten)updatePurchaseCash(prefix);
+}
+function updatePurchaseCash(prefix){
+  const before=clampZero(safeNum($(prefix+'ProductAmount').value)-safeNum($(prefix+'Coupon').value));
+  const cash=clampZero(before-safeNum($(prefix+'UsedNormal').value)-safeNum($(prefix+'UsedLimited').value));
+  $(prefix+'BeforeCost').value=Math.round(before);
+  $(prefix+'CashPaid').value=Math.round(cash);
+}
+function currentDrafts(prefix){return prefix==='a'?addPointDrafts:editPointDrafts}
+function setCurrentDrafts(prefix,value){if(prefix==='a')addPointDrafts=value;else editPointDrafts=value}
+function renderPointDrafts(prefix){
+  const drafts=currentDrafts(prefix);
+  const target=$(prefix+'PointDraftList');
+  target.innerHTML=drafts.length?drafts.map((entry,index)=>`
+    <div class="point-row">
+      <div class="point-row-top">
+        <div><div class="point-row-title">${POINT_BREAKDOWN_NAME[entry.breakdown]} <span class="badge ${entry.type}">${POINT_TYPE_NAME[entry.type]}</span></div>
+          <div class="item-meta">${POINT_STATUS_NAME[entry.status]} ／ 予定 ${clampZero(entry.expected).toLocaleString()}pt ／ 確定 ${clampZero(entry.confirmed).toLocaleString()}pt</div>
+        </div>
+        <div class="point-row-amount">${(entry.status==='planned'?entry.expected:entry.confirmed).toLocaleString()}pt</div>
+      </div>
+      <div class="point-actions">
+        <button class="btn btn-small" onclick="openPointEntryEditor('${prefix}',${index})">編集</button>
+        <button class="btn btn-small btn-danger" onclick="deletePointDraft('${prefix}',${index})">削除</button>
+      </div>
+    </div>`).join(''):'<div class="empty" style="padding:15px 5px">ポイント明細なし</div>';
+}
+function openPointEntryEditor(prefix,index=-1){
+  pointEditorContext={prefix,index};
+  const drafts=currentDrafts(prefix);
+  const entry=index>=0?drafts[index]:normalizePointEntry({status:'planned',type:'normal',breakdown:'normal_purchase'});
+  $('pointEntryModalTitle').textContent=index>=0?'ポイント明細を編集':'ポイント明細を追加';
+  $('pType').value=entry.type;
+  $('pBreakdown').value=entry.breakdown;
+  $('pExpected').value=entry.expected||'';
+  $('pConfirmed').value=entry.confirmed||'';
+  $('pPlannedDate').value=entry.plannedDate||'';
+  $('pActualDate').value=entry.actualDate||'';
+  $('pExpiryDate').value=entry.expiryDate||'';
+  $('pStatus').value=entry.status;
+  $('pNote').value=entry.note||'';
+  $('pointEntryModal').classList.add('open');
+}
+function pointDraftFromForm(existing={}){
+  const entry=normalizePointEntry({
+    ...existing,
+    type:$('pType').value,
+    breakdown:$('pBreakdown').value,
+    expected:clampZero($('pExpected').value),
+    confirmed:clampZero($('pConfirmed').value),
+    plannedDate:$('pPlannedDate').value,
+    actualDate:$('pActualDate').value,
+    expiryDate:$('pExpiryDate').value,
+    status:$('pStatus').value,
+    note:$('pNote').value.trim()
+  });
+  return entry;
+}
+function validatePointDraft(entry,oldEntry=null){
+  if(entry.expected<=0&&entry.confirmed<=0)return '予定ポイントか確定ポイントを入力してください';
+  if(entry.status==='planned'&&entry.expected<=0)return '予定状態では獲得予定ポイントが必要です';
+  if(['confirmed','used','expired'].includes(entry.status)&&entry.confirmed<=0)return '確定ポイントを入力してください';
+  if(entry.status==='confirmed'&&!entry.actualDate)return '確定状態では実際の付与日を入力してください';
+  if(entry.type==='limited'&&['confirmed','used'].includes(entry.status)&&!entry.expiryDate)return '期間限定ポイントは有効期限を入力してください';
+  if(oldEntry&&clampZero(oldEntry.usedAmount)>entry.confirmed)return '使用済みポイントより確定ポイントを少なくできません';
+  if(oldEntry&&oldEntry.usedAmount>0&&oldEntry.type!==entry.type)return '使用履歴があるポイントの種別は変更できません';
+  return '';
+}
+function savePointDraft(){
+  const {prefix,index}=pointEditorContext;
+  const drafts=currentDrafts(prefix);
+  const old=index>=0?drafts[index]:null;
+  const entry=pointDraftFromForm(old||{});
+  const error=validatePointDraft(entry,old);
+  if(error){toast(error);return}
+  if(index>=0)drafts[index]=entry;else drafts.push(entry);
+  setCurrentDrafts(prefix,drafts);
+  renderPointDrafts(prefix);
+  closeModal('pointEntryModal');
+}
+function deletePointDraft(prefix,index){
+  const drafts=currentDrafts(prefix);
+  const entry=drafts[index];
+  if(entry&&clampZero(entry.usedAmount)>0){toast('使用履歴がある明細は削除できません');return}
+  drafts.splice(index,1);
+  setCurrentDrafts(prefix,drafts);
+  renderPointDrafts(prefix);
+}
+function addEstimatedPointDrafts(prefix){
+  const base=clampZero($(prefix+'BeforeCost').value);
+  if(base<=0){toast('商品代金とクーポンを先に入力してください');return}
+  const drafts=currentDrafts(prefix);
+  const plannedDate='';
+  const standard=Math.floor(base*.01);
+  const spuExtra=Math.floor(base*Math.max(0,safeNum(settings.spuMultiplier)-1)/100);
+  const buyAround=Math.floor(base*Math.max(0,safeNum(settings.buyAroundMultiplier))/100);
+  if(standard>0)drafts.push(normalizePointEntry({type:'normal',breakdown:'normal_purchase',expected:standard,status:'planned',plannedDate,note:'設定倍率による簡易見積り'}));
+  if(spuExtra>0)drafts.push(normalizePointEntry({type:'limited',breakdown:'spu',expected:spuExtra,status:'planned',plannedDate,note:`SPU ${settings.spuMultiplier}倍の簡易見積り。要確認`}));
+  if(buyAround>0)drafts.push(normalizePointEntry({type:'limited',breakdown:'buyaround',expected:buyAround,status:'planned',plannedDate,note:`買い回り ${settings.buyAroundMultiplier}倍の簡易見積り。要確認`}));
+  setCurrentDrafts(prefix,drafts);
+  renderPointDrafts(prefix);
+  toast('簡易見積りを追加しました');
+}
+function readPurchaseForm(prefix){
+  const sourceType=$(prefix+'PurchaseSourceType').value;
+  const rakuten=sourceType==='rakuten';
+  const productAmount=rakuten?clampZero($(prefix+'ProductAmount').value):clampZero($(prefix+'Cost').value);
+  const coupon=rakuten?clampZero($(prefix+'Coupon').value):0;
+  const usedNormal=rakuten?clampZero($(prefix+'UsedNormal').value):0;
+  const usedLimited=rakuten?clampZero($(prefix+'UsedLimited').value):0;
+  const before=clampZero(productAmount-coupon);
+  const cash=clampZero(before-usedNormal-usedLimited);
+  return {
+    purchaseSourceType:sourceType,
+    source:sourceType==='rakuten'?'楽天市場':sourceType==='secondstreet'?'セカンドストリート':$(prefix+'Source').value,
+    orderNo:rakuten?$(prefix+'OrderNo').value.trim():'',
+    purchaseDate:rakuten?($(prefix+'PurchaseDate').value||$(prefix+'Date').value):$(prefix+'Date').value,
+    productAmount,couponDiscount:coupon,usedNormalPoints:usedNormal,usedLimitedPoints:usedLimited,
+    cashPaid:cash,cost:before
+  };
+}
+function validatePurchaseForm(prefix,purchase){
+  if(purchase.purchaseSourceType==='rakuten'){
+    if(purchase.productAmount<=0)return '楽天の商品代金を入力してください';
+    if(purchase.couponDiscount>purchase.productAmount)return 'クーポン値引額が商品代金を超えています';
+    if(purchase.usedNormalPoints+purchase.usedLimitedPoints>pointBeforeCost(purchase))return '使用ポイントが仕入原価を超えています';
+    for(const entry of currentDrafts(prefix)){
+      const error=validatePointDraft(entry,entry.id?pointEntries.find(current=>current.id===entry.id):null);
+      if(error)return error;
+    }
+  }
+  return '';
+}
 
 function openAdd(){
+  addPointDrafts=[];
   $('aType').value=stockType;
-  $('aName').value='';$('aCost').value='';$('aMemo').value='';$('aDate').value=today();
-  $('aCat').value=CATS[0];$('aSource').value=stockType==='fuyohin'?'不用品':SOURCES[1];
+  $('aDate').value=today();$('aName').value='';$('aCat').value=CATS[0];$('aMemo').value='';
+  $('aPurchaseSourceType').value=stockType==='fuyohin'?'other':'secondstreet';
+  $('aSource').value=stockType==='fuyohin'?'不用品':'セカンドストリート';
+  $('aCost').value='';$('aOrderNo').value='';$('aPurchaseDate').value=today();
+  $('aProductAmount').value='';$('aCoupon').value=0;$('aUsedNormal').value=0;$('aUsedLimited').value=0;
+  togglePurchaseFields('a');renderPointDrafts('a');
   $('addModal').classList.add('open');
+}
+function replaceItemPointEntries(itemId,drafts){
+  const existing=pointEntries.filter(entry=>String(entry.itemId)===String(itemId));
+  const nextIds=new Set(drafts.map(entry=>entry.id).filter(Boolean));
+  const blocked=existing.find(entry=>!nextIds.has(entry.id)&&clampZero(entry.usedAmount)>0);
+  if(blocked)throw new Error('使用履歴があるポイント明細は削除できません');
+  pointEntries=pointEntries.filter(entry=>String(entry.itemId)!==String(itemId));
+  drafts.forEach(draft=>{
+    const old=existing.find(entry=>entry.id===draft.id);
+    const normalized=normalizePointEntry({...draft,id:draft.id||uid('pt'),itemId,usedAmount:old?.usedAmount||draft.usedAmount||0});
+    const error=validatePointDraft(normalized,old);
+    if(error)throw new Error(error);
+    pointEntries.push(normalized);
+  });
+}
+function releaseUsage(usage){
+  (usage.allocations||[]).forEach(allocation=>{
+    const entry=pointEntries.find(point=>point.id===allocation.entryId);
+    if(!entry)return;
+    entry.usedAmount=clampZero(entry.usedAmount-allocation.amount);
+    if(entry.status==='used'&&availableOfEntry(entry)>0)entry.status='confirmed';
+  });
+}
+function removeAutoPurchaseUsages(itemId){
+  const targets=pointUsages.filter(usage=>usage.autoPurchase&&String(usage.relatedItemId)===String(itemId));
+  targets.forEach(releaseUsage);
+  pointUsages=pointUsages.filter(usage=>!(usage.autoPurchase&&String(usage.relatedItemId)===String(itemId)));
+}
+function allocatePoints(type,amount,useDate,excludeItemId=''){
+  const required=clampZero(amount);
+  if(required<=0)return [];
+  const candidates=pointEntries.filter(entry=>{
+    if(entry.type!==type||availableOfEntry(entry)<=0)return false;
+    if(excludeItemId&&String(entry.itemId)===String(excludeItemId))return false;
+    if(entry.actualDate&&entry.actualDate>useDate)return false;
+    return true;
+  }).sort((a,b)=>{
+    if(type==='limited'){
+      const expiryCompare=String(a.expiryDate||'9999-12-31').localeCompare(String(b.expiryDate||'9999-12-31'));
+      if(expiryCompare)return expiryCompare;
+    }
+    return String(a.actualDate||a.plannedDate||'9999-12-31').localeCompare(String(b.actualDate||b.plannedDate||'9999-12-31'));
+  });
+  const total=candidates.reduce((sum,entry)=>sum+availableOfEntry(entry),0);
+  if(total<required)throw new Error(`${POINT_TYPE_NAME[type]}ポイント残高が不足しています（残高 ${total.toLocaleString()}pt）`);
+  let remaining=required;
+  const allocations=[];
+  for(const entry of candidates){
+    if(remaining<=0)break;
+    const take=Math.min(availableOfEntry(entry),remaining);
+    entry.usedAmount=clampZero(entry.usedAmount)+take;
+    if(availableOfEntry(entry)<=0)entry.status='used';
+    allocations.push({entryId:entry.id,amount:take});
+    remaining-=take;
+  }
+  return allocations;
+}
+function createUsage({date,type,amount,purpose,scope,relatedItemId,note,autoPurchase=false,excludeItemId=''}){
+  const allocations=allocatePoints(type,amount,date,excludeItemId);
+  const usage=normalizeUsage({
+    id:uid('use'),date,type,amount,purpose,scope,relatedItemId,note,autoPurchase,allocations
+  });
+  pointUsages.push(usage);
+  return usage;
+}
+function syncPurchasePointUsages(item){
+  removeAutoPurchaseUsages(item.id);
+  const date=item.purchaseDate||item.date||today();
+  if(item.usedNormalPoints>0)createUsage({
+    date,type:'normal',amount:item.usedNormalPoints,purpose:'purchase',scope:'business',
+    relatedItemId:item.id,note:`${item.name}の購入時使用`,autoPurchase:true,excludeItemId:item.id
+  });
+  if(item.usedLimitedPoints>0)createUsage({
+    date,type:'limited',amount:item.usedLimitedPoints,purpose:'purchase',scope:'business',
+    relatedItemId:item.id,note:`${item.name}の購入時使用`,autoPurchase:true,excludeItemId:item.id
+  });
 }
 function addItem(){
   const name=$('aName').value.trim();
   if(!name){toast('商品名を入力してください');return}
-  const item={
-    id:Date.now(),name,type:$('aType').value,cat:$('aCat').value,source:$('aSource').value,
-    cost:safeNum($('aCost').value),date:$('aDate').value||today(),memo:$('aMemo').value.trim(),
-    status:'listed',actualPrice:0,price:0,soldDate:'',ship:0,misc:0,platform:'mercari',feeRate:.10,shipMethod:'manual'
-  };
-  items.unshift(item);save();closeModal('addModal');stockType=item.type;syncStockTypeTabs();stockStatus='selling';syncStockStatusTabs();renderAll();toast('登録しました');
+  const purchase=readPurchaseForm('a');
+  const error=validatePurchaseForm('a',purchase);
+  if(error){toast(error);return}
+  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages)};
+  try{
+    const item=normalizeItem({
+      id:uid('item'),name,type:$('aType').value,cat:$('aCat').value,date:$('aDate').value||today(),
+      memo:$('aMemo').value.trim(),status:'listed',actualPrice:0,price:0,soldDate:'',ship:0,misc:0,
+      platform:'mercari',feeRate:.10,shipMethod:'manual',...purchase
+    });
+    items.unshift(item);
+    if(item.purchaseSourceType==='rakuten'){
+      replaceItemPointEntries(item.id,addPointDrafts);
+      syncPurchasePointUsages(item);
+    }
+    saveAll();closeModal('addModal');
+    stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録しました');
+  }catch(errorObject){
+    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;
+    toast(errorObject.message||'登録できませんでした');
+  }
 }
-function syncStockTypeTabs(){
-  document.querySelectorAll('#stockTypeTabs button').forEach((b,idx)=>b.classList.toggle('active',(idx===0&&stockType==='sedori')||(idx===1&&stockType==='fuyohin')));
-}
-function syncStockStatusTabs(){
-  const map=['selling','waiting','history'];
-  document.querySelectorAll('#stockStatusTabs button').forEach((b,idx)=>b.classList.toggle('active',map[idx]===stockStatus));
+function syncStockTabs(){
+  document.querySelectorAll('#stockTypeTabs button').forEach((button,index)=>button.classList.toggle('active',(index===0&&stockType==='sedori')||(index===1&&stockType==='fuyohin')));
+  const statuses=['selling','waiting','history'];
+  document.querySelectorAll('#stockStatusTabs button').forEach((button,index)=>button.classList.toggle('active',statuses[index]===stockStatus));
 }
 
 function openSold(id){
-  const i=items.find(x=>String(x.id)===String(id));if(!i)return;
-  $('soldId').value=i.id;$('soldName').textContent=i.name;$('sDate').value=today();$('sPlatform').value='mercari';
+  const item=items.find(current=>String(current.id)===String(id));if(!item)return;
+  $('soldId').value=item.id;$('soldName').textContent=item.name;$('sDate').value=today();$('sPlatform').value='mercari';
   $('sPrice').value='';$('sShip').value='';$('sMisc').value=0;refreshShipOptions('s');calcSoldPreview();
   $('soldModal').classList.add('open');
 }
 function refreshShipOptions(prefix){
   const platform=$(prefix+'Platform').value;
   const group=platform.startsWith('yahoo')?'yahoo':platform==='mercari'?'mercari':'all';
-  const select=$(prefix+'ShipMethod');
-  select.innerHTML=SHIPPING_METHODS.filter(x=>x.group==='all'||x.group===group).map(x=>`<option value="${x.id}">${x.name}${x.fee===null?'':`（${yen(x.fee)}）`}</option>`).join('');
+  $(prefix+'ShipMethod').innerHTML=SHIPPING_METHODS
+    .filter(method=>method.group==='all'||method.group===group)
+    .map(method=>`<option value="${method.id}">${method.name}${method.fee===null?'':`（${yen(method.fee)}）`}</option>`).join('');
 }
 function applyShipFee(prefix){
-  const method=SHIPPING_METHODS.find(x=>x.id===$(prefix+'ShipMethod').value);
+  const method=SHIPPING_METHODS.find(current=>current.id===$(prefix+'ShipMethod').value);
   if(method&&method.fee!==null)$(prefix+'Ship').value=method.fee;
 }
-function calcPreview(price,cost,platform,ship,misc){
-  const fee=Math.floor(safeNum(price)*feeRate(platform));
-  const profit=safeNum(price)-fee-safeNum(cost)-safeNum(ship)-safeNum(misc);
-  const roi=safeNum(cost)>0?Math.round(profit/safeNum(cost)*100):0;
-  return {fee,profit,roi};
+function salePreview(item,price,platform,ship,misc){
+  const temporary={...item,actualPrice:clampZero(price),price:clampZero(price),platform,feeRate:feeRate(platform),ship:clampZero(ship),misc:clampZero(misc)};
+  return {
+    fee:feeOf(temporary),
+    net:mercariNet(temporary),
+    cash:cashFlowOf(temporary),
+    predicted:predictedProfitOf(temporary),
+    confirmed:confirmedProfitOf(temporary)
+  };
+}
+function previewHtml(preview,item){
+  return `<div class="preview-row"><span>販売手数料</span><b>${yen(preview.fee)}</b></div>
+    <div class="preview-row"><span>メルカリ等の手取り</span><b>${yen(preview.net)}</b></div>
+    <div class="preview-row"><span>実際の資金支出</span><b>${yen(actualCashOut(item))}</b></div>
+    <div class="preview-row"><span>現金収支</span><b class="${preview.cash>=0?'green':'red'}">${yen(preview.cash)}</b></div>
+    <div class="preview-row"><span>ポイント込み予想利益</span><b class="${preview.predicted>=0?'green':'red'}">${yen(preview.predicted)}</b></div>
+    <div class="preview-row"><span>ポイント込み確定利益</span><b class="${preview.confirmed>=0?'green':'red'}">${yen(preview.confirmed)}</b></div>`;
 }
 function calcSoldPreview(){
-  const i=items.find(x=>String(x.id)===String($('soldId').value));
-  const p=calcPreview($('sPrice').value,i?.cost||0,$('sPlatform').value,$('sShip').value,$('sMisc').value);
-  $('soldPreview').innerHTML=previewHtml(p,i?.cost||0,$('sShip').value,$('sMisc').value);
-}
-function previewHtml(p,cost,ship,misc){
-  return `<div class="preview-row"><span>販売手数料</span><b>${yen(p.fee)}</b></div>
-  <div class="preview-row"><span>仕入れ値</span><b>${yen(cost)}</b></div>
-  <div class="preview-row"><span>送料・その他</span><b>${yen(safeNum(ship)+safeNum(misc))}</b></div>
-  <div class="preview-row"><span>利益</span><b class="${p.profit>=0?'green':'red'}">${yen(p.profit)}</b></div>
-  <div class="preview-row"><span>ROI</span><b>${p.roi}%</b></div>`;
+  const item=items.find(current=>String(current.id)===String($('soldId').value));if(!item)return;
+  const preview=salePreview(item,$('sPrice').value,$('sPlatform').value,$('sShip').value,$('sMisc').value);
+  $('soldPreview').innerHTML=previewHtml(preview,item);
 }
 function saveSold(){
-  const i=items.find(x=>String(x.id)===String($('soldId').value));if(!i)return;
-  const price=safeNum($('sPrice').value);if(price<=0){toast('販売価格を入力してください');return}
-  i.status='sold';i.soldDate=$('sDate').value||today();i.actualPrice=price;i.price=price;
-  i.platform=$('sPlatform').value;i.feeRate=feeRate(i.platform);i.ship=safeNum($('sShip').value);
-  i.misc=safeNum($('sMisc').value);i.shipMethod=$('sShipMethod').value;
-  save();closeModal('soldModal');stockStatus='waiting';syncStockStatusTabs();renderAll();toast('売れた記録を保存しました');
+  const item=items.find(current=>String(current.id)===String($('soldId').value));if(!item)return;
+  const price=clampZero($('sPrice').value);
+  if(price<=0){toast('販売価格を入力してください');return}
+  item.status='sold';item.soldDate=$('sDate').value||today();item.actualPrice=price;item.price=price;
+  item.platform=$('sPlatform').value;item.feeRate=feeRate(item.platform);item.ship=clampZero($('sShip').value);
+  item.misc=clampZero($('sMisc').value);item.shipMethod=$('sShipMethod').value;
+  saveAll();closeModal('soldModal');stockStatus='waiting';syncStockTabs();renderAll();toast('売れた記録を保存しました');
 }
 function markShipped(id){
-  const i=items.find(x=>String(x.id)===String(id));if(!i)return;
-  i.status='shipped';save();renderAll();toast('発送済みにしました');
+  const item=items.find(current=>String(current.id)===String(id));if(!item)return;
+  item.status='shipped';saveAll();renderAll();toast('発送済みにしました');
 }
 
 function openEdit(id){
-  const i=items.find(x=>String(x.id)===String(id));if(!i)return;
-  $('eId').value=i.id;$('eType').value=i.type;$('eDate').value=i.date;$('eName').value=i.name;$('eCat').value=i.cat;
-  $('eSource').value=i.source;$('eCost').value=i.cost;$('eStatus').value=i.status;$('eMemo').value=i.memo||'';
-  $('eSoldDate').value=i.soldDate||today();$('ePlatform').value=i.platform||'mercari';$('ePrice').value=i.actualPrice||i.price||'';
+  const item=items.find(current=>String(current.id)===String(id));if(!item)return;
+  editPointDrafts=itemPointEntries(item.id).map(deepClone);
+  $('eId').value=item.id;$('eType').value=item.type;$('eDate').value=item.date;$('eName').value=item.name;$('eCat').value=item.cat;
+  $('ePurchaseSourceType').value=item.purchaseSourceType;$('eSource').value=SOURCES.includes(item.source)?item.source:'その他';
+  $('eCost').value=item.cost;$('eOrderNo').value=item.orderNo||'';$('ePurchaseDate').value=item.purchaseDate||item.date;
+  $('eProductAmount').value=item.productAmount||item.cost;$('eCoupon').value=item.couponDiscount||0;
+  $('eUsedNormal').value=item.usedNormalPoints||0;$('eUsedLimited').value=item.usedLimitedPoints||0;
+  $('eStatus').value=item.status;$('eMemo').value=item.memo||'';
+  $('eSoldDate').value=item.soldDate||today();$('ePlatform').value=item.platform||'mercari';$('ePrice').value=item.actualPrice||item.price||'';
   refreshShipOptions('e');
-  $('eShipMethod').value=[...$('eShipMethod').options].some(o=>o.value===i.shipMethod)?i.shipMethod:'manual';
-  $('eShip').value=i.ship||0;$('eMisc').value=i.misc||0;toggleEditSale();$('editModal').classList.add('open');
+  $('eShipMethod').value=[...$('eShipMethod').options].some(option=>option.value===item.shipMethod)?item.shipMethod:'manual';
+  $('eShip').value=item.ship||0;$('eMisc').value=item.misc||0;
+  togglePurchaseFields('e');updatePurchaseCash('e');renderPointDrafts('e');toggleEditSale();
+  $('editModal').classList.add('open');
 }
 function toggleEditSale(){
   $('editSaleArea').style.display=['sold','shipped'].includes($('eStatus').value)?'block':'none';
   calcEditPreview();
 }
 function calcEditPreview(){
-  const p=calcPreview($('ePrice').value,$('eCost').value,$('ePlatform').value,$('eShip').value,$('eMisc').value);
-  $('editPreview').innerHTML=previewHtml(p,$('eCost').value,$('eShip').value,$('eMisc').value);
+  const item=items.find(current=>String(current.id)===String($('eId').value));if(!item)return;
+  const draftItem={...item,...readPurchaseForm('e')};
+  const preview=salePreview(draftItem,$('ePrice').value,$('ePlatform').value,$('eShip').value,$('eMisc').value);
+  $('editPreview').innerHTML=previewHtml(preview,draftItem);
 }
 function saveEdit(){
-  const i=items.find(x=>String(x.id)===String($('eId').value));if(!i)return;
-  i.name=$('eName').value.trim()||i.name;i.type=$('eType').value;i.date=$('eDate').value||today();
-  i.cat=$('eCat').value;i.source=$('eSource').value;i.cost=safeNum($('eCost').value);i.status=$('eStatus').value;i.memo=$('eMemo').value.trim();
-  if(['sold','shipped'].includes(i.status)){
-    i.soldDate=$('eSoldDate').value||today();i.platform=$('ePlatform').value;i.feeRate=feeRate(i.platform);
-    i.actualPrice=safeNum($('ePrice').value);i.price=i.actualPrice;i.ship=safeNum($('eShip').value);
-    i.misc=safeNum($('eMisc').value);i.shipMethod=$('eShipMethod').value;
-    if(i.actualPrice<=0){toast('販売価格を入力してください');return}
-  }else{
-    i.status='listed';i.soldDate='';i.actualPrice=0;i.price=0;i.ship=0;i.misc=0;i.shipMethod='manual';
+  const item=items.find(current=>String(current.id)===String($('eId').value));if(!item)return;
+  const purchase=readPurchaseForm('e');
+  const error=validatePurchaseForm('e',purchase);
+  if(error){toast(error);return}
+  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages)};
+  try{
+    const oldSourceType=item.purchaseSourceType;
+    const existingPoints=itemPointEntries(item.id);
+    if(oldSourceType==='rakuten'&&purchase.purchaseSourceType!=='rakuten'){
+      if(existingPoints.some(entry=>entry.usedAmount>0))throw new Error('使用履歴がある楽天ポイント明細があるため、仕入れ先区分を変更できません');
+      if(existingPoints.length&&!confirm('楽天ポイント明細と購入時ポイント使用履歴を削除して、仕入れ先区分を変更しますか？'))return;
+      removeAutoPurchaseUsages(item.id);
+      pointEntries=pointEntries.filter(entry=>String(entry.itemId)!==String(item.id));
+    }
+    Object.assign(item,{
+      name:$('eName').value.trim()||item.name,type:$('eType').value,date:$('eDate').value||today(),
+      cat:$('eCat').value,memo:$('eMemo').value.trim(),status:$('eStatus').value,...purchase
+    });
+    if(item.purchaseSourceType==='rakuten'){
+      replaceItemPointEntries(item.id,editPointDrafts);
+      syncPurchasePointUsages(item);
+    }
+    if(['sold','shipped'].includes(item.status)){
+      item.soldDate=$('eSoldDate').value||today();item.platform=$('ePlatform').value;item.feeRate=feeRate(item.platform);
+      item.actualPrice=clampZero($('ePrice').value);item.price=item.actualPrice;item.ship=clampZero($('eShip').value);
+      item.misc=clampZero($('eMisc').value);item.shipMethod=$('eShipMethod').value;
+      if(item.actualPrice<=0)throw new Error('販売価格を入力してください');
+    }else{
+      item.status='listed';item.soldDate='';item.actualPrice=0;item.price=0;item.ship=0;item.misc=0;item.shipMethod='manual';
+    }
+    item.cashPaid=actualCashOut(item);
+    saveAll();closeModal('editModal');renderAll();toast('保存しました');
+  }catch(errorObject){
+    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;
+    toast(errorObject.message||'保存できませんでした');
   }
-  save();closeModal('editModal');renderAll();toast('保存しました');
 }
 function deleteCurrentEdit(){
-  const id=$('eId').value;if(!confirm('この商品を削除しますか？'))return;
-  items=items.filter(x=>String(x.id)!==String(id));save();closeModal('editModal');renderAll();toast('削除しました');
+  const id=$('eId').value;
+  const allocated=itemPointEntries(id).some(entry=>entry.usedAmount>0);
+  if(allocated){toast('ポイント使用履歴がある商品は削除できません');return}
+  if(!confirm('この商品を削除しますか？'))return;
+  removeAutoPurchaseUsages(id);
+  pointEntries=pointEntries.filter(entry=>String(entry.itemId)!==String(id));
+  items=items.filter(item=>String(item.id)!==String(id));
+  saveAll();closeModal('editModal');renderAll();toast('削除しました');
 }
 
-function soldItems(type='all'){return items.filter(i=>typeMatches(i,type)&&isSold(i))}
-function summarize(arr){
-  const s={count:arr.length,sales:0,cost:0,fee:0,ship:0,misc:0,profit:0};
-  arr.forEach(i=>{s.sales+=safeNum(i.actualPrice||i.price);s.cost+=safeNum(i.cost);s.fee+=feeOf(i);s.ship+=safeNum(i.ship);s.misc+=safeNum(i.misc);s.profit+=profitOf(i)});
-  s.roi=s.cost>0?Math.round(s.profit/s.cost*100):0;
-  return s;
+function soldItems(type='all'){return items.filter(item=>typeMatches(item,type)&&isSold(item))}
+function summarize(list){
+  const summary={count:list.length,sales:0,fee:0,ship:0,misc:0,beforeCost:0,cashOut:0,cashFlow:0,predicted:0,confirmed:0,expectedPoints:0,confirmedPoints:0};
+  list.forEach(item=>{
+    summary.sales+=safeNum(item.actualPrice||item.price);summary.fee+=feeOf(item);summary.ship+=safeNum(item.ship);summary.misc+=safeNum(item.misc);
+    summary.beforeCost+=pointBeforeCost(item);summary.cashOut+=actualCashOut(item);summary.cashFlow+=cashFlowOf(item);
+    summary.predicted+=predictedProfitOf(item);summary.confirmed+=confirmedProfitOf(item);
+    summary.expectedPoints+=expectedPointsForItem(item);summary.confirmedPoints+=confirmedPointsForItem(item);
+  });
+  summary.roi=summary.beforeCost>0?Math.round(summary.confirmed/summary.beforeCost*100):0;
+  return summary;
 }
 function summaryCard(label,value,color,key,sub='タップで詳細'){
   return `<button class="summary-card" onclick="openSummaryDetail('${key}')"><div class="label">${label}</div><div class="value ${color}">${value}</div><div class="sub">${sub}</div></button>`;
 }
 function renderAnalysis(){
-  const ym=monthKey(viewMonth);$('analysisMonth').textContent=ym;
-  const month=soldItems(analysisType).filter(i=>(i.soldDate||'').startsWith(ym));
+  const yearMonth=monthKey(viewMonth);$('analysisMonth').textContent=yearMonth;
+  const month=soldItems(analysisType).filter(item=>String(item.soldDate).startsWith(yearMonth));
   const total=soldItems(analysisType);
-  const m=summarize(month),t=summarize(total);
+  const monthSummary=summarize(month),totalSummary=summarize(total);
   $('analysisSummary').innerHTML=
-    summaryCard('今月利益',yen(m.profit),m.profit>=0?'green':'red','monthProfit')+
-    summaryCard('今月売上',yen(m.sales),'orange','monthSales')+
-    summaryCard('販売数',m.count+'件','blue','monthCount')+
-    summaryCard('ROI',m.roi+'%','green','monthRoi');
+    summaryCard('今月 現金収支',yen(monthSummary.cashFlow),monthSummary.cashFlow>=0?'green':'red','monthCash')+
+    summaryCard('今月 ポイント込確定',yen(monthSummary.confirmed),monthSummary.confirmed>=0?'green':'red','monthConfirmed')+
+    summaryCard('今月売上',yen(monthSummary.sales),'orange','monthSales')+
+    summaryCard('販売数',monthSummary.count+'件','blue','monthCount');
   $('totalSummary').innerHTML=
-    summaryCard('累計利益',yen(t.profit),t.profit>=0?'green':'red','totalProfit')+
-    summaryCard('累計売上',yen(t.sales),'orange','totalSales')+
-    summaryCard('累計販売数',t.count+'件','blue','totalCount')+
-    summaryCard('累計ROI',t.roi+'%','green','totalRoi');
-  renderMonthlyTable();renderPlatformTable();
+    summaryCard('累計 現金収支',yen(totalSummary.cashFlow),totalSummary.cashFlow>=0?'green':'red','totalCash')+
+    summaryCard('累計 ポイント込確定',yen(totalSummary.confirmed),totalSummary.confirmed>=0?'green':'red','totalConfirmed')+
+    summaryCard('累計売上',yen(totalSummary.sales),'orange','totalSales')+
+    summaryCard('累計販売数',totalSummary.count+'件','blue','totalCount');
+  renderBudget(yearMonth);renderMonthlyTable();renderPlatformTable();
 }
-function moveMonth(n){viewMonth.setMonth(viewMonth.getMonth()+n);renderAnalysis()}
-function groupBy(arr,keyFn){
-  const out={};arr.forEach(i=>{const k=keyFn(i)||'未設定';(out[k]||(out[k]=[])).push(i)});return out;
+function moveMonth(offset){viewMonth.setMonth(viewMonth.getMonth()+offset);renderAnalysis()}
+function renderBudget(yearMonth){
+  const purchases=items.filter(item=>item.purchaseSourceType==='rakuten'&&String(item.purchaseDate||item.date).startsWith(yearMonth));
+  const spent=purchases.reduce((sum,item)=>sum+actualCashOut(item),0);
+  const before=purchases.reduce((sum,item)=>sum+pointBeforeCost(item),0);
+  const budget=clampZero(settings.purchaseBudget);
+  const percent=budget>0?Math.min(100,Math.round(spent/budget*100)):0;
+  $('budgetCard').innerHTML=`<div class="section-head"><div class="section-title">楽天仕入れ予算</div><div class="note">${yearMonth}</div></div>
+    <div class="preview-row"><span>実際の資金支出</span><b>${yen(spent)}</b></div>
+    <div class="preview-row"><span>ポイント使用前仕入原価</span><b>${yen(before)}</b></div>
+    <div class="preview-row"><span>月間予算</span><b>${yen(budget)}</b></div>
+    <div class="progress"><div style="width:${percent}%"></div></div>
+    <div class="note" style="margin-top:7px">${percent}% 使用 ／ ${purchases.length}件</div>`;
+}
+function groupBy(list,keyFunction){
+  const result={};list.forEach(item=>{const key=keyFunction(item)||'未設定';(result[key]||(result[key]=[])).push(item)});return result;
 }
 function renderMonthlyTable(){
-  const groups=groupBy(soldItems(analysisType),i=>(i.soldDate||'').slice(0,7));
-  const rows=Object.keys(groups).sort().reverse().slice(0,12).map(k=>({k,...summarize(groups[k])}));
-  $('monthlyTable').innerHTML=rows.length?`<table><tr><th>月</th><th>売上</th><th>利益</th><th>件数</th></tr>${rows.map(r=>`<tr><td>${r.k}</td><td>${yen(r.sales)}</td><td class="${r.profit>=0?'green':'red'}">${yen(r.profit)}</td><td>${r.count}</td></tr>`).join('')}</table>`:'<div class="empty">データなし</div>';
+  const groups=groupBy(soldItems(analysisType),item=>String(item.soldDate).slice(0,7));
+  const rows=Object.keys(groups).sort().reverse().slice(0,12).map(key=>({key,...summarize(groups[key])}));
+  $('monthlyTable').innerHTML=rows.length?`<table><tr><th>月</th><th>売上</th><th>現金収支</th><th>pt込確定</th><th>件数</th></tr>
+    ${rows.map(row=>`<tr><td>${row.key}</td><td>${yen(row.sales)}</td><td class="${row.cashFlow>=0?'green':'red'}">${yen(row.cashFlow)}</td><td class="${row.confirmed>=0?'green':'red'}">${yen(row.confirmed)}</td><td>${row.count}</td></tr>`).join('')}</table>`:'<div class="empty">データなし</div>';
 }
 function renderPlatformTable(){
-  const groups=groupBy(soldItems(analysisType),i=>PLATFORM_NAME[i.platform]||'その他');
-  const rows=Object.keys(groups).map(k=>({k,...summarize(groups[k])})).sort((a,b)=>b.sales-a.sales);
-  $('platformTable').innerHTML=rows.length?`<table><tr><th>販売先</th><th>売上</th><th>利益</th><th>件数</th></tr>${rows.map(r=>`<tr><td>${r.k}</td><td>${yen(r.sales)}</td><td class="${r.profit>=0?'green':'red'}">${yen(r.profit)}</td><td>${r.count}</td></tr>`).join('')}</table>`:'<div class="empty">データなし</div>';
+  const groups=groupBy(soldItems(analysisType),item=>PLATFORM_NAME[item.platform]||'その他');
+  const rows=Object.keys(groups).map(key=>({key,...summarize(groups[key])})).sort((a,b)=>b.sales-a.sales);
+  $('platformTable').innerHTML=rows.length?`<table><tr><th>販売先</th><th>売上</th><th>現金収支</th><th>pt込確定</th><th>件数</th></tr>
+    ${rows.map(row=>`<tr><td>${row.key}</td><td>${yen(row.sales)}</td><td class="${row.cashFlow>=0?'green':'red'}">${yen(row.cashFlow)}</td><td class="${row.confirmed>=0?'green':'red'}">${yen(row.confirmed)}</td><td>${row.count}</td></tr>`).join('')}</table>`:'<div class="empty">データなし</div>';
 }
 function openSummaryDetail(key){
-  const ym=monthKey(viewMonth);
+  const yearMonth=monthKey(viewMonth);
   const monthly=key.startsWith('month');
-  const arr=soldItems(analysisType).filter(i=>!monthly||(i.soldDate||'').startsWith(ym)).sort((a,b)=>(b.soldDate||'').localeCompare(a.soldDate||''));
-  const s=summarize(arr);
-  $('detailTitle').textContent=monthly?`${ym} の詳細`:'累計の詳細';
-  $('detailContent').innerHTML=`<div class="detail-summary"><div class="note">利益</div><div class="big ${s.profit>=0?'green':'red'}">${yen(s.profit)}</div><div class="note">売上 ${yen(s.sales)} ／ 仕入れ ${yen(s.cost)} ／ 手数料 ${yen(s.fee)} ／ 送料 ${yen(s.ship)} ／ その他 ${yen(s.misc)} ／ ${s.count}件</div></div>`+
-    (arr.length?arr.map(detailRow).join(''):'<div class="empty">データなし</div>');
+  const list=soldItems(analysisType).filter(item=>!monthly||String(item.soldDate).startsWith(yearMonth)).sort((a,b)=>String(b.soldDate).localeCompare(String(a.soldDate)));
+  const summary=summarize(list);
+  $('detailTitle').textContent=monthly?`${yearMonth} の利益詳細`:'累計利益詳細';
+  $('detailContent').innerHTML=`<div class="detail-summary">
+      <div class="preview-row"><span>現金収支</span><b class="${summary.cashFlow>=0?'green':'red'}">${yen(summary.cashFlow)}</b></div>
+      <div class="preview-row"><span>ポイント込み予想利益</span><b class="${summary.predicted>=0?'green':'red'}">${yen(summary.predicted)}</b></div>
+      <div class="preview-row"><span>ポイント込み確定利益</span><b class="${summary.confirmed>=0?'green':'red'}">${yen(summary.confirmed)}</b></div>
+      <div class="preview-row"><span>売上</span><b>${yen(summary.sales)}</b></div>
+      <div class="preview-row"><span>仕入原価</span><b>${yen(summary.beforeCost)}</b></div>
+      <div class="preview-row"><span>確定ポイント</span><b>${summary.confirmedPoints.toLocaleString()}pt</b></div>
+    </div>${list.length?list.map(detailRow).join(''):'<div class="empty">データなし</div>'}`;
   $('detailModal').classList.add('open');
+}
+function detailRow(item){
+  return `<div class="item" style="margin-bottom:8px" onclick="openItemDetail('${item.id}')">
+    <div class="item-top"><div class="item-name">${escapeHtml(item.name)}</div><div class="item-price ${confirmedProfitOf(item)>=0?'green':'red'}">${yen(confirmedProfitOf(item))}</div></div>
+    <div class="item-meta">${item.soldDate||'-'} ／ 現金 ${yen(cashFlowOf(item))} ／ 確定 ${confirmedPointsForItem(item).toLocaleString()}pt</div>
+  </div>`;
 }
 function openItemDetail(id){
-  const i=items.find(x=>String(x.id)===String(id));if(!i)return;
-  $('detailTitle').textContent=i.name;
+  const item=items.find(current=>String(current.id)===String(id));if(!item)return;
+  const entries=itemPointEntries(item.id);
+  $('detailTitle').textContent=item.name;
   $('detailContent').innerHTML=`<div class="detail-summary">
-    <div class="preview-row"><span>状態</span><b>${statusText(i.status)}</b></div>
-    <div class="preview-row"><span>販売価格</span><b>${yen(i.actualPrice||i.price)}</b></div>
-    <div class="preview-row"><span>仕入れ値</span><b>${yen(i.cost)}</b></div>
-    <div class="preview-row"><span>手数料</span><b>${yen(feeOf(i))}</b></div>
-    <div class="preview-row"><span>送料</span><b>${yen(i.ship)}</b></div>
-    <div class="preview-row"><span>その他</span><b>${yen(i.misc)}</b></div>
-    <div class="preview-row"><span>利益</span><b class="${profitOf(i)>=0?'green':'red'}">${yen(profitOf(i))}</b></div>
-    <div class="preview-row"><span>発送方法</span><b>${escapeHtml(shipName(i.shipMethod))}</b></div>
-  </div>`;
+      <div class="section-title" style="margin-bottom:7px">利益</div>
+      <div class="preview-row"><span>メルカリ等の手取り</span><b>${yen(mercariNet(item))}</b></div>
+      <div class="preview-row"><span>現金収支</span><b class="${cashFlowOf(item)>=0?'green':'red'}">${yen(cashFlowOf(item))}</b></div>
+      <div class="preview-row"><span>ポイント込み予想利益</span><b class="${predictedProfitOf(item)>=0?'green':'red'}">${yen(predictedProfitOf(item))}</b></div>
+      <div class="preview-row"><span>ポイント込み確定利益</span><b class="${confirmedProfitOf(item)>=0?'green':'red'}">${yen(confirmedProfitOf(item))}</b></div>
+      <div class="preview-row"><span>獲得予定ポイント</span><b>${expectedPointsForItem(item).toLocaleString()}pt</b></div>
+      <div class="preview-row"><span>確定ポイント</span><b>${confirmedPointsForItem(item).toLocaleString()}pt</b></div>
+    </div>
+    <div class="detail-summary">
+      <div class="section-title" style="margin-bottom:7px">仕入れ</div>
+      <div class="preview-row"><span>仕入れ先区分</span><b>${SOURCE_TYPE_NAME[item.purchaseSourceType]}</b></div>
+      ${item.purchaseSourceType==='rakuten'?`
+        <div class="preview-row"><span>楽天注文番号</span><b>${escapeHtml(item.orderNo||'-')}</b></div>
+        <div class="preview-row"><span>商品代金</span><b>${yen(item.productAmount)}</b></div>
+        <div class="preview-row"><span>クーポン</span><b>－${yen(item.couponDiscount)}</b></div>
+        <div class="preview-row"><span>ポイント使用前仕入原価</span><b>${yen(pointBeforeCost(item))}</b></div>
+        <div class="preview-row"><span>使用通常ポイント</span><b>${item.usedNormalPoints.toLocaleString()}pt</b></div>
+        <div class="preview-row"><span>使用期間限定ポイント</span><b>${item.usedLimitedPoints.toLocaleString()}pt</b></div>
+        <div class="preview-row"><span>実際の資金支出</span><b>${yen(actualCashOut(item))}</b></div>`:
+        `<div class="preview-row"><span>仕入れ値</span><b>${yen(item.cost)}</b></div>`}
+    </div>
+    ${entries.length?`<div class="detail-summary"><div class="section-title" style="margin-bottom:7px">ポイント明細</div>${entries.map(entry=>`
+      <div class="point-row">
+        <div class="point-row-title">${POINT_BREAKDOWN_NAME[entry.breakdown]} <span class="badge ${entry.type}">${POINT_TYPE_NAME[entry.type]}</span></div>
+        <div class="item-meta">${POINT_STATUS_NAME[entry.status]} ／ 予定 ${entry.expected.toLocaleString()}pt ／ 確定 ${entry.confirmed.toLocaleString()}pt ／ 使用 ${entry.usedAmount.toLocaleString()}pt<br>付与予定 ${entry.plannedDate||'-'} ／ 付与 ${entry.actualDate||'-'} ／ 期限 ${entry.expiryDate||'-'}</div>
+      </div>`).join('')}</div>`:''}`;
   $('detailModal').classList.add('open');
 }
-function detailRow(i){
-  return `<div class="item" style="margin-bottom:8px"><div class="item-top"><div class="item-name">${escapeHtml(i.name)}</div><div class="item-price ${profitOf(i)>=0?'green':'red'}">${yen(profitOf(i))}</div></div><div class="item-meta">${i.soldDate||'-'} ／ 売上 ${yen(i.actualPrice||i.price)} ／ 送料 ${yen(i.ship)}</div></div>`;
+
+function pointSummaryData(){
+  const currentMonth=monthKey(new Date());
+  const normal=availablePointBalance('normal');
+  const limited=availablePointBalance('limited');
+  const unconfirmed=pointEntries.filter(entry=>entry.status==='planned').reduce((sum,entry)=>sum+entry.expected,0);
+  const earned=pointEntries.filter(entry=>entry.actualDate&&entry.actualDate.startsWith(currentMonth)).reduce((sum,entry)=>sum+effectiveConfirmedAmount(entry),0);
+  const used=pointUsages.filter(usage=>usage.date.startsWith(currentMonth)).reduce((sum,usage)=>sum+usage.amount,0);
+  const limitDate=new Date();limitDate.setDate(limitDate.getDate()+safeNum(settings.expiryWarningDays));
+  const expiring=pointEntries.filter(entry=>entry.type==='limited'&&entry.expiryDate&&entry.expiryDate>=today()&&entry.expiryDate<=localDate(limitDate))
+    .reduce((sum,entry)=>sum+availableOfEntry(entry),0);
+  return {normal,limited,unconfirmed,earned,used,expiring};
+}
+function pointCard(label,value,color,sub){
+  return `<div class="summary-card"><div class="label">${label}</div><div class="value ${color}">${value}</div><div class="sub">${sub}</div></div>`;
+}
+function renderPointPage(){
+  applyAutomaticExpiry();
+  const data=pointSummaryData();
+  $('pointSummary').innerHTML=
+    pointCard('通常ポイント残高',data.normal.toLocaleString()+'pt','blue','副業で確定・未使用')+
+    pointCard('期間限定残高',data.limited.toLocaleString()+'pt','purple','期限が近い順に使用')+
+    pointCard('未確定ポイント',data.unconfirmed.toLocaleString()+'pt','orange','獲得予定')+
+    pointCard('今月獲得',data.earned.toLocaleString()+'pt','green','確定したポイント')+
+    pointCard('今月使用',data.used.toLocaleString()+'pt','red','副業・私用を含む')+
+    pointCard(`${settings.expiryWarningDays}日以内失効`,data.expiring.toLocaleString()+'pt',data.expiring?'red':'green','未使用の期間限定');
+  renderWarnings();
+  renderPointHistory();
+}
+function daysBetween(from,to){
+  const start=new Date(from+'T00:00:00');const end=new Date(to+'T00:00:00');
+  return Math.ceil((end-start)/86400000);
+}
+function getWarnings(){
+  const warnings=[];
+  const current=today();
+  pointEntries.forEach(entry=>{
+    const item=items.find(currentItem=>String(currentItem.id)===String(entry.itemId));
+    const name=item?.name||'繰越・調整ポイント';
+    if(entry.type==='limited'&&entry.expiryDate&&availableOfEntry(entry)>0){
+      const days=daysBetween(current,entry.expiryDate);
+      if(days>=0&&days<=safeNum(settings.expiryWarningDays)){
+        warnings.push({critical:days<=7,title:`${days}日後に失効`,text:`${name}：${availableOfEntry(entry).toLocaleString()}pt（期限 ${entry.expiryDate}）`});
+      }
+    }
+    if(entry.status==='planned'&&entry.plannedDate&&entry.plannedDate<current){
+      warnings.push({critical:true,title:'付与予定日を超過',text:`${name}：${entry.expected.toLocaleString()}pt（予定 ${entry.plannedDate}）`});
+    }
+    if(entry.status!=='planned'&&entry.status!=='canceled'&&entry.expected>0&&entry.confirmed!==entry.expected){
+      warnings.push({critical:false,title:'予定と確定が不一致',text:`${name}：予定 ${entry.expected.toLocaleString()}pt／確定 ${entry.confirmed.toLocaleString()}pt`});
+    }
+  });
+  pointUsages.forEach(usage=>{
+    const allocated=(usage.allocations||[]).reduce((sum,allocation)=>sum+allocation.amount,0);
+    if(allocated<usage.amount){
+      warnings.push({critical:true,title:'ポイント使用の割当不足',text:`${usage.date}：使用 ${usage.amount.toLocaleString()}ptに対し割当 ${allocated.toLocaleString()}pt`});
+    }
+  });
+  const currentMonth=monthKey(new Date());
+  const currentExpected=pointEntries.filter(entry=>(entry.actualDate||entry.plannedDate||'').startsWith(currentMonth))
+    .reduce((sum,entry)=>sum+(entry.status==='planned'?entry.expected:effectiveConfirmedAmount(entry)),0);
+  const cap=clampZero(settings.monthlyPointCap);
+  if(cap>0&&currentExpected>=cap*.9){
+    warnings.push({critical:currentExpected>cap,title:currentExpected>cap?'月間ポイント上限を超える可能性':'月間ポイント上限に接近',
+      text:`今月 ${currentExpected.toLocaleString()}pt ／ 設定上限 ${cap.toLocaleString()}pt。キャンペーンごとの上限を確認してください。`});
+  }
+  const spent=items.filter(item=>item.purchaseSourceType==='rakuten'&&String(item.purchaseDate).startsWith(currentMonth))
+    .reduce((sum,item)=>sum+actualCashOut(item),0);
+  if(settings.purchaseBudget>0&&spent>settings.purchaseBudget){
+    warnings.push({critical:true,title:'楽天仕入れ予算を超過',text:`今月の資金支出 ${yen(spent)} ／ 予算 ${yen(settings.purchaseBudget)}`});
+  }
+  return warnings;
+}
+function renderWarnings(){
+  const warnings=getWarnings();
+  $('warningCount').textContent=`${warnings.length}件`;
+  $('warningList').innerHTML=warnings.length?warnings.map(warning=>`
+    <div class="warning ${warning.critical?'critical':''}">
+      <div class="warning-title">${escapeHtml(warning.title)}</div><div class="warning-text">${escapeHtml(warning.text)}</div>
+    </div>`).join(''):'<div class="empty" style="padding:15px">現在、警告はありません</div>';
+}
+function buildPointHistory(){
+  const events=[];
+  pointEntries.forEach(entry=>{
+    const item=items.find(current=>String(current.id)===String(entry.itemId));
+    const source=item?.name||'繰越・調整ポイント';
+    if(entry.status==='planned'){
+      events.push({id:`planned_${entry.id}`,date:entry.plannedDate||entry.createdAt.slice(0,10),type:entry.type,event:'planned',amount:entry.expected,title:'獲得予定',source,note:entry.note});
+    }else if(entry.confirmed>0){
+      events.push({id:`earned_${entry.id}`,date:entry.actualDate||entry.plannedDate||entry.createdAt.slice(0,10),type:entry.type,event:'earned',amount:effectiveConfirmedAmount(entry),title:'獲得',source,note:entry.note});
+    }
+    if(entry.expiredAmount>0){
+      events.push({id:`expired_${entry.id}`,date:entry.expiryDate||today(),type:entry.type,event:'expired',amount:entry.expiredAmount,title:'失効',source,note:entry.note});
+    }
+    if(entry.canceledAmount>0||entry.status==='canceled'){
+      events.push({id:`canceled_${entry.id}`,date:entry.actualDate||entry.plannedDate||entry.createdAt.slice(0,10),type:entry.type,event:'canceled',amount:entry.canceledAmount||entry.expected,title:'取消',source,note:entry.note});
+    }
+  });
+  pointUsages.forEach(usage=>{
+    const item=items.find(current=>String(current.id)===String(usage.relatedItemId));
+    events.push({id:`used_${usage.id}`,date:usage.date,type:usage.type,event:'used',amount:usage.amount,title:'使用',
+      source:item?.name||USAGE_PURPOSE_NAME[usage.purpose],note:`${USAGE_PURPOSE_NAME[usage.purpose]}／${usage.scope==='private'?'私用':'副業'}${usage.note?'／'+usage.note:''}`});
+  });
+  return events.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+}
+function renderPointHistory(){
+  const type=$('historyType').value||'all';
+  const event=$('historyEvent').value||'all';
+  const month=$('historyMonth').value;
+  let events=buildPointHistory();
+  if(type!=='all')events=events.filter(item=>item.type===type);
+  if(event!=='all')events=events.filter(item=>item.event===event);
+  if(month)events=events.filter(item=>String(item.date).startsWith(month));
+  $('historyCount').textContent=`${events.length}件`;
+  const signs={planned:'＋',earned:'＋',used:'－',expired:'－',canceled:'－'};
+  $('pointHistory').innerHTML=events.length?events.map(item=>`
+    <div class="item history-event">
+      <div class="history-icon">${signs[item.event]}</div>
+      <div class="history-main">
+        <div class="history-title">${item.title}・${POINT_TYPE_NAME[item.type]}</div>
+        <div class="history-meta">${item.date||'-'} ／ ${escapeHtml(item.source)}${item.note?`<br>${escapeHtml(item.note)}`:''}</div>
+      </div>
+      <div class="history-amount ${['earned','planned'].includes(item.event)?'green':'red'}">${signs[item.event]}${item.amount.toLocaleString()}pt</div>
+    </div>`).join(''):'<div class="empty">履歴がありません</div>';
+}
+function clearHistoryFilter(){$('historyType').value='all';$('historyEvent').value='all';$('historyMonth').value='';renderPointHistory()}
+
+function openPointUsage(){
+  $('uDate').value=today();$('uType').value='normal';$('uAmount').value='';$('uPurpose').value='card';$('uScope').value='business';$('uNote').value='';
+  $('uRelatedItem').innerHTML='<option value="">関連なし</option>'+items.map(item=>`<option value="${item.id}">${escapeHtml(item.name)}</option>`).join('');
+  renderUsageBalance();$('pointUsageModal').classList.add('open');
+}
+function renderUsageBalance(){
+  const type=$('uType').value;
+  $('usageBalanceNote').textContent=`現在の${POINT_TYPE_NAME[type]}ポイント残高：${availablePointBalance(type).toLocaleString()}pt`;
+}
+function savePointUsage(){
+  const type=$('uType').value;
+  const amount=clampZero($('uAmount').value);
+  if(amount<=0){toast('使用ポイント数を入力してください');return}
+  const snapshot={points:deepClone(pointEntries),usages:deepClone(pointUsages)};
+  try{
+    createUsage({
+      date:$('uDate').value||today(),type,amount,purpose:$('uPurpose').value,scope:$('uScope').value,
+      relatedItemId:$('uRelatedItem').value,note:$('uNote').value.trim(),autoPurchase:false
+    });
+    saveAll();closeModal('pointUsageModal');renderAll();toast('ポイント使用を登録しました');
+  }catch(errorObject){
+    pointEntries=snapshot.points;pointUsages=snapshot.usages;toast(errorObject.message);
+  }
+}
+function openManualPoint(){
+  $('mPointType').value='normal';$('mPointAmount').value='';$('mPointDate').value=today();$('mPointExpiry').value='';$('mPointNote').value='';
+  $('manualPointModal').classList.add('open');
+}
+function saveManualPoint(){
+  const type=$('mPointType').value;
+  const amount=clampZero($('mPointAmount').value);
+  if(amount<=0){toast('ポイント数を入力してください');return}
+  if(type==='limited'&&!$('mPointExpiry').value){toast('期間限定ポイントは有効期限を入力してください');return}
+  pointEntries.push(normalizePointEntry({
+    id:uid('pt'),itemId:'',type,breakdown:'other',expected:amount,confirmed:amount,status:'confirmed',
+    plannedDate:$('mPointDate').value||today(),actualDate:$('mPointDate').value||today(),
+    expiryDate:$('mPointExpiry').value,note:$('mPointNote').value.trim()||'繰越・調整ポイント'
+  }));
+  saveAll();closeModal('manualPointModal');renderAll();toast('繰越・調整ポイントを登録しました');
 }
 
-function renderData(){
-  const sold=soldItems('all').length;
-  $('dataCount').textContent=`全${items.length}件・販売済み${sold}件`;
+function loadSettingsForm(){
+  $('setSpu').value=settings.spuMultiplier;$('setBuyAround').value=settings.buyAroundMultiplier;
+  $('setBudget').value=settings.purchaseBudget;$('setPointValue').value=settings.pointValue;
+  $('setExpiryDays').value=settings.expiryWarningDays;$('setMonthlyCap').value=settings.monthlyPointCap;
 }
+function saveSettings(){
+  settings={
+    spuMultiplier:clampZero($('setSpu').value),
+    buyAroundMultiplier:clampZero($('setBuyAround').value),
+    purchaseBudget:clampZero($('setBudget').value),
+    pointValue:clampZero($('setPointValue').value),
+    expiryWarningDays:Math.max(1,Math.round(clampZero($('setExpiryDays').value)||30)),
+    monthlyPointCap:clampZero($('setMonthlyCap').value)
+  };
+  saveAll();renderAll();toast('設定を保存しました');
+}
+function renderData(){
+  $('dataCount').textContent=`商品 ${items.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件`;
+  loadSettingsForm();
+}
+function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
 function makeCSV(){
   const start=$('csvStart').value,end=$('csvEnd').value;
-  const arr=[...items].filter(i=>{
-    const d=(isSold(i)?i.soldDate:i.date)||'';const m=d.slice(0,7);
-    return (!start||m>=start)&&(!end||m<=end);
+  const list=items.filter(item=>{
+    const date=(isSold(item)?item.soldDate:item.purchaseDate||item.date)||'';
+    const month=date.slice(0,7);
+    return (!start||month>=start)&&(!end||month<=end);
   });
-  const head=['商品名','種別','カテゴリ','仕入れ先','登録日','状態','売れた日','売上','仕入れ値','手数料','送料','その他','利益','ROI','販売先','発送方法','メモ'];
-  const rows=arr.map(i=>[i.name,i.type==='fuyohin'?'不用品':'せどり',i.cat,i.source,i.date,statusText(i.status),i.soldDate,i.actualPrice||i.price,i.cost,feeOf(i),i.ship,i.misc,profitOf(i),roiOf(i),PLATFORM_NAME[i.platform]||'',shipName(i.shipMethod),i.memo]);
-  return [head,...rows].map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const header=[
+    '商品名','種別','カテゴリ','仕入れ先区分','仕入れ先','楽天注文番号','購入日','商品代金','クーポン',
+    '使用通常ポイント','使用期間限定ポイント','ポイント使用前仕入原価','実際の資金支出','状態','売れた日',
+    '売上','手数料','送料','その他販売経費','メルカリ等手取り','現金収支','獲得予定ポイント',
+    '確定ポイント','ポイント込み予想利益','ポイント込み確定利益','販売先','発送方法','メモ'
+  ];
+  const rows=list.map(item=>[
+    item.name,item.type==='fuyohin'?'不用品':'せどり',item.cat,SOURCE_TYPE_NAME[item.purchaseSourceType],item.source,item.orderNo,
+    item.purchaseDate,item.productAmount,item.couponDiscount,item.usedNormalPoints,item.usedLimitedPoints,pointBeforeCost(item),
+    actualCashOut(item),statusText(item.status),item.soldDate,item.actualPrice||item.price,feeOf(item),item.ship,item.misc,
+    mercariNet(item),cashFlowOf(item),expectedPointsForItem(item),confirmedPointsForItem(item),predictedProfitOf(item),
+    confirmedProfitOf(item),PLATFORM_NAME[item.platform]||'',shipName(item.shipMethod),item.memo
+  ]);
+  return [header,...rows].map(row=>row.map(csvEscape).join(',')).join('\n');
 }
-function downloadCSV(){downloadBlob(new Blob(['\ufeff'+makeCSV()],{type:'text/csv'}),`sedori_${today()}.csv`);toast('CSVを保存しました')}
+function downloadCSV(){
+  downloadBlob(new Blob(['\ufeff'+makeCSV()],{type:'text/csv'}),`sedori_items_${today()}.csv`);
+  toast('商品CSVを保存しました');
+}
+function makePointCSV(){
+  const header=['日付','内容','ポイント種別','ポイント数','商品・使用先','状態・利用区分','備考'];
+  const rows=buildPointHistory().map(event=>[
+    event.date,event.title,POINT_TYPE_NAME[event.type],event.amount,event.source,event.event,event.note
+  ]);
+  return [header,...rows].map(row=>row.map(csvEscape).join(',')).join('\n');
+}
+function downloadPointCSV(){
+  downloadBlob(new Blob(['\ufeff'+makePointCSV()],{type:'text/csv'}),`sedori_points_${today()}.csv`);
+  toast('ポイントCSVを保存しました');
+}
 function downloadBackup(){
-  const data={version:'2026-07-simple',items,exportedAt:new Date().toISOString()};
+  const data={
+    version:'2026-07-rakuten-points-v3',schemaVersion:SCHEMA_VERSION,
+    items,pointEntries,pointUsages,settings,exportedAt:new Date().toISOString()
+  };
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
   toast('バックアップを保存しました');
 }
 function restoreBackup(event){
   const file=event.target.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=()=>{
+  const reader=new FileReader();
+  reader.onload=()=>{
     try{
-      const data=JSON.parse(r.result);const next=Array.isArray(data)?data:data.items;
-      if(!Array.isArray(next))throw new Error();
+      const data=JSON.parse(reader.result);
       if(!confirm('現在のデータを上書きして復元しますか？'))return;
-      items=next;normalizeAll();renderAll();toast('復元しました');
-    }catch{toast('復元できませんでした')}
+      if(Array.isArray(data)){
+        items=data;pointEntries=[];pointUsages=[];settings={...DEFAULT_SETTINGS};
+      }else{
+        if(!Array.isArray(data.items))throw new Error('商品データがありません');
+        items=data.items;pointEntries=Array.isArray(data.pointEntries)?data.pointEntries:[];
+        pointUsages=Array.isArray(data.pointUsages)?data.pointUsages:[];
+        settings={...DEFAULT_SETTINGS,...(data.settings||{})};
+      }
+      items=items.map(normalizeItem);pointEntries=pointEntries.map(normalizePointEntry);pointUsages=pointUsages.map(normalizeUsage);
+      migrateEmbeddedPointDetails();applyAutomaticExpiry();saveAll();renderAll();toast('復元しました');
+    }catch(errorObject){toast(`復元できませんでした：${errorObject.message||'形式エラー'}`)}
+    event.target.value='';
   };
-  r.readAsText(file);
+  reader.readAsText(file);
 }
 function downloadBlob(blob,name){
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const anchor=document.createElement('a');anchor.href=URL.createObjectURL(blob);anchor.download=name;anchor.click();
+  setTimeout(()=>URL.revokeObjectURL(anchor.href),1000);
 }
 function deleteAll(){
-  if(!confirm('全データを削除しますか？'))return;
+  if(!confirm('商品・ポイント・使用履歴・設定をすべて削除しますか？'))return;
   if(!confirm('本当に削除します。バックアップは保存しましたか？'))return;
-  items=[];save();renderAll();toast('全データを削除しました');
+  items=[];pointEntries=[];pointUsages=[];settings={...DEFAULT_SETTINGS};saveAll();loadSettingsForm();renderAll();toast('全データを削除しました');
 }
 function openShipping(){
   const groups=[['mercari','メルカリ'],['yahoo','Yahoo!フリマ・ヤフオク']];
   $('shipTable').innerHTML=groups.map(([group,title])=>{
-    const rows=SHIPPING_METHODS.filter(x=>x.group===group);
-    return `<div class="section-title" style="margin:12px 0 6px">${title}</div><div class="table-wrap"><table><tr><th>発送方法</th><th>送料</th></tr>${rows.map(x=>`<tr><td>${x.name}</td><td>${x.fee===null?'手入力':yen(x.fee)}</td></tr>`).join('')}</table></div>`;
+    const rows=SHIPPING_METHODS.filter(method=>method.group===group);
+    return `<div class="section-title" style="margin:12px 0 6px">${title}</div><div class="table-wrap"><table>
+      <tr><th>発送方法</th><th>送料</th></tr>${rows.map(method=>`<tr><td>${method.name}</td><td>${method.fee===null?'手入力':yen(method.fee)}</td></tr>`).join('')}
+    </table></div>`;
   }).join('');
   $('shipModal').classList.add('open');
 }
 function closeModal(id){$(id).classList.remove('open')}
 
-document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+/* 内部検証。通常画面からは実行しません。 */
+window.runSedoriSelfTests=function(){
+  const original={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),settings:deepClone(settings)};
+  const results=[];
+  const test=(name,condition,details='')=>results.push({name,passed:Boolean(condition),details});
+  try{
+    settings={...DEFAULT_SETTINGS,pointValue:1};
+    items=[];pointEntries=[];pointUsages=[];
+    const legacy=normalizeItem({id:'legacy',name:'セカスト商品',source:'セカンドストリート',cost:1000,status:'sold',actualPrice:3000,price:3000,ship:210,misc:0,platform:'mercari',feeRate:.1,soldDate:'2026-07-01'});
+    items=[legacy];
+    test('既存セカスト利益',confirmedProfitOf(legacy)===1490,`結果 ${confirmedProfitOf(legacy)}`);
+
+    const rakuten=normalizeItem({id:'rakuten',name:'楽天商品',purchaseSourceType:'rakuten',source:'楽天市場',productAmount:5000,couponDiscount:500,usedNormalPoints:500,usedLimitedPoints:0,cost:4500,status:'sold',actualPrice:7000,price:7000,ship:750,misc:0,platform:'mercari',feeRate:.1,soldDate:'2026-07-01'});
+    items.push(rakuten);
+    pointEntries=[
+      normalizePointEntry({id:'p1',itemId:'rakuten',type:'normal',breakdown:'normal_purchase',expected:100,status:'planned'}),
+      normalizePointEntry({id:'p2',itemId:'rakuten',type:'limited',breakdown:'spu',expected:300,confirmed:250,status:'confirmed',actualDate:'2026-07-02',expiryDate:'2026-09-30'})
+    ];
+    test('予定と確定を分離',expectedPointsForItem(rakuten)===400&&confirmedPointsForItem(rakuten)===250,
+      `予定 ${expectedPointsForItem(rakuten)} 確定 ${confirmedPointsForItem(rakuten)}`);
+    test('楽天現金収支',cashFlowOf(rakuten)===1550,`結果 ${cashFlowOf(rakuten)}`);
+    test('楽天ポイント込確定利益',confirmedProfitOf(rakuten)===1300,`結果 ${confirmedProfitOf(rakuten)}`);
+
+    pointEntries=[
+      normalizePointEntry({id:'l1',type:'limited',confirmed:100,status:'confirmed',actualDate:'2026-07-01',expiryDate:'2026-07-31'}),
+      normalizePointEntry({id:'l2',type:'limited',confirmed:100,status:'confirmed',actualDate:'2026-07-01',expiryDate:'2026-08-31'})
+    ];
+    const beforeProfit=confirmedProfitOf(rakuten);
+    const allocations=allocatePoints('limited',120,'2026-07-10');
+    test('期間限定ポイント期限順消費',allocations.length===2&&allocations[0].entryId==='l1'&&allocations[0].amount===100&&allocations[1].entryId==='l2'&&allocations[1].amount===20,JSON.stringify(allocations));
+    test('ポイント使用後の二重計上なし',confirmedProfitOf(rakuten)===beforeProfit,`使用前 ${beforeProfit} 使用後 ${confirmedProfitOf(rakuten)}`);
+
+    const migrated=normalizeItem({id:'old',name:'旧商品',cost:1200,source:'リサイクルショップ',status:'listed'});
+    test('既存データ移行',migrated.cost===1200&&migrated.purchaseSourceType==='other'&&migrated.productAmount===1200,JSON.stringify(migrated));
+  }catch(errorObject){
+    results.push({name:'テスト実行',passed:false,details:errorObject.message});
+  }finally{
+    items=original.items;pointEntries=original.points;pointUsages=original.usages;settings=original.settings;
+  }
+  return {passed:results.every(result=>result.passed),results};
+};
+
+document.querySelectorAll('.modal').forEach(modal=>modal.addEventListener('click',event=>{if(event.target===modal)modal.classList.remove('open')}));
 init();
 </script>
 </body>
 </html>
+<!--
+変更履歴
+2026-07-26
+- 既存の単一HTML・localStorage構成を維持したまま楽天ポイント管理を追加
+- sedori_itemsの既存商品を自動移行し、既存データを初期化しない処理を追加
+- sedori_point_entries、sedori_point_usages、sedori_settings、sedori_schema_versionを追加
+- 1商品に複数の獲得ポイント明細を関連付ける構造を追加
+- 通常ポイント・期間限定ポイント・予定・確定・使用済み・失効・取消を追加
+- 購入時ポイント使用を副業ポイント残高から自動減算
+- 期間限定ポイントを有効期限が近い順に消費するFIFO処理を追加
+- 現金収支、ポイント込み予想利益、ポイント込み確定利益を分離
+- ポイント管理画面、履歴、警告、設定、ポイントCSVを追加
+- SPU、買い回り、仕入れ予算、ポイント価値、失効警告日数、月間上限を設定化
+- 旧セカスト商品の従来利益計算を維持
+- バックアップを商品・ポイント・使用履歴・設定の統合形式へ拡張
+-->
