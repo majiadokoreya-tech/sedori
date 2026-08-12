@@ -139,6 +139,14 @@ th{color:var(--muted);font-size:.68rem}
 .inline-check{display:flex;align-items:center;gap:8px;margin:5px 0 10px}
 .inline-check input{width:auto}
 .help{background:var(--yellow);border:1px solid #f0df9d;border-radius:12px;padding:10px;font-size:.71rem;line-height:1.55;color:#6f5a00;margin-bottom:10px}
+.pack-choice{display:grid;grid-template-columns:auto 1fr 76px;gap:9px;align-items:center;border:1px solid var(--line);border-radius:13px;padding:10px;margin-bottom:8px;background:#fff}
+.pack-choice.recommended{border-color:#ff9eb2;background:#fff8fa}
+.pack-choice input[type="checkbox"]{width:22px;height:22px}
+.pack-choice input[type="number"]{padding:8px;text-align:center}
+.pack-choice-name{font-size:.78rem;font-weight:950;line-height:1.35}
+.pack-choice-meta{font-size:.68rem;color:var(--muted);margin-top:3px;line-height:1.45}
+.pack-total{background:#f7f8fa;border:1px solid var(--line);border-radius:13px;padding:11px;margin:10px 0}
+.pack-total strong{font-size:1.15rem}
 @media(min-width:780px){
   .modal{align-items:center}.modal-box{max-width:740px;margin:auto;border-radius:22px}
   .fixed-add{left:calc(50% + 300px);right:auto}
@@ -596,12 +604,26 @@ th{color:var(--muted);font-size:.68rem}
     <div class="form-grid one"><div><label>梱包材名</label><input id="packName" placeholder="例：ダンボール 60サイズ"></div></div>
     <div class="form-grid">
       <div><label>現在の在庫数</label><input id="packStock" type="number" min="0" inputmode="numeric"></div>
-      <div><label>在庫警告ライン</label><input id="packLowStock" type="number" min="0" inputmode="numeric" value="3"></div>
+      <div><label>1個あたり単価</label><input id="packUnitCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="例：5"></div>
     </div>
+    <div class="form-grid one"><div><label>在庫警告ライン</label><input id="packLowStock" type="number" min="0" inputmode="numeric" value="3"></div></div>
     <div class="form-grid one"><div><label>発送時に自動で1個減らす発送サイズ・方法</label><select id="packLinkKey"></select></div></div>
     <div class="help">「段ボール」を選ぶとサイズ別に登録できます。例：60サイズ箱を5個登録 → 60サイズで発送済みにすると4個になります。80サイズ箱など他サイズの在庫には影響しません。</div>
     <button class="btn btn-primary full" onclick="savePackagingMaterial()">保存する</button>
     <button id="packDeleteButton" class="btn btn-danger full" style="margin-top:9px" onclick="deletePackagingMaterial()">この梱包材を削除</button>
+  </div>
+</div>
+
+<!-- 発送完了・梱包材選択 -->
+<div class="modal" id="shippingCompleteModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>発送に使った梱包材</h2><button class="close" onclick="closeModal('shippingCompleteModal')">×</button></div>
+    <input id="shippingCompleteItemId" type="hidden">
+    <div id="shippingCompleteInfo" class="help"></div>
+    <div class="section-head"><div class="section-title">使用したアイテムを選択</div><div class="note">複数選択OK</div></div>
+    <div id="shippingMaterialChoices"></div>
+    <div id="shippingPackagingTotal" class="pack-total"></div>
+    <button class="btn btn-blue full" onclick="confirmShipment()">選択した梱包材で発送済みにする</button>
   </div>
 </div>
 
@@ -635,7 +657,7 @@ const STORAGE={
   settings:'sedori_settings',
   schema:'sedori_schema_version'
 };
-const SCHEMA_VERSION=5;
+const SCHEMA_VERSION=6;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -646,7 +668,7 @@ const DEFAULT_SETTINGS={
   lastCategory:'その他'
 };
 const DEFAULT_PACKAGING=[
-  {id:'pack_mini_default',name:'ゆうパケットポストmini 専用封筒',stock:0,linkKey:'mini',materialType:'special',boxSize:'',lowStockAt:3,createdAt:'2026-08-12T00:00:00.000Z'}
+  {id:'pack_mini_default',name:'ゆうパケットポストmini 専用封筒',stock:0,unitCost:0,linkKey:'mini',materialType:'special',boxSize:'',lowStockAt:3,createdAt:'2026-08-12T00:00:00.000Z'}
 ];
 const BOX_SIZES=[60,80,100,120,140,160,170,180,200];
 const PACKAGING_TYPE_NAME={special:'専用資材',box:'段ボール',bag:'袋・封筒',tape:'テープ・シール',other:'その他'};
@@ -774,6 +796,7 @@ function normalizePackagingMaterial(raw){
   material.id=material.id||uid('pack');
   material.name=String(material.name||'梱包材').trim()||'梱包材';
   material.stock=Math.max(0,Math.floor(safeNum(material.stock)));
+  material.unitCost=Math.max(0,safeNum(material.unitCost));
   material.linkKey=PACKAGING_LINKS.some(link=>link.key===material.linkKey)?material.linkKey:'none';
   const linkedSize=String(material.linkKey).match(/^size(\d+)$/);
   const nameSize=String(material.name).match(/(?:段ボール|ダンボール|箱).*?(60|80|100|120|140|160|170|180|200)/);
@@ -810,8 +833,9 @@ function actualCashOut(item){
   }
   return clampZero(item.cost);
 }
+function packagingCostOf(item){return Math.max(0,safeNum(item.packagingCost))}
 function mercariNet(item){
-  return safeNum(item.actualPrice||item.price)-feeOf(item)-safeNum(item.ship)-safeNum(item.misc);
+  return safeNum(item.actualPrice||item.price)-feeOf(item)-safeNum(item.ship)-safeNum(item.misc)-packagingCostOf(item);
 }
 function itemPointEntries(itemId){return pointEntries.filter(entry=>String(entry.itemId)===String(itemId))}
 function effectiveConfirmedAmount(entry){
@@ -883,10 +907,17 @@ function normalizeItem(raw,index=0){
   item.misc=clampZero(item.misc);
   item.soldDate=item.soldDate||'';
   item.shipMethod=item.shipMethod||guessShipMethod(item);
-  item.packagingConsumption=item.packagingConsumption&&item.packagingConsumption.materialId?{
-    materialId:String(item.packagingConsumption.materialId),quantity:Math.max(1,Math.floor(safeNum(item.packagingConsumption.quantity)||1)),
-    consumedAt:item.packagingConsumption.consumedAt||'',shipMethod:item.packagingConsumption.shipMethod||item.shipMethod
-  }:null;
+  const legacyPackaging=item.packagingConsumption&&item.packagingConsumption.materialId?[item.packagingConsumption]:[];
+  const rawPackaging=Array.isArray(item.packagingConsumptions)?item.packagingConsumptions:legacyPackaging;
+  item.packagingConsumptions=rawPackaging.filter(c=>c&&c.materialId).map(c=>({
+    materialId:String(c.materialId),
+    quantity:Math.max(1,Math.floor(safeNum(c.quantity)||1)),
+    unitCost:Math.max(0,safeNum(c.unitCost)),
+    consumedAt:c.consumedAt||'',
+    shipMethod:c.shipMethod||item.shipMethod
+  }));
+  item.packagingCost=item.packagingConsumptions.reduce((sum,c)=>sum+(safeNum(c.unitCost)*Math.max(1,Math.floor(safeNum(c.quantity)||1))),0);
+  item.packagingConsumption=null;
   item.purchaseSourceType=['secondstreet','rakuten','other'].includes(item.purchaseSourceType)
     ?item.purchaseSourceType:inferPurchaseSourceType(item.source);
   item.orderNo=item.orderNo||'';
@@ -1381,8 +1412,9 @@ function renderShipPackagingNote(prefix){
   const select=$(prefix+'ShipMethod');
   if(!note||!select)return;
   const material=linkedPackagingForShipMethod(select.value);
-  if(!material){note.textContent='この発送方法に自動連動する梱包材は設定されていません。';return}
-  note.innerHTML=`使用する梱包材：<b>${escapeHtml(material.name)}</b> ／ 在庫 <b class="${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</b>（発送済みで－1）`;
+  if(!packagingMaterials.length){note.textContent='梱包材在庫が未登録です。設定画面から登録できます。';return}
+  if(!material){note.textContent='発送済みにする時、登録済み梱包材から実際に使ったアイテムを選択します。';return}
+  note.innerHTML=`発送時に梱包材を選択します。おすすめ：<b>${escapeHtml(material.name)}</b> ／ 在庫 <b class="${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</b>`;
 }
 function salePreview(item,price,platform,ship,misc){
   const temporary={...item,actualPrice:clampZero(price),price:clampZero(price),platform,feeRate:feeRate(platform),ship:clampZero(ship),misc:clampZero(misc)};
@@ -1416,37 +1448,113 @@ function saveSold(){
   item.misc=clampZero($('sMisc').value);item.shipMethod=$('sShipMethod').value;
   saveAll();closeModal('soldModal');stockStatus='waiting';syncStockTabs();renderAll();toast('売れた記録を保存しました');
 }
-function restorePackagingConsumption(item){
-  const consumption=item.packagingConsumption;
-  if(!consumption)return;
-  const material=packagingMaterials.find(current=>String(current.id)===String(consumption.materialId));
-  if(material)material.stock+=Math.max(1,Math.floor(safeNum(consumption.quantity)||1));
-  item.packagingConsumption=null;
+function restorePackagingConsumptions(item){
+  const consumptions=Array.isArray(item.packagingConsumptions)?item.packagingConsumptions:[];
+  consumptions.forEach(consumption=>{
+    const material=packagingMaterials.find(current=>String(current.id)===String(consumption.materialId));
+    if(material)material.stock+=Math.max(1,Math.floor(safeNum(consumption.quantity)||1));
+  });
+  item.packagingConsumptions=[];
+  item.packagingCost=0;
 }
 function syncPackagingForItem(item){
-  const desired=item.status==='shipped'?linkedPackagingForShipMethod(item.shipMethod):null;
-  const current=item.packagingConsumption;
-  if(current&&(!desired||String(current.materialId)!==String(desired.id))){
-    restorePackagingConsumption(item);
+  if(item.status!=='shipped'&&Array.isArray(item.packagingConsumptions)&&item.packagingConsumptions.length){
+    restorePackagingConsumptions(item);
   }
-  if(item.status!=='shipped'||!desired)return;
-  if(item.packagingConsumption&&String(item.packagingConsumption.materialId)===String(desired.id))return;
-  if(desired.stock<=0)throw new Error(`${desired.name}の在庫が0個です。梱包材在庫を補充してから発送済みにしてください`);
-  desired.stock-=1;
-  item.packagingConsumption={materialId:desired.id,quantity:1,consumedAt:new Date().toISOString(),shipMethod:item.shipMethod};
 }
-function markShipped(id){
+function openShippingComplete(id){
   const item=items.find(current=>String(current.id)===String(id));if(!item)return;
+  if(item.status!=='sold'){toast('未発送の商品だけ発送処理できます');return}
+  $('shippingCompleteItemId').value=item.id;
+  $('shippingCompleteInfo').innerHTML=`<b>${escapeHtml(item.name)}</b><br>発送方法：${escapeHtml(shipName(item.shipMethod))}<br>実際に使用した梱包材を選んでください。`;
+  renderShippingMaterialChoices(item);
+  $('shippingCompleteModal').classList.add('open');
+}
+function markShipped(id){openShippingComplete(id)}
+function renderShippingMaterialChoices(item){
+  const target=$('shippingMaterialChoices');
+  const recommendedKey=packagingLinkKey(item.shipMethod);
+  const sorted=[...packagingMaterials].sort((a,b)=>{
+    const ar=a.linkKey===recommendedKey?0:1;
+    const br=b.linkKey===recommendedKey?0:1;
+    if(ar!==br)return ar-br;
+    if(a.stock===0&&b.stock>0)return 1;
+    if(b.stock===0&&a.stock>0)return -1;
+    return String(a.name).localeCompare(String(b.name),'ja');
+  });
+  if(!sorted.length){
+    target.innerHTML='<div class="empty" style="padding:16px">梱包材が未登録です。設定画面から追加できます。</div>';
+    updateShippingPackagingTotal();
+    return;
+  }
+  target.innerHTML=sorted.map(material=>{
+    const recommended=material.linkKey===recommendedKey&&recommendedKey!=='none';
+    const disabled=material.stock<=0?'disabled':'';
+    return `<div class="pack-choice ${recommended?'recommended':''}">
+      <input id="shipPackCheck_${material.id}" type="checkbox" data-pack-id="${material.id}" onchange="updateShippingPackagingTotal()" ${disabled}>
+      <label for="shipPackCheck_${material.id}">
+        <div class="pack-choice-name">${escapeHtml(material.name)} ${recommended?'<span class="badge rakuten">おすすめ</span>':''}</div>
+        <div class="pack-choice-meta">在庫 ${material.stock}個 ／ 単価 ${yen(material.unitCost)}${material.boxSize?` ／ ${material.boxSize}サイズ`:''}</div>
+      </label>
+      <input id="shipPackQty_${material.id}" type="number" min="1" max="${material.stock}" value="1" inputmode="numeric" onchange="updateShippingPackagingTotal()" oninput="updateShippingPackagingTotal()" ${disabled}>
+    </div>`;
+  }).join('');
+  updateShippingPackagingTotal();
+}
+function readShippingSelections(){
+  return packagingMaterials.map(material=>{
+    const check=$(`shipPackCheck_${material.id}`);
+    if(!check||!check.checked)return null;
+    const qty=Math.max(1,Math.floor(safeNum($(`shipPackQty_${material.id}`)?.value)||1));
+    return {materialId:material.id,quantity:qty,unitCost:material.unitCost};
+  }).filter(Boolean);
+}
+function updateShippingPackagingTotal(){
+  const selections=readShippingSelections();
+  const total=selections.reduce((sum,selection)=>sum+(safeNum(selection.unitCost)*selection.quantity),0);
+  const count=selections.reduce((sum,selection)=>sum+selection.quantity,0);
+  const target=$('shippingPackagingTotal');
+  if(!target)return;
+  target.innerHTML=`<div class="preview-row"><span>選択した梱包材</span><b>${selections.length}種類・${count}個</b></div>
+    <div class="preview-row"><span>梱包費</span><strong>${yen(total)}</strong></div>
+    <div class="note">梱包費は利益計算の販売経費として自動で差し引きます。</div>`;
+}
+function consumePackagingSelections(item,selections){
+  const consumedAt=new Date().toISOString();
+  selections.forEach(selection=>{
+    const material=packagingMaterials.find(current=>String(current.id)===String(selection.materialId));
+    if(!material)throw new Error('選択した梱包材が見つかりません');
+    const qty=Math.max(1,Math.floor(safeNum(selection.quantity)||1));
+    if(material.stock<qty)throw new Error(`${material.name}の在庫が不足しています（在庫 ${material.stock}個）`);
+  });
+  selections.forEach(selection=>{
+    const material=packagingMaterials.find(current=>String(current.id)===String(selection.materialId));
+    material.stock-=selection.quantity;
+  });
+  item.packagingConsumptions=selections.map(selection=>({
+    materialId:String(selection.materialId),
+    quantity:Math.max(1,Math.floor(safeNum(selection.quantity)||1)),
+    unitCost:Math.max(0,safeNum(selection.unitCost)),
+    consumedAt,
+    shipMethod:item.shipMethod
+  }));
+  item.packagingCost=item.packagingConsumptions.reduce((sum,c)=>sum+(c.unitCost*c.quantity),0);
+}
+function confirmShipment(){
+  const item=items.find(current=>String(current.id)===String($('shippingCompleteItemId').value));if(!item)return;
+  const selections=readShippingSelections();
+  if(!selections.length&&!confirm('梱包材を選択していません。梱包材なしで発送済みにしますか？'))return;
   const oldItem=deepClone(item);
   const oldPackaging=deepClone(packagingMaterials);
   try{
     item.status='shipped';
-    syncPackagingForItem(item);
-    saveAll();renderAll();
-    const material=item.packagingConsumption?packagingMaterials.find(current=>String(current.id)===String(item.packagingConsumption.materialId)):null;
-    toast(material?`発送済み：${material.name} 残り${material.stock}個`:'発送済みにしました');
+    consumePackagingSelections(item,selections);
+    saveAll();closeModal('shippingCompleteModal');renderAll();
+    const totalQty=selections.reduce((sum,s)=>sum+s.quantity,0);
+    toast(selections.length?`発送済み：梱包材 ${totalQty}個・梱包費 ${yen(item.packagingCost)}`:'発送済みにしました');
   }catch(errorObject){
-    Object.assign(item,oldItem);packagingMaterials=oldPackaging;toast(errorObject.message||'発送済みにできませんでした');
+    Object.assign(item,oldItem);packagingMaterials=oldPackaging;
+    toast(errorObject.message||'発送済みにできませんでした');
   }
 }
 
@@ -1484,6 +1592,11 @@ function saveEdit(){
   if(error){toast(error);return}
   const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials)};
   try{
+    const previousStatus=item.status;
+    const requestedStatus=$('eStatus').value;
+    if(previousStatus!=='shipped'&&requestedStatus==='shipped'){
+      throw new Error('発送済みへの変更は、在庫一覧の「発送済みにする」から梱包材を選択して行ってください');
+    }
     const oldSourceType=item.purchaseSourceType;
     const existingPoints=itemPointEntries(item.id);
     if(oldSourceType==='rakuten'&&purchase.purchaseSourceType!=='rakuten'){
@@ -1529,9 +1642,9 @@ function deleteCurrentEdit(){
 
 function soldItems(type='all'){return items.filter(item=>typeMatches(item,type)&&isSold(item))}
 function summarize(list){
-  const summary={count:list.length,sales:0,fee:0,ship:0,misc:0,beforeCost:0,cashOut:0,cashFlow:0,predicted:0,confirmed:0,expectedPoints:0,confirmedPoints:0};
+  const summary={count:list.length,sales:0,fee:0,ship:0,misc:0,packagingCost:0,beforeCost:0,cashOut:0,cashFlow:0,predicted:0,confirmed:0,expectedPoints:0,confirmedPoints:0};
   list.forEach(item=>{
-    summary.sales+=safeNum(item.actualPrice||item.price);summary.fee+=feeOf(item);summary.ship+=safeNum(item.ship);summary.misc+=safeNum(item.misc);
+    summary.sales+=safeNum(item.actualPrice||item.price);summary.fee+=feeOf(item);summary.ship+=safeNum(item.ship);summary.misc+=safeNum(item.misc);summary.packagingCost+=packagingCostOf(item);
     summary.beforeCost+=pointBeforeCost(item);summary.cashOut+=actualCashOut(item);summary.cashFlow+=cashFlowOf(item);
     summary.predicted+=predictedProfitOf(item);summary.confirmed+=confirmedProfitOf(item);
     summary.expectedPoints+=expectedPointsForItem(item);summary.confirmedPoints+=confirmedPointsForItem(item);
@@ -1600,6 +1713,7 @@ function openSummaryDetail(key){
       <div class="preview-row"><span>ポイント込み確定利益</span><b class="${summary.confirmed>=0?'green':'red'}">${yen(summary.confirmed)}</b></div>
       <div class="preview-row"><span>売上</span><b>${yen(summary.sales)}</b></div>
       <div class="preview-row"><span>仕入原価</span><b>${yen(summary.beforeCost)}</b></div>
+      <div class="preview-row"><span>梱包費</span><b>${yen(summary.packagingCost)}</b></div>
       <div class="preview-row"><span>確定ポイント</span><b>${summary.confirmedPoints.toLocaleString()}pt</b></div>
     </div>${list.length?list.map(detailRow).join(''):'<div class="empty">データなし</div>'}`;
   $('detailModal').classList.add('open');
@@ -1617,6 +1731,7 @@ function openItemDetail(id){
   $('detailContent').innerHTML=`<div class="detail-summary">
       <div class="section-title" style="margin-bottom:7px">利益</div>
       <div class="preview-row"><span>メルカリ等の手取り</span><b>${yen(mercariNet(item))}</b></div>
+      <div class="preview-row"><span>梱包費</span><b>${yen(packagingCostOf(item))}</b></div>
       <div class="preview-row"><span>現金収支</span><b class="${cashFlowOf(item)>=0?'green':'red'}">${yen(cashFlowOf(item))}</b></div>
       <div class="preview-row"><span>ポイント込み予想利益</span><b class="${predictedProfitOf(item)>=0?'green':'red'}">${yen(predictedProfitOf(item))}</b></div>
       <div class="preview-row"><span>ポイント込み確定利益</span><b class="${confirmedProfitOf(item)>=0?'green':'red'}">${yen(confirmedProfitOf(item))}</b></div>
@@ -1636,6 +1751,13 @@ function openItemDetail(id){
         <div class="preview-row"><span>実際の資金支出</span><b>${yen(actualCashOut(item))}</b></div>`:
         `<div class="preview-row"><span>仕入れ値</span><b>${yen(item.cost)}</b></div>`}
     </div>
+    ${Array.isArray(item.packagingConsumptions)&&item.packagingConsumptions.length?`<div class="detail-summary"><div class="section-title" style="margin-bottom:7px">使用した梱包材</div>
+      ${item.packagingConsumptions.map(consumption=>{
+        const material=packagingMaterials.find(current=>String(current.id)===String(consumption.materialId));
+        return `<div class="preview-row"><span>${escapeHtml(material?.name||'削除済み梱包材')} × ${consumption.quantity}</span><b>${yen(consumption.unitCost*consumption.quantity)}</b></div>`;
+      }).join('')}
+      <div class="preview-row"><span>梱包費合計</span><b>${yen(packagingCostOf(item))}</b></div>
+    </div>`:''}
     ${entries.length?`<div class="detail-summary"><div class="section-title" style="margin-bottom:7px">ポイント明細</div>${entries.map(entry=>`
       <div class="point-row">
         <div class="point-row-title">${POINT_BREAKDOWN_NAME[entry.breakdown]} <span class="badge ${entry.type}">${POINT_TYPE_NAME[entry.type]}</span></div>
@@ -1818,7 +1940,7 @@ function renderPackagingInventory(){
   target.innerHTML=packagingMaterials.map(material=>`
     <div class="item">
       <div class="item-top">
-        <div><div class="item-name">${escapeHtml(material.name)}</div><div class="item-meta">${escapeHtml(PACKAGING_TYPE_NAME[material.materialType]||'その他')}${material.boxSize?` ／ ${material.boxSize}サイズ`:''}<br>自動減算：${escapeHtml(packagingLinkName(material.linkKey))} ／ 警告 ${material.lowStockAt}個以下</div></div>
+        <div><div class="item-name">${escapeHtml(material.name)}</div><div class="item-meta">${escapeHtml(PACKAGING_TYPE_NAME[material.materialType]||'その他')}${material.boxSize?` ／ ${material.boxSize}サイズ`:''} ／ 単価 ${yen(material.unitCost)}<br>発送時おすすめ：${escapeHtml(packagingLinkName(material.linkKey))} ／ 警告 ${material.lowStockAt}個以下</div></div>
         <div class="item-price ${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</div>
       </div>
       <div class="compact-actions" style="margin-top:9px">
@@ -1884,6 +2006,7 @@ function openPackagingEditor(id=''){
   $('packBoxSize').value=material?.boxSize||'60';
   $('packName').value=material?.name||'';
   $('packStock').value=material?.stock??0;
+  $('packUnitCost').value=material?.unitCost??0;
   $('packLowStock').value=material?.lowStockAt??3;
   $('packLinkKey').innerHTML=PACKAGING_LINKS.map(link=>`<option value="${link.key}">${link.name}</option>`).join('');
   $('packLinkKey').value=material?.linkKey||'none';
@@ -1913,6 +2036,7 @@ function savePackagingMaterial(){
   const values={
     name,materialType,boxSize,
     stock:Math.max(0,Math.floor(safeNum($('packStock').value))),
+    unitCost:Math.max(0,safeNum($('packUnitCost').value)),
     lowStockAt:Math.max(0,Math.floor(safeNum($('packLowStock').value))),
     linkKey
   };
@@ -1927,7 +2051,7 @@ function savePackagingMaterial(){
 }
 function deletePackagingMaterial(){
   const id=$('packId').value;if(!id)return;
-  if(items.some(item=>item.packagingConsumption&&String(item.packagingConsumption.materialId)===String(id))){toast('発送履歴で使用済みの梱包材は削除できません');return}
+  if(items.some(item=>Array.isArray(item.packagingConsumptions)&&item.packagingConsumptions.some(c=>String(c.materialId)===String(id)))){toast('発送履歴で使用済みの梱包材は削除できません');return}
   if(!confirm('この梱包材を削除しますか？'))return;
   packagingMaterials=packagingMaterials.filter(material=>String(material.id)!==String(id));saveAll();closeModal('packagingModal');renderData();toast('梱包材を削除しました');
 }
@@ -1963,13 +2087,14 @@ function makeCSV(){
   const header=[
     '商品名','種別','カテゴリ','仕入れ先区分','仕入れ先','楽天注文番号','購入日','商品代金','クーポン',
     '使用通常ポイント','使用期間限定ポイント','ポイント使用前仕入原価','実際の資金支出','状態','売れた日',
-    '売上','手数料','送料','その他販売経費','メルカリ等手取り','現金収支','獲得予定ポイント',
+    '売上','手数料','送料','梱包費','その他販売経費','使用梱包材','メルカリ等手取り','現金収支','獲得予定ポイント',
     '確定ポイント','ポイント込み予想利益','ポイント込み確定利益','販売先','発送方法','メモ'
   ];
   const rows=list.map(item=>[
     item.name,item.type==='fuyohin'?'不用品':'せどり',item.cat,SOURCE_TYPE_NAME[item.purchaseSourceType],item.source,item.orderNo,
     item.purchaseDate,item.productAmount,item.couponDiscount,item.usedNormalPoints,item.usedLimitedPoints,pointBeforeCost(item),
-    actualCashOut(item),statusText(item.status),item.soldDate,item.actualPrice||item.price,feeOf(item),item.ship,item.misc,
+    actualCashOut(item),statusText(item.status),item.soldDate,item.actualPrice||item.price,feeOf(item),item.ship,packagingCostOf(item),item.misc,
+    (item.packagingConsumptions||[]).map(c=>{const m=packagingMaterials.find(x=>String(x.id)===String(c.materialId));return `${m?.name||'削除済み'}×${c.quantity}`}).join(' / '),
     mercariNet(item),cashFlowOf(item),expectedPointsForItem(item),confirmedPointsForItem(item),predictedProfitOf(item),
     confirmedProfitOf(item),PLATFORM_NAME[item.platform]||'',shipName(item.shipMethod),item.memo
   ]);
@@ -1992,7 +2117,7 @@ function downloadPointCSV(){
 }
 function downloadBackup(){
   const data={
-    version:'2026-08-packaging-v5',schemaVersion:SCHEMA_VERSION,
+    version:'2026-08-packaging-v6',schemaVersion:SCHEMA_VERSION,
     items,pointEntries,pointUsages,packagingMaterials,settings,exportedAt:new Date().toISOString()
   };
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
@@ -2080,22 +2205,27 @@ window.runSedoriSelfTests=function(){
     settings.lastCategory='古着';
     test('前回カテゴリ保持',settings.lastCategory==='古着',settings.lastCategory);
 
-    packagingMaterials=[normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,linkKey:'mini',lowStockAt:2})];
+    packagingMaterials=[
+      normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,unitCost:5,linkKey:'mini',lowStockAt:2}),
+      normalizePackagingMaterial({id:'oppPack',name:'OPP袋',stock:10,unitCost:3,linkKey:'none',materialType:'bag',lowStockAt:2})
+    ];
     const shipped=normalizeItem({id:'ship1',name:'発送テスト',cost:100,status:'sold',actualPrice:500,price:500,shipMethod:'mercari_mini',ship:160,platform:'mercari',soldDate:'2026-08-12'});
-    items.push(shipped);shipped.status='shipped';syncPackagingForItem(shipped);
-    test('発送時に梱包材を1個減算',packagingMaterials[0].stock===4,`残り ${packagingMaterials[0].stock}`);
-    syncPackagingForItem(shipped);
-    test('同じ商品で二重減算しない',packagingMaterials[0].stock===4,`残り ${packagingMaterials[0].stock}`);
+    items.push(shipped);shipped.status='shipped';
+    consumePackagingSelections(shipped,[{materialId:'miniPack',quantity:1,unitCost:5},{materialId:'oppPack',quantity:1,unitCost:3}]);
+    test('発送時に選択した複数梱包材を減算',packagingMaterials[0].stock===4&&packagingMaterials[1].stock===9,`mini=${packagingMaterials[0].stock} OPP=${packagingMaterials[1].stock}`);
+    test('梱包費を自動計算',packagingCostOf(shipped)===8,`梱包費 ${packagingCostOf(shipped)}`);
+    test('梱包費を利益から差し引く',confirmedProfitOf(shipped)===182,`利益 ${confirmedProfitOf(shipped)}`);
     shipped.status='sold';syncPackagingForItem(shipped);
-    test('発送済み取消で在庫を戻す',packagingMaterials[0].stock===5,`残り ${packagingMaterials[0].stock}`);
+    test('発送済み取消で選択した在庫を全て戻す',packagingMaterials[0].stock===5&&packagingMaterials[1].stock===10&&packagingCostOf(shipped)===0,`mini=${packagingMaterials[0].stock} OPP=${packagingMaterials[1].stock}`);
 
     packagingMaterials=[
-      normalizePackagingMaterial({id:'box60',name:'ダンボール 60サイズ',materialType:'box',boxSize:'60',stock:3,linkKey:'size60',lowStockAt:1}),
-      normalizePackagingMaterial({id:'box80',name:'ダンボール 80サイズ',materialType:'box',boxSize:'80',stock:4,linkKey:'size80',lowStockAt:1})
+      normalizePackagingMaterial({id:'box60',name:'ダンボール 60サイズ',materialType:'box',boxSize:'60',stock:3,unitCost:50,linkKey:'size60',lowStockAt:1}),
+      normalizePackagingMaterial({id:'box80',name:'ダンボール 80サイズ',materialType:'box',boxSize:'80',stock:4,unitCost:70,linkKey:'size80',lowStockAt:1})
     ];
-    const boxShipment=normalizeItem({id:'boxShip',name:'80サイズ発送テスト',cost:100,status:'sold',actualPrice:1000,price:1000,shipMethod:'mercari_80_yamato',ship:850,platform:'mercari',soldDate:'2026-08-12'});
-    items.push(boxShipment);boxShipment.status='shipped';syncPackagingForItem(boxShipment);
-    test('段ボールをサイズ別に減算',packagingMaterials[0].stock===3&&packagingMaterials[1].stock===3,`60=${packagingMaterials[0].stock} 80=${packagingMaterials[1].stock}`);
+    const boxShipment=normalizeItem({id:'boxShip',name:'80サイズ発送テスト',cost:100,status:'sold',actualPrice:2000,price:2000,shipMethod:'mercari_80_yamato',ship:850,platform:'mercari',soldDate:'2026-08-12'});
+    items.push(boxShipment);boxShipment.status='shipped';
+    consumePackagingSelections(boxShipment,[{materialId:'box80',quantity:1,unitCost:70}]);
+    test('選んだ80サイズ段ボールだけ減算',packagingMaterials[0].stock===3&&packagingMaterials[1].stock===3,`60=${packagingMaterials[0].stock} 80=${packagingMaterials[1].stock}`);
   }catch(errorObject){
     results.push({name:'テスト実行',passed:false,details:errorObject.message});
   }finally{
@@ -2111,6 +2241,17 @@ init();
 </html>
 <!--
 変更履歴
+2026-08-12
+- 発送済みにする時、登録済み梱包材から実際に使用したアイテムを複数選択できるよう変更
+- 選択した梱包材の使用数だけ在庫を自動減算
+- 梱包材ごとに1個あたり単価を登録できるよう追加
+- 選択した梱包材の単価×使用数から梱包費を自動計算
+- 梱包費を販売経費として現金収支・ポイント込み利益から自動控除
+- 発送済み取消時は選択した全梱包材の在庫を自動復元
+- 商品詳細とCSVに使用梱包材・梱包費を追加
+- 旧1種類自動減算データを複数梱包材形式へ自動移行
+- schema v6へ更新
+
 2026-08-12
 - 段ボールを60・80・100・120・140・160・170・180・200サイズ別に登録可能に変更
 - 段ボール選択時にサイズから梱包材名と発送サイズを自動設定
