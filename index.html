@@ -273,12 +273,24 @@ th{color:var(--muted);font-size:.68rem}
 <section id="data" class="page">
   <div class="card">
     <div class="section-head"><div class="section-title">バックアップ</div><div id="dataCount" class="note"></div></div>
-    <div class="help">更新前にバックアップを保存してください。既存商品、ポイント明細、使用履歴、設定をまとめて保存します。</div>
+    <div class="help">更新前にバックアップを保存してください。既存商品、ポイント明細、使用履歴、梱包材在庫、設定をまとめて保存します。</div>
     <button class="btn btn-blue full" onclick="downloadBackup()">バックアップを保存</button>
     <label class="btn full" style="display:block;text-align:center;margin-top:8px">
       バックアップを復元
       <input type="file" accept=".json" onchange="restoreBackup(event)" style="display:none">
     </label>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <div class="section-title">梱包材在庫</div>
+      <div class="compact-actions">
+        <button class="btn btn-small" onclick="addCardboardSet()">段ボール一括追加</button>
+        <button class="btn btn-small btn-primary" onclick="openPackagingEditor()">＋ 追加</button>
+      </div>
+    </div>
+    <div class="help">段ボールは60・80・100サイズなどサイズ別に在庫管理できます。発送方法と紐づけると、「発送済みにする」を押した時に該当サイズだけ自動で1個減らします。</div>
+    <div id="packagingList" class="item-list"></div>
   </div>
 
   <div class="card">
@@ -401,6 +413,7 @@ th{color:var(--muted);font-size:.68rem}
       <div><label>発送方法</label><select id="sShipMethod" onchange="applyShipFee('s');calcSoldPreview()"></select></div>
       <div><label>送料</label><input id="sShip" type="number" inputmode="numeric" oninput="calcSoldPreview()"></div>
     </div>
+    <div id="sPackStockNote" class="note" style="margin:-3px 0 9px"></div>
     <div class="form-grid one"><div><label>その他販売経費</label><input id="sMisc" type="number" inputmode="numeric" value="0" oninput="calcSoldPreview()"></div></div>
     <div class="preview" id="soldPreview"></div>
     <button class="btn btn-green full" onclick="saveSold()">売れた記録を保存</button>
@@ -475,6 +488,7 @@ th{color:var(--muted);font-size:.68rem}
         <div><label>発送方法</label><select id="eShipMethod" onchange="applyShipFee('e');calcEditPreview()"></select></div>
         <div><label>送料</label><input id="eShip" type="number" inputmode="numeric" oninput="calcEditPreview()"></div>
       </div>
+      <div id="ePackStockNote" class="note" style="margin:-3px 0 9px"></div>
       <div class="form-grid one"><div><label>その他販売経費</label><input id="eMisc" type="number" inputmode="numeric" oninput="calcEditPreview()"></div></div>
       <div class="preview" id="editPreview"></div>
     </div>
@@ -562,6 +576,35 @@ th{color:var(--muted);font-size:.68rem}
   </div>
 </div>
 
+<!-- 梱包材編集 -->
+<div class="modal" id="packagingModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="packagingModalTitle">梱包材を追加</h2><button class="close" onclick="closeModal('packagingModal')">×</button></div>
+    <input id="packId" type="hidden">
+    <div class="form-grid">
+      <div><label>梱包材の種類</label>
+        <select id="packKind" onchange="onPackagingKindChange()">
+          <option value="special">専用資材</option>
+          <option value="box">段ボール</option>
+          <option value="bag">袋・封筒</option>
+          <option value="tape">テープ・シール</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div id="packBoxSizeWrap" style="display:none"><label>段ボールサイズ</label><select id="packBoxSize" onchange="onPackagingBoxSizeChange()"></select></div>
+    </div>
+    <div class="form-grid one"><div><label>梱包材名</label><input id="packName" placeholder="例：ダンボール 60サイズ"></div></div>
+    <div class="form-grid">
+      <div><label>現在の在庫数</label><input id="packStock" type="number" min="0" inputmode="numeric"></div>
+      <div><label>在庫警告ライン</label><input id="packLowStock" type="number" min="0" inputmode="numeric" value="3"></div>
+    </div>
+    <div class="form-grid one"><div><label>発送時に自動で1個減らす発送サイズ・方法</label><select id="packLinkKey"></select></div></div>
+    <div class="help">「段ボール」を選ぶとサイズ別に登録できます。例：60サイズ箱を5個登録 → 60サイズで発送済みにすると4個になります。80サイズ箱など他サイズの在庫には影響しません。</div>
+    <button class="btn btn-primary full" onclick="savePackagingMaterial()">保存する</button>
+    <button id="packDeleteButton" class="btn btn-danger full" style="margin-top:9px" onclick="deletePackagingMaterial()">この梱包材を削除</button>
+  </div>
+</div>
+
 <!-- 詳細 -->
 <div class="modal" id="detailModal">
   <div class="modal-box">
@@ -588,18 +631,25 @@ const STORAGE={
   items:'sedori_items',
   points:'sedori_point_entries',
   usages:'sedori_point_usages',
+  packaging:'sedori_packaging_materials',
   settings:'sedori_settings',
   schema:'sedori_schema_version'
 };
-const SCHEMA_VERSION=3;
+const SCHEMA_VERSION=5;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
   purchaseBudget:50000,
   pointValue:1,
   expiryWarningDays:30,
-  monthlyPointCap:0
+  monthlyPointCap:0,
+  lastCategory:'その他'
 };
+const DEFAULT_PACKAGING=[
+  {id:'pack_mini_default',name:'ゆうパケットポストmini 専用封筒',stock:0,linkKey:'mini',materialType:'special',boxSize:'',lowStockAt:3,createdAt:'2026-08-12T00:00:00.000Z'}
+];
+const BOX_SIZES=[60,80,100,120,140,160,170,180,200];
+const PACKAGING_TYPE_NAME={special:'専用資材',box:'段ボール',bag:'袋・封筒',tape:'テープ・シール',other:'その他'};
 const CATS=['レトロゲーム','トレカ','ブランド品','古着','電子機器','本・漫画','おもちゃ','その他'];
 const SOURCES=['セカンドストリート','楽天市場','ハードオフ','ブックオフ','メルカリ','ヤフオク','リサイクルショップ','フリマ','不用品','その他'];
 const SOURCE_TYPE_NAME={secondstreet:'セカスト',rakuten:'楽天市場',other:'その他'};
@@ -650,10 +700,29 @@ const SHIPPING_METHODS=[
  {id:'yahoo_170',group:'yahoo',name:'ゆうパック 170',fee:1900},
  {id:'other',group:'all',name:'普通郵便・その他',fee:null}
 ];
+const PACKAGING_LINKS=[
+  {key:'none',name:'自動減算しない'},
+  {key:'mini',name:'ゆうパケットポストmini'},
+  {key:'post',name:'ゆうパケットポスト'},
+  {key:'plus',name:'ゆうパケットプラス'},
+  {key:'compact',name:'宅急便コンパクト'},
+  {key:'nekopos',name:'ネコポス'},
+  {key:'packet',name:'ゆうパケット'},
+  {key:'size60',name:'60サイズ'},
+  {key:'size80',name:'80サイズ'},
+  {key:'size100',name:'100サイズ'},
+  {key:'size120',name:'120サイズ'},
+  {key:'size140',name:'140サイズ'},
+  {key:'size160',name:'160サイズ'},
+  {key:'size170',name:'170サイズ'},
+  {key:'size180',name:'180サイズ'},
+  {key:'size200',name:'200サイズ'}
+];
 
 let items=[];
 let pointEntries=[];
 let pointUsages=[];
+let packagingMaterials=[];
 let settings={...DEFAULT_SETTINGS};
 let stockType='sedori';
 let stockStatus='selling';
@@ -686,6 +755,41 @@ function isSold(item){return ['sold','shipped'].includes(item.status)&&safeNum(i
 function statusText(status){return status==='sold'?'未発送':status==='shipped'?'発送済み':'販売中'}
 function typeMatches(item,type){return type==='all'||item.type===type}
 function shipName(id){return SHIPPING_METHODS.find(method=>method.id===id)?.name||'手入力'}
+function packagingLinkName(key){return PACKAGING_LINKS.find(link=>link.key===key)?.name||'自動減算しない'}
+function packagingLinkKey(shipMethodId){
+  const map={
+    mercari_mini:'mini',yahoo_mini:'mini',mercari_post:'post',yahoo_post:'post',
+    mercari_plus:'plus',yahoo_plus:'plus',mercari_compact:'compact',yahoo_compact:'compact',
+    mercari_nekopos:'nekopos',yahoo_nekopos:'nekopos',mercari_packet:'packet',yahoo_packet:'packet',
+    mercari_60:'size60',yahoo_60:'size60',mercari_80_yamato:'size80',mercari_80_post:'size80',yahoo_80:'size80',
+    mercari_100_yamato:'size100',mercari_100_post:'size100',yahoo_100:'size100',
+    mercari_120:'size120',yahoo_120:'size120',mercari_140:'size140',yahoo_140:'size140',
+    mercari_160:'size160',yahoo_160:'size160',mercari_post170:'size170',yahoo_170:'size170',
+    mercari_yamato180:'size180',mercari_yamato200:'size200'
+  };
+  return map[shipMethodId]||'none';
+}
+function normalizePackagingMaterial(raw){
+  const material={...raw};
+  material.id=material.id||uid('pack');
+  material.name=String(material.name||'梱包材').trim()||'梱包材';
+  material.stock=Math.max(0,Math.floor(safeNum(material.stock)));
+  material.linkKey=PACKAGING_LINKS.some(link=>link.key===material.linkKey)?material.linkKey:'none';
+  const linkedSize=String(material.linkKey).match(/^size(\d+)$/);
+  const nameSize=String(material.name).match(/(?:段ボール|ダンボール|箱).*?(60|80|100|120|140|160|170|180|200)/);
+  material.boxSize=String(material.boxSize||linkedSize?.[1]||nameSize?.[1]||'');
+  material.materialType=PACKAGING_TYPE_NAME[material.materialType]?material.materialType:
+    (material.boxSize?'box':String(material.name).includes('封筒')||String(material.name).includes('袋')?'bag':'special');
+  if(material.materialType!=='box')material.boxSize='';
+  material.lowStockAt=Math.max(0,Math.floor(safeNum(material.lowStockAt)));
+  material.createdAt=material.createdAt||new Date().toISOString();
+  return material;
+}
+function linkedPackagingForShipMethod(shipMethodId){
+  const key=packagingLinkKey(shipMethodId);
+  if(key==='none')return null;
+  return packagingMaterials.find(material=>material.linkKey===key)||null;
+}
 function inferPurchaseSourceType(source){
   const value=String(source||'').toLowerCase();
   if(value.includes('楽天'))return 'rakuten';
@@ -755,6 +859,7 @@ function saveAll(){
   localStorage.setItem(STORAGE.items,JSON.stringify(items));
   localStorage.setItem(STORAGE.points,JSON.stringify(pointEntries));
   localStorage.setItem(STORAGE.usages,JSON.stringify(pointUsages));
+  localStorage.setItem(STORAGE.packaging,JSON.stringify(packagingMaterials));
   localStorage.setItem(STORAGE.settings,JSON.stringify(settings));
   localStorage.setItem(STORAGE.schema,String(SCHEMA_VERSION));
   setSaveState('保存済み');
@@ -778,6 +883,10 @@ function normalizeItem(raw,index=0){
   item.misc=clampZero(item.misc);
   item.soldDate=item.soldDate||'';
   item.shipMethod=item.shipMethod||guessShipMethod(item);
+  item.packagingConsumption=item.packagingConsumption&&item.packagingConsumption.materialId?{
+    materialId:String(item.packagingConsumption.materialId),quantity:Math.max(1,Math.floor(safeNum(item.packagingConsumption.quantity)||1)),
+    consumedAt:item.packagingConsumption.consumedAt||'',shipMethod:item.packagingConsumption.shipMethod||item.shipMethod
+  }:null;
   item.purchaseSourceType=['secondstreet','rakuten','other'].includes(item.purchaseSourceType)
     ?item.purchaseSourceType:inferPurchaseSourceType(item.source);
   item.orderNo=item.orderNo||'';
@@ -877,13 +986,17 @@ function loadAll(){
   items=parseStorage(STORAGE.items,[]);
   pointEntries=parseStorage(STORAGE.points,[]);
   pointUsages=parseStorage(STORAGE.usages,[]);
+  const packagingRaw=localStorage.getItem(STORAGE.packaging);
+  packagingMaterials=packagingRaw===null?deepClone(DEFAULT_PACKAGING):parseStorage(STORAGE.packaging,[]);
   settings={...DEFAULT_SETTINGS,...parseStorage(STORAGE.settings,{})};
   if(!Array.isArray(items))items=[];
   if(!Array.isArray(pointEntries))pointEntries=[];
   if(!Array.isArray(pointUsages))pointUsages=[];
+  if(!Array.isArray(packagingMaterials))packagingMaterials=deepClone(DEFAULT_PACKAGING);
   items=items.map(normalizeItem);
   pointEntries=pointEntries.map(normalizePointEntry);
   pointUsages=pointUsages.map(normalizeUsage);
+  packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
   migrateEmbeddedPointDetails();
   applyAutomaticExpiry();
   saveAll();
@@ -1128,7 +1241,7 @@ function validatePurchaseForm(prefix,purchase){
 function openAdd(){
   addPointDrafts=[];
   $('aType').value=stockType;
-  $('aDate').value=today();$('aName').value='';$('aCat').value=CATS[0];$('aMemo').value='';
+  $('aDate').value=today();$('aName').value='';$('aCat').value=CATS.includes(settings.lastCategory)?settings.lastCategory:CATS[0];$('aMemo').value='';
   $('aPurchaseSourceType').value=stockType==='fuyohin'?'other':'secondstreet';
   $('aSource').value=stockType==='fuyohin'?'不用品':'セカンドストリート';
   $('aCost').value='';$('aOrderNo').value='';$('aPurchaseDate').value=today();
@@ -1218,7 +1331,7 @@ function addItem(){
   const purchase=readPurchaseForm('a');
   const error=validatePurchaseForm('a',purchase);
   if(error){toast(error);return}
-  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages)};
+  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials)};
   try{
     const item=normalizeItem({
       id:uid('item'),name,type:$('aType').value,cat:$('aCat').value,date:$('aDate').value||today(),
@@ -1230,10 +1343,11 @@ function addItem(){
       replaceItemPointEntries(item.id,addPointDrafts);
       syncPurchasePointUsages(item);
     }
+    settings.lastCategory=item.cat;
     saveAll();closeModal('addModal');
     stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録しました');
   }catch(errorObject){
-    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;
+    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
     toast(errorObject.message||'登録できませんでした');
   }
 }
@@ -1255,10 +1369,20 @@ function refreshShipOptions(prefix){
   $(prefix+'ShipMethod').innerHTML=SHIPPING_METHODS
     .filter(method=>method.group==='all'||method.group===group)
     .map(method=>`<option value="${method.id}">${method.name}${method.fee===null?'':`（${yen(method.fee)}）`}</option>`).join('');
+  renderShipPackagingNote(prefix);
 }
 function applyShipFee(prefix){
   const method=SHIPPING_METHODS.find(current=>current.id===$(prefix+'ShipMethod').value);
   if(method&&method.fee!==null)$(prefix+'Ship').value=method.fee;
+  renderShipPackagingNote(prefix);
+}
+function renderShipPackagingNote(prefix){
+  const note=$(prefix+'PackStockNote');
+  const select=$(prefix+'ShipMethod');
+  if(!note||!select)return;
+  const material=linkedPackagingForShipMethod(select.value);
+  if(!material){note.textContent='この発送方法に自動連動する梱包材は設定されていません。';return}
+  note.innerHTML=`使用する梱包材：<b>${escapeHtml(material.name)}</b> ／ 在庫 <b class="${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</b>（発送済みで－1）`;
 }
 function salePreview(item,price,platform,ship,misc){
   const temporary={...item,actualPrice:clampZero(price),price:clampZero(price),platform,feeRate:feeRate(platform),ship:clampZero(ship),misc:clampZero(misc)};
@@ -1292,9 +1416,38 @@ function saveSold(){
   item.misc=clampZero($('sMisc').value);item.shipMethod=$('sShipMethod').value;
   saveAll();closeModal('soldModal');stockStatus='waiting';syncStockTabs();renderAll();toast('売れた記録を保存しました');
 }
+function restorePackagingConsumption(item){
+  const consumption=item.packagingConsumption;
+  if(!consumption)return;
+  const material=packagingMaterials.find(current=>String(current.id)===String(consumption.materialId));
+  if(material)material.stock+=Math.max(1,Math.floor(safeNum(consumption.quantity)||1));
+  item.packagingConsumption=null;
+}
+function syncPackagingForItem(item){
+  const desired=item.status==='shipped'?linkedPackagingForShipMethod(item.shipMethod):null;
+  const current=item.packagingConsumption;
+  if(current&&(!desired||String(current.materialId)!==String(desired.id))){
+    restorePackagingConsumption(item);
+  }
+  if(item.status!=='shipped'||!desired)return;
+  if(item.packagingConsumption&&String(item.packagingConsumption.materialId)===String(desired.id))return;
+  if(desired.stock<=0)throw new Error(`${desired.name}の在庫が0個です。梱包材在庫を補充してから発送済みにしてください`);
+  desired.stock-=1;
+  item.packagingConsumption={materialId:desired.id,quantity:1,consumedAt:new Date().toISOString(),shipMethod:item.shipMethod};
+}
 function markShipped(id){
   const item=items.find(current=>String(current.id)===String(id));if(!item)return;
-  item.status='shipped';saveAll();renderAll();toast('発送済みにしました');
+  const oldItem=deepClone(item);
+  const oldPackaging=deepClone(packagingMaterials);
+  try{
+    item.status='shipped';
+    syncPackagingForItem(item);
+    saveAll();renderAll();
+    const material=item.packagingConsumption?packagingMaterials.find(current=>String(current.id)===String(item.packagingConsumption.materialId)):null;
+    toast(material?`発送済み：${material.name} 残り${material.stock}個`:'発送済みにしました');
+  }catch(errorObject){
+    Object.assign(item,oldItem);packagingMaterials=oldPackaging;toast(errorObject.message||'発送済みにできませんでした');
+  }
 }
 
 function openEdit(id){
@@ -1309,6 +1462,7 @@ function openEdit(id){
   $('eSoldDate').value=item.soldDate||today();$('ePlatform').value=item.platform||'mercari';$('ePrice').value=item.actualPrice||item.price||'';
   refreshShipOptions('e');
   $('eShipMethod').value=[...$('eShipMethod').options].some(option=>option.value===item.shipMethod)?item.shipMethod:'manual';
+  renderShipPackagingNote('e');
   $('eShip').value=item.ship||0;$('eMisc').value=item.misc||0;
   togglePurchaseFields('e');updatePurchaseCash('e');renderPointDrafts('e');toggleEditSale();
   $('editModal').classList.add('open');
@@ -1328,7 +1482,7 @@ function saveEdit(){
   const purchase=readPurchaseForm('e');
   const error=validatePurchaseForm('e',purchase);
   if(error){toast(error);return}
-  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages)};
+  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials)};
   try{
     const oldSourceType=item.purchaseSourceType;
     const existingPoints=itemPointEntries(item.id);
@@ -1355,9 +1509,10 @@ function saveEdit(){
       item.status='listed';item.soldDate='';item.actualPrice=0;item.price=0;item.ship=0;item.misc=0;item.shipMethod='manual';
     }
     item.cashPaid=actualCashOut(item);
+    syncPackagingForItem(item);
     saveAll();closeModal('editModal');renderAll();toast('保存しました');
   }catch(errorObject){
-    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;
+    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
     toast(errorObject.message||'保存できませんでした');
   }
 }
@@ -1656,6 +1811,127 @@ function saveManualPoint(){
   saveAll();closeModal('manualPointModal');renderAll();toast('繰越・調整ポイントを登録しました');
 }
 
+function renderPackagingInventory(){
+  const target=$('packagingList');
+  if(!target)return;
+  if(!packagingMaterials.length){target.innerHTML='<div class="empty" style="padding:15px">梱包材が未登録です</div>';return}
+  target.innerHTML=packagingMaterials.map(material=>`
+    <div class="item">
+      <div class="item-top">
+        <div><div class="item-name">${escapeHtml(material.name)}</div><div class="item-meta">${escapeHtml(PACKAGING_TYPE_NAME[material.materialType]||'その他')}${material.boxSize?` ／ ${material.boxSize}サイズ`:''}<br>自動減算：${escapeHtml(packagingLinkName(material.linkKey))} ／ 警告 ${material.lowStockAt}個以下</div></div>
+        <div class="item-price ${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</div>
+      </div>
+      <div class="compact-actions" style="margin-top:9px">
+        <button class="btn btn-small" onclick="adjustPackagingStock('${material.id}',-1)">－1</button>
+        <button class="btn btn-small" onclick="adjustPackagingStock('${material.id}',1)">＋1</button>
+        <button class="btn btn-small" onclick="openPackagingEditor('${material.id}')">編集</button>
+      </div>
+    </div>`).join('');
+}
+function adjustPackagingStock(id,delta){
+  const material=packagingMaterials.find(current=>String(current.id)===String(id));if(!material)return;
+  const next=material.stock+delta;
+  if(next<0){toast('在庫は0個未満にできません');return}
+  material.stock=next;saveAll();renderPackagingInventory();renderShipPackagingNote('s');renderShipPackagingNote('e');
+}
+function packagingDefaultName(kind,boxSize){
+  if(kind==='box'&&boxSize)return `ダンボール ${boxSize}サイズ`;
+  if(kind==='bag')return 'OPP袋・封筒';
+  if(kind==='tape')return '梱包テープ・シール';
+  if(kind==='special')return '専用梱包材';
+  return '梱包材';
+}
+function onPackagingKindChange(){
+  const kind=$('packKind').value;
+  $('packBoxSizeWrap').style.display=kind==='box'?'block':'none';
+  if(kind==='box'){
+    if(!$('packBoxSize').value)$('packBoxSize').value='60';
+    onPackagingBoxSizeChange();
+  }
+}
+function onPackagingBoxSizeChange(){
+  if($('packKind').value!=='box')return;
+  const size=$('packBoxSize').value;
+  if(!size)return;
+  const currentName=$('packName').value.trim();
+  if(!currentName||/^ダンボール \d+サイズ$/.test(currentName)||/^段ボール \d+サイズ$/.test(currentName)||currentName==='専用梱包材'){
+    $('packName').value=`ダンボール ${size}サイズ`;
+  }
+  const key=`size${size}`;
+  if([...$('packLinkKey').options].some(option=>option.value===key))$('packLinkKey').value=key;
+}
+function addCardboardSet(){
+  const missing=BOX_SIZES.filter(size=>!packagingMaterials.some(material=>material.materialType==='box'&&String(material.boxSize)===String(size)));
+  if(!missing.length){toast('段ボールの全サイズは登録済みです');return}
+  if(!confirm(`${missing.join('・')}サイズの段ボールを在庫0個で追加しますか？`))return;
+  missing.forEach(size=>{
+    const linkKey=`size${size}`;
+    const conflict=packagingMaterials.find(material=>material.linkKey===linkKey);
+    packagingMaterials.push(normalizePackagingMaterial({
+      id:uid('pack'),name:`ダンボール ${size}サイズ`,stock:0,lowStockAt:2,
+      materialType:'box',boxSize:String(size),linkKey:conflict?'none':linkKey
+    }));
+  });
+  saveAll();renderPackagingInventory();renderData();
+  toast('段ボールをサイズ別に追加しました');
+}
+function openPackagingEditor(id=''){
+  const material=id?packagingMaterials.find(current=>String(current.id)===String(id)):null;
+  $('packagingModalTitle').textContent=material?'梱包材を編集':'梱包材を追加';
+  $('packId').value=material?.id||'';
+  $('packKind').value=material?.materialType||'special';
+  $('packBoxSize').innerHTML=BOX_SIZES.map(size=>`<option value="${size}">${size}サイズ</option>`).join('');
+  $('packBoxSize').value=material?.boxSize||'60';
+  $('packName').value=material?.name||'';
+  $('packStock').value=material?.stock??0;
+  $('packLowStock').value=material?.lowStockAt??3;
+  $('packLinkKey').innerHTML=PACKAGING_LINKS.map(link=>`<option value="${link.key}">${link.name}</option>`).join('');
+  $('packLinkKey').value=material?.linkKey||'none';
+  $('packDeleteButton').style.display=material?'block':'none';
+  onPackagingKindChange();
+  if(material){
+    $('packName').value=material.name;
+    $('packLinkKey').value=material.linkKey||'none';
+  }else{
+    $('packName').value='';
+  }
+  $('packagingModal').classList.add('open');
+}
+function savePackagingMaterial(){
+  const id=$('packId').value;
+  const materialType=$('packKind').value;
+  const boxSize=materialType==='box'?String($('packBoxSize').value):'';
+  let name=$('packName').value.trim();
+  if(!name)name=packagingDefaultName(materialType,boxSize);
+  let linkKey=$('packLinkKey').value;
+  if(materialType==='box'&&boxSize)linkKey=`size${boxSize}`;
+  const conflict=packagingMaterials.find(material=>String(material.id)!==String(id)&&material.linkKey===linkKey&&linkKey!=='none');
+  if(conflict){
+    if(!confirm(`${packagingLinkName(linkKey)}は「${conflict.name}」に連動中です。こちらへ連動先を変更しますか？`))return;
+    conflict.linkKey='none';
+  }
+  const values={
+    name,materialType,boxSize,
+    stock:Math.max(0,Math.floor(safeNum($('packStock').value))),
+    lowStockAt:Math.max(0,Math.floor(safeNum($('packLowStock').value))),
+    linkKey
+  };
+  if(id){
+    const material=packagingMaterials.find(current=>String(current.id)===String(id));if(!material)return;
+    Object.assign(material,values);
+  }else{
+    packagingMaterials.push(normalizePackagingMaterial({id:uid('pack'),...values}));
+  }
+  saveAll();closeModal('packagingModal');renderData();renderShipPackagingNote('s');renderShipPackagingNote('e');
+  toast(materialType==='box'?`${boxSize}サイズ段ボールを保存しました`:'梱包材を保存しました');
+}
+function deletePackagingMaterial(){
+  const id=$('packId').value;if(!id)return;
+  if(items.some(item=>item.packagingConsumption&&String(item.packagingConsumption.materialId)===String(id))){toast('発送履歴で使用済みの梱包材は削除できません');return}
+  if(!confirm('この梱包材を削除しますか？'))return;
+  packagingMaterials=packagingMaterials.filter(material=>String(material.id)!==String(id));saveAll();closeModal('packagingModal');renderData();toast('梱包材を削除しました');
+}
+
 function loadSettingsForm(){
   $('setSpu').value=settings.spuMultiplier;$('setBuyAround').value=settings.buyAroundMultiplier;
   $('setBudget').value=settings.purchaseBudget;$('setPointValue').value=settings.pointValue;
@@ -1673,8 +1949,8 @@ function saveSettings(){
   saveAll();renderAll();toast('設定を保存しました');
 }
 function renderData(){
-  $('dataCount').textContent=`商品 ${items.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件`;
-  loadSettingsForm();
+  $('dataCount').textContent=`商品 ${items.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
+  loadSettingsForm();renderPackagingInventory();
 }
 function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
 function makeCSV(){
@@ -1716,8 +1992,8 @@ function downloadPointCSV(){
 }
 function downloadBackup(){
   const data={
-    version:'2026-07-rakuten-points-v3',schemaVersion:SCHEMA_VERSION,
-    items,pointEntries,pointUsages,settings,exportedAt:new Date().toISOString()
+    version:'2026-08-packaging-v5',schemaVersion:SCHEMA_VERSION,
+    items,pointEntries,pointUsages,packagingMaterials,settings,exportedAt:new Date().toISOString()
   };
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
   toast('バックアップを保存しました');
@@ -1730,14 +2006,15 @@ function restoreBackup(event){
       const data=JSON.parse(reader.result);
       if(!confirm('現在のデータを上書きして復元しますか？'))return;
       if(Array.isArray(data)){
-        items=data;pointEntries=[];pointUsages=[];settings={...DEFAULT_SETTINGS};
+        items=data;pointEntries=[];pointUsages=[];packagingMaterials=deepClone(DEFAULT_PACKAGING);settings={...DEFAULT_SETTINGS};
       }else{
         if(!Array.isArray(data.items))throw new Error('商品データがありません');
         items=data.items;pointEntries=Array.isArray(data.pointEntries)?data.pointEntries:[];
         pointUsages=Array.isArray(data.pointUsages)?data.pointUsages:[];
+        packagingMaterials=Array.isArray(data.packagingMaterials)?data.packagingMaterials:deepClone(DEFAULT_PACKAGING);
         settings={...DEFAULT_SETTINGS,...(data.settings||{})};
       }
-      items=items.map(normalizeItem);pointEntries=pointEntries.map(normalizePointEntry);pointUsages=pointUsages.map(normalizeUsage);
+      items=items.map(normalizeItem);pointEntries=pointEntries.map(normalizePointEntry);pointUsages=pointUsages.map(normalizeUsage);packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
       migrateEmbeddedPointDetails();applyAutomaticExpiry();saveAll();renderAll();toast('復元しました');
     }catch(errorObject){toast(`復元できませんでした：${errorObject.message||'形式エラー'}`)}
     event.target.value='';
@@ -1751,7 +2028,7 @@ function downloadBlob(blob,name){
 function deleteAll(){
   if(!confirm('商品・ポイント・使用履歴・設定をすべて削除しますか？'))return;
   if(!confirm('本当に削除します。バックアップは保存しましたか？'))return;
-  items=[];pointEntries=[];pointUsages=[];settings={...DEFAULT_SETTINGS};saveAll();loadSettingsForm();renderAll();toast('全データを削除しました');
+  items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];settings={...DEFAULT_SETTINGS};saveAll();loadSettingsForm();renderAll();toast('全データを削除しました');
 }
 function openShipping(){
   const groups=[['mercari','メルカリ'],['yahoo','Yahoo!フリマ・ヤフオク']];
@@ -1767,12 +2044,12 @@ function closeModal(id){$(id).classList.remove('open')}
 
 /* 内部検証。通常画面からは実行しません。 */
 window.runSedoriSelfTests=function(){
-  const original={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),settings:deepClone(settings)};
+  const original={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials),settings:deepClone(settings)};
   const results=[];
   const test=(name,condition,details='')=>results.push({name,passed:Boolean(condition),details});
   try{
     settings={...DEFAULT_SETTINGS,pointValue:1};
-    items=[];pointEntries=[];pointUsages=[];
+    items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];
     const legacy=normalizeItem({id:'legacy',name:'セカスト商品',source:'セカンドストリート',cost:1000,status:'sold',actualPrice:3000,price:3000,ship:210,misc:0,platform:'mercari',feeRate:.1,soldDate:'2026-07-01'});
     items=[legacy];
     test('既存セカスト利益',confirmedProfitOf(legacy)===1490,`結果 ${confirmedProfitOf(legacy)}`);
@@ -1799,10 +2076,30 @@ window.runSedoriSelfTests=function(){
 
     const migrated=normalizeItem({id:'old',name:'旧商品',cost:1200,source:'リサイクルショップ',status:'listed'});
     test('既存データ移行',migrated.cost===1200&&migrated.purchaseSourceType==='other'&&migrated.productAmount===1200,JSON.stringify(migrated));
+
+    settings.lastCategory='古着';
+    test('前回カテゴリ保持',settings.lastCategory==='古着',settings.lastCategory);
+
+    packagingMaterials=[normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,linkKey:'mini',lowStockAt:2})];
+    const shipped=normalizeItem({id:'ship1',name:'発送テスト',cost:100,status:'sold',actualPrice:500,price:500,shipMethod:'mercari_mini',ship:160,platform:'mercari',soldDate:'2026-08-12'});
+    items.push(shipped);shipped.status='shipped';syncPackagingForItem(shipped);
+    test('発送時に梱包材を1個減算',packagingMaterials[0].stock===4,`残り ${packagingMaterials[0].stock}`);
+    syncPackagingForItem(shipped);
+    test('同じ商品で二重減算しない',packagingMaterials[0].stock===4,`残り ${packagingMaterials[0].stock}`);
+    shipped.status='sold';syncPackagingForItem(shipped);
+    test('発送済み取消で在庫を戻す',packagingMaterials[0].stock===5,`残り ${packagingMaterials[0].stock}`);
+
+    packagingMaterials=[
+      normalizePackagingMaterial({id:'box60',name:'ダンボール 60サイズ',materialType:'box',boxSize:'60',stock:3,linkKey:'size60',lowStockAt:1}),
+      normalizePackagingMaterial({id:'box80',name:'ダンボール 80サイズ',materialType:'box',boxSize:'80',stock:4,linkKey:'size80',lowStockAt:1})
+    ];
+    const boxShipment=normalizeItem({id:'boxShip',name:'80サイズ発送テスト',cost:100,status:'sold',actualPrice:1000,price:1000,shipMethod:'mercari_80_yamato',ship:850,platform:'mercari',soldDate:'2026-08-12'});
+    items.push(boxShipment);boxShipment.status='shipped';syncPackagingForItem(boxShipment);
+    test('段ボールをサイズ別に減算',packagingMaterials[0].stock===3&&packagingMaterials[1].stock===3,`60=${packagingMaterials[0].stock} 80=${packagingMaterials[1].stock}`);
   }catch(errorObject){
     results.push({name:'テスト実行',passed:false,details:errorObject.message});
   }finally{
-    items=original.items;pointEntries=original.points;pointUsages=original.usages;settings=original.settings;
+    items=original.items;pointEntries=original.points;pointUsages=original.usages;packagingMaterials=original.packaging;settings=original.settings;
   }
   return {passed:results.every(result=>result.passed),results};
 };
@@ -1814,6 +2111,24 @@ init();
 </html>
 <!--
 変更履歴
+2026-08-12
+- 段ボールを60・80・100・120・140・160・170・180・200サイズ別に登録可能に変更
+- 段ボール選択時にサイズから梱包材名と発送サイズを自動設定
+- 60サイズ発送なら60サイズ箱だけ減るサイズ別自動在庫連動を追加
+- 「段ボール一括追加」で未登録サイズを在庫0個から一括作成できる機能を追加
+- 既存梱包材データをmaterialType・boxSize付きへ安全に自動移行
+- schema v5へ更新
+
+2026-08-12
+- 商品追加時のカテゴリを前回登録したカテゴリから開始するよう変更
+- 梱包材在庫管理を追加
+- 発送方法と梱包材を紐づけ、発送済み時に在庫を自動で1個減算
+- 同じ商品で梱包材が二重減算されない消費記録を追加
+- 発送済みを取り消した場合は梱包材在庫を自動で戻す処理を追加
+- 発送方法変更時は旧梱包材を戻して新しい梱包材を消費する処理を追加
+- 梱包材在庫をバックアップ・復元対象へ追加
+- sedori_packaging_materials と schema v4 を追加
+
 2026-07-26
 - 既存の単一HTML・localStorage構成を維持したまま楽天ポイント管理を追加
 - sedori_itemsの既存商品を自動移行し、既存データを初期化しない処理を追加
