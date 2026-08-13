@@ -113,6 +113,22 @@ th{color:var(--muted);font-size:.68rem}
 .toast.show{opacity:1}
 .detail-summary{background:#f7f8fa;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
 .detail-summary .big{font-size:1.35rem;font-weight:950;margin-top:4px}
+.sale-hero{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:10px}
+.sale-hero-label{font-size:.72rem;color:var(--muted);font-weight:900}
+.sale-hero-price{font-size:2rem;font-weight:1000;line-height:1.15;margin-top:3px;font-variant-numeric:tabular-nums}
+.sale-hero-meta{font-size:.72rem;color:var(--muted);margin-top:7px;line-height:1.5}
+.calc-section{background:#f7f8fa;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.calc-section-title{font-size:.86rem;font-weight:1000;margin-bottom:8px}
+.calc-line{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:.78rem;border-bottom:1px solid #e8e9ed}
+.calc-line:last-child{border-bottom:0}
+.calc-line span:last-child{font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
+.calc-line.minus span:last-child{color:var(--red)}
+.calc-result{display:flex;justify-content:space-between;gap:12px;align-items:end;padding-top:10px;margin-top:3px;border-top:2px solid #dfe1e5}
+.calc-result .result-label{font-size:.76rem;font-weight:900}
+.calc-result .result-value{font-size:1.35rem;font-weight:1000;font-variant-numeric:tabular-nums}
+.profit-main{display:flex;justify-content:space-between;align-items:end;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0}
+.profit-main .label{font-size:.74rem;color:var(--muted);font-weight:900}
+.profit-main .value{font-size:1.45rem;font-weight:1000;font-variant-numeric:tabular-nums}
 .filter-box{display:none;margin-bottom:10px}.filter-box.open{display:block}
 .rakuten-area{display:none}.rakuten-area.open{display:block}
 .point-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;margin-bottom:8px}
@@ -1842,42 +1858,99 @@ function detailRow(item){
 function openItemDetail(id){
   const item=items.find(current=>String(current.id)===String(id));if(!item)return;
   const entries=itemPointEntries(item.id);
+  const salePrice=safeNum(item.actualPrice||item.price);
+  const sellingFee=feeOf(item);
+  const shippingFee=safeNum(item.ship);
+  const packagingFee=packagingCostOf(item);
+  const otherExpense=safeNum(item.misc);
+  const net=mercariNet(item);
+  const isRakuten=item.purchaseSourceType==='rakuten';
+  const hasPoints=isRakuten||entries.length>0||expectedPointsForItem(item)>0||confirmedPointsForItem(item)>0;
+
   $('detailTitle').textContent=item.name;
-  $('detailContent').innerHTML=`<div class="detail-summary">
-      <div class="section-title" style="margin-bottom:7px">利益</div>
-      <div class="preview-row"><span>メルカリ等の手取り</span><b>${yen(mercariNet(item))}</b></div>
-      <div class="preview-row"><span>梱包費</span><b>${yen(packagingCostOf(item))}</b></div>
-      <div class="preview-row"><span>現金収支</span><b class="${cashFlowOf(item)>=0?'green':'red'}">${yen(cashFlowOf(item))}</b></div>
-      <div class="preview-row"><span>ポイント込み予想利益</span><b class="${predictedProfitOf(item)>=0?'green':'red'}">${yen(predictedProfitOf(item))}</b></div>
-      <div class="preview-row"><span>ポイント込み確定利益</span><b class="${confirmedProfitOf(item)>=0?'green':'red'}">${yen(confirmedProfitOf(item))}</b></div>
-      <div class="preview-row"><span>獲得予定ポイント</span><b>${expectedPointsForItem(item).toLocaleString()}pt</b></div>
-      <div class="preview-row"><span>確定ポイント</span><b>${confirmedPointsForItem(item).toLocaleString()}pt</b></div>
+  $('detailContent').innerHTML=`
+    <div class="sale-hero">
+      <div class="sale-hero-label">販売価格</div>
+      <div class="sale-hero-price">${yen(salePrice)}</div>
+      <div class="sale-hero-meta">
+        ${escapeHtml(PLATFORM_NAME[item.platform]||'その他')} ／ 売れた日 ${escapeHtml(item.soldDate||'-')}<br>
+        発送方法：${escapeHtml(shipName(item.shipMethod))}
+      </div>
     </div>
+
+    <div class="calc-section">
+      <div class="calc-section-title">売上の内訳</div>
+      <div class="calc-line"><span>販売価格</span><span>${yen(salePrice)}</span></div>
+      <div class="calc-line minus"><span>販売手数料</span><span>－${yen(sellingFee)}</span></div>
+      <div class="calc-line minus"><span>送料</span><span>－${yen(shippingFee)}</span></div>
+      <div class="calc-line minus"><span>梱包費</span><span>－${yen(packagingFee)}</span></div>
+      <div class="calc-line minus"><span>その他販売経費</span><span>－${yen(otherExpense)}</span></div>
+      <div class="calc-result">
+        <div class="result-label">販売後の手取り</div>
+        <div class="result-value ${net>=0?'green':'red'}">${yen(net)}</div>
+      </div>
+    </div>
+
+    <div class="calc-section">
+      <div class="calc-section-title">利益</div>
+      ${isRakuten?`
+        <div class="calc-line"><span>ポイント使用前仕入原価</span><span>${yen(pointBeforeCost(item))}</span></div>
+        <div class="calc-line"><span>実際の資金支出</span><span>${yen(actualCashOut(item))}</span></div>
+      `:`
+        <div class="calc-line"><span>仕入れ値</span><span>${yen(item.cost)}</span></div>
+      `}
+      <div class="profit-main">
+        <div><div class="label">現金収支</div><div class="note">販売後の手取り − 実際の資金支出</div></div>
+        <div class="value ${cashFlowOf(item)>=0?'green':'red'}">${yen(cashFlowOf(item))}</div>
+      </div>
+      ${hasPoints?`
+        <div class="calc-line"><span>獲得予定ポイント</span><span>${expectedPointsForItem(item).toLocaleString()}pt</span></div>
+        <div class="calc-line"><span>確定ポイント</span><span>${confirmedPointsForItem(item).toLocaleString()}pt</span></div>
+        <div class="calc-line"><span>ポイント込み予想利益</span><span class="${predictedProfitOf(item)>=0?'green':'red'}">${yen(predictedProfitOf(item))}</span></div>
+        <div class="calc-line"><span>ポイント込み確定利益</span><span class="${confirmedProfitOf(item)>=0?'green':'red'}">${yen(confirmedProfitOf(item))}</span></div>
+      `:''}
+    </div>
+
     <div class="detail-summary">
-      <div class="section-title" style="margin-bottom:7px">仕入れ</div>
-      <div class="preview-row"><span>仕入れ先区分</span><b>${SOURCE_TYPE_NAME[item.purchaseSourceType]}</b></div>
-      ${item.purchaseSourceType==='rakuten'?`
+      <div class="section-title" style="margin-bottom:7px">仕入れ情報</div>
+      <div class="preview-row"><span>仕入れ先区分</span><b>${SOURCE_TYPE_NAME[item.purchaseSourceType]||'その他'}</b></div>
+      <div class="preview-row"><span>仕入れ先</span><b>${escapeHtml(item.source||'-')}</b></div>
+      <div class="preview-row"><span>購入日</span><b>${escapeHtml(item.purchaseDate||item.date||'-')}</b></div>
+      ${isRakuten?`
         <div class="preview-row"><span>楽天注文番号</span><b>${escapeHtml(item.orderNo||'-')}</b></div>
         <div class="preview-row"><span>商品代金</span><b>${yen(item.productAmount)}</b></div>
-        <div class="preview-row"><span>クーポン</span><b>－${yen(item.couponDiscount)}</b></div>
-        <div class="preview-row"><span>ポイント使用前仕入原価</span><b>${yen(pointBeforeCost(item))}</b></div>
-        <div class="preview-row"><span>使用通常ポイント</span><b>${item.usedNormalPoints.toLocaleString()}pt</b></div>
-        <div class="preview-row"><span>使用期間限定ポイント</span><b>${item.usedLimitedPoints.toLocaleString()}pt</b></div>
-        <div class="preview-row"><span>実際の資金支出</span><b>${yen(actualCashOut(item))}</b></div>`:
-        `<div class="preview-row"><span>仕入れ値</span><b>${yen(item.cost)}</b></div>`}
+        <div class="preview-row"><span>クーポン値引</span><b>－${yen(item.couponDiscount)}</b></div>
+        <div class="preview-row"><span>使用通常ポイント</span><b>${safeNum(item.usedNormalPoints).toLocaleString()}pt</b></div>
+        <div class="preview-row"><span>使用期間限定ポイント</span><b>${safeNum(item.usedLimitedPoints).toLocaleString()}pt</b></div>
+      `:''}
     </div>
-    ${Array.isArray(item.packagingSelections)&&item.packagingSelections.length?`<div class="detail-summary"><div class="section-title" style="margin-bottom:7px">${item.status==='shipped'?'使用した梱包材':'発送予定の梱包材'}</div>
-      ${item.packagingSelections.map(selection=>{
-        const material=packagingMaterials.find(current=>String(current.id)===String(selection.materialId));
-        return `<div class="preview-row"><span>${escapeHtml(material?.name||'削除済み梱包材')} × ${selection.quantity}</span><b>${yen(selection.unitCost*selection.quantity)}</b></div>`;
-      }).join('')}
-      <div class="preview-row"><span>梱包費合計</span><b>${yen(packagingCostOf(item))}</b></div>
-    </div>`:''}
-    ${entries.length?`<div class="detail-summary"><div class="section-title" style="margin-bottom:7px">ポイント明細</div>${entries.map(entry=>`
-      <div class="point-row">
-        <div class="point-row-title">${POINT_BREAKDOWN_NAME[entry.breakdown]} <span class="badge ${entry.type}">${POINT_TYPE_NAME[entry.type]}</span></div>
-        <div class="item-meta">${POINT_STATUS_NAME[entry.status]} ／ 予定 ${entry.expected.toLocaleString()}pt ／ 確定 ${entry.confirmed.toLocaleString()}pt ／ 使用 ${entry.usedAmount.toLocaleString()}pt<br>付与予定 ${entry.plannedDate||'-'} ／ 付与 ${entry.actualDate||'-'} ／ 期限 ${entry.expiryDate||'-'}</div>
-      </div>`).join('')}</div>`:''}`;
+
+    ${Array.isArray(item.packagingSelections)&&item.packagingSelections.length?`
+      <div class="detail-summary">
+        <div class="section-title" style="margin-bottom:7px">${item.status==='shipped'?'使用した梱包材':'発送予定の梱包材'}</div>
+        ${item.packagingSelections.map(selection=>{
+          const material=packagingMaterials.find(current=>String(current.id)===String(selection.materialId));
+          return `<div class="preview-row">
+            <span>${escapeHtml(material?.name||'削除済み梱包材')} × ${selection.quantity}</span>
+            <b>${yen(selection.unitCost*selection.quantity)}</b>
+          </div>`;
+        }).join('')}
+        <div class="preview-row"><span>梱包費合計</span><b>${yen(packagingFee)}</b></div>
+      </div>`:''}
+
+    ${entries.length?`
+      <div class="detail-summary">
+        <div class="section-title" style="margin-bottom:7px">楽天ポイント明細</div>
+        ${entries.map(entry=>`
+          <div class="point-row">
+            <div class="point-row-title">${POINT_BREAKDOWN_NAME[entry.breakdown]} <span class="badge ${entry.type}">${POINT_TYPE_NAME[entry.type]}</span></div>
+            <div class="item-meta">
+              ${POINT_STATUS_NAME[entry.status]} ／ 予定 ${entry.expected.toLocaleString()}pt ／ 確定 ${entry.confirmed.toLocaleString()}pt ／ 使用 ${entry.usedAmount.toLocaleString()}pt<br>
+              付与予定 ${entry.plannedDate||'-'} ／ 付与 ${entry.actualDate||'-'} ／ 期限 ${entry.expiryDate||'-'}
+            </div>
+          </div>`).join('')}
+      </div>`:''}
+  `;
   $('detailModal').classList.add('open');
 }
 
@@ -2362,6 +2435,15 @@ init();
 </html>
 <!--
 変更履歴
+2026-08-13
+- 商品詳細画面を「販売価格 → 手数料・送料・梱包費・その他経費 → 販売後の手取り → 利益」の順に全面整理
+- 販売価格を詳細画面最上部へ大きく表示
+- 販売先・売れた日・発送方法を販売価格の直下へ表示
+- 販売手数料・送料・梱包費・その他販売経費を差し引き表示
+- 「メルカリ等の手取り」を分かりやすい「販売後の手取り」表示へ変更
+- 通常商品のポイント0pt表示を省略し、楽天商品・ポイント対象商品だけポイント利益を表示
+- 既存の利益計算・楽天ポイント・梱包材在庫・保存データは変更なし
+
 2026-08-13
 - 「売れた記録」画面内で登録済み梱包材を複数選択できるよう変更
 - 梱包材の使用数と単価から梱包費をその場で自動計算し利益プレビューへ反映
