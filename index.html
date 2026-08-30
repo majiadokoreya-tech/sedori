@@ -129,6 +129,17 @@ th{color:var(--muted);font-size:.68rem}
 .profit-main{display:flex;justify-content:space-between;align-items:end;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0}
 .profit-main .label{font-size:.74rem;color:var(--muted);font-weight:900}
 .profit-main .value{font-size:1.45rem;font-weight:1000;font-variant-numeric:tabular-nums}
+.break-even-box{background:#f8f9fb;border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.break-even-title{font-size:.8rem;font-weight:1000;margin-bottom:8px}
+.break-even-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.break-even-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 6px;text-align:center}
+.break-even-card .market{font-size:.65rem;color:var(--muted);font-weight:900;line-height:1.25}
+.break-even-card .price{font-size:1rem;font-weight:1000;margin-top:4px;font-variant-numeric:tabular-nums}
+.break-even-card .fee{font-size:.61rem;color:var(--muted);margin-top:2px}
+.break-even-line{font-size:.7rem;color:var(--muted);line-height:1.55;margin-top:8px}
+.item-break-even{margin-top:7px;background:#f7f8fa;border-radius:10px;padding:7px 8px;font-size:.68rem;line-height:1.55;color:var(--muted)}
+.item-break-even b{color:var(--text)}
+@media(max-width:360px){.break-even-grid{grid-template-columns:1fr}.break-even-card{text-align:left;display:flex;justify-content:space-between;align-items:center}.break-even-card .price{margin-top:0}}
 .filter-box{display:none;margin-bottom:10px}.filter-box.open{display:block}
 .rakuten-area{display:none}.rakuten-area.open{display:block}
 .point-row{border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;margin-bottom:8px}
@@ -379,7 +390,7 @@ th{color:var(--muted);font-size:.68rem}
       </div>
     </div>
     <div id="aSourceWrap" class="form-grid one"><div><label>仕入れ先</label><select id="aSource"></select></div></div>
-    <div id="aSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="aCost" type="number" inputmode="numeric" min="0" placeholder="0"></div></div>
+    <div id="aSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="aCost" type="number" inputmode="numeric" min="0" placeholder="0" oninput="updateBreakEvenPreview('a')"></div></div>
 
     <div id="aRakutenPurchase" class="rakuten-area">
       <div class="help">商品代金・クーポン・使用ポイントを入力すると、実際の資金支出を自動計算します。獲得ポイントは明細ごとに追加してください。</div>
@@ -411,6 +422,20 @@ th{color:var(--muted);font-size:.68rem}
         <div id="aPointDraftList"></div>
       </div>
     </div>
+
+    <div class="sub-card">
+      <div class="section-title" style="margin-bottom:9px">出品時の想定発送</div>
+      <div class="form-grid">
+        <div><label>想定発送方法</label><select id="aPlannedShipMethod" onchange="applyPlannedShipping('a')"></select></div>
+        <div><label>想定送料</label><input id="aPlannedShipFee" type="number" min="0" inputmode="numeric" oninput="updateBreakEvenPreview('a')"></div>
+      </div>
+      <div class="form-grid one">
+        <div><label>想定梱包費</label><input id="aPlannedPackagingCost" type="number" min="0" step="0.01" inputmode="decimal" oninput="updateBreakEvenPreview('a')"></div>
+      </div>
+      <div class="note">発送方法を選ぶと送料と、紐づいている梱包材1個分の単価を目安として自動入力します。金額は手入力で修正できます。</div>
+      <div id="aBreakEvenPreview"></div>
+    </div>
+
     <div class="form-grid one"><div><label>メモ</label><textarea id="aMemo"></textarea></div></div>
     <div class="note" style="margin-bottom:10px">登録すると自動で「販売中」になります。</div>
     <button class="btn btn-primary full" onclick="addItem()">登録する</button>
@@ -427,7 +452,7 @@ th{color:var(--muted);font-size:.68rem}
       <div><label>売れた日</label><input id="sDate" type="date"></div>
       <div><label>販売先</label>
         <select id="sPlatform" onchange="refreshShipOptions('s');renderSoldPackagingChoices();updatePromotionVisibility('s');calcSoldPreview()">
-          <option value="mercari">メルカリ</option><option value="yahoo-flea">Yahoo!フリマ</option>
+          <option value="mercari">メルカリ</option><option value="rakuma">ラクマ</option><option value="yahoo-flea">Yahoo!フリマ</option>
           <option value="yahoo-auction">ヤフオク</option><option value="other">その他</option>
         </select>
       </div>
@@ -476,7 +501,7 @@ th{color:var(--muted);font-size:.68rem}
       </div>
     </div>
     <div id="eSourceWrap" class="form-grid one"><div><label>仕入れ先</label><select id="eSource"></select></div></div>
-    <div id="eSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="eCost" type="number" inputmode="numeric"></div></div>
+    <div id="eSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="eCost" type="number" inputmode="numeric" oninput="updateBreakEvenPreview('e')"></div></div>
 
     <div id="eRakutenPurchase" class="rakuten-area">
       <div class="form-grid">
@@ -502,6 +527,18 @@ th{color:var(--muted);font-size:.68rem}
       </div>
     </div>
 
+    <div class="sub-card">
+      <div class="section-title" style="margin-bottom:9px">出品時の想定発送・損益分岐点</div>
+      <div class="form-grid">
+        <div><label>想定発送方法</label><select id="ePlannedShipMethod" onchange="applyPlannedShipping('e')"></select></div>
+        <div><label>想定送料</label><input id="ePlannedShipFee" type="number" min="0" inputmode="numeric" oninput="updateBreakEvenPreview('e')"></div>
+      </div>
+      <div class="form-grid one">
+        <div><label>想定梱包費</label><input id="ePlannedPackagingCost" type="number" min="0" step="0.01" inputmode="decimal" oninput="updateBreakEvenPreview('e')"></div>
+      </div>
+      <div id="eBreakEvenPreview"></div>
+    </div>
+
     <div class="form-grid">
       <div><label>状態</label>
         <select id="eStatus" onchange="toggleEditSale()">
@@ -515,7 +552,7 @@ th{color:var(--muted);font-size:.68rem}
         <div><label>売れた日</label><input id="eSoldDate" type="date"></div>
         <div><label>販売先</label>
           <select id="ePlatform" onchange="refreshShipOptions('e');updatePromotionVisibility('e');calcEditPreview()">
-            <option value="mercari">メルカリ</option><option value="yahoo-flea">Yahoo!フリマ</option>
+            <option value="mercari">メルカリ</option><option value="rakuma">ラクマ</option><option value="yahoo-flea">Yahoo!フリマ</option>
             <option value="yahoo-auction">ヤフオク</option><option value="other">その他</option>
           </select>
         </div>
@@ -690,7 +727,7 @@ const STORAGE={
   settings:'sedori_settings',
   schema:'sedori_schema_version'
 };
-const SCHEMA_VERSION=8;
+const SCHEMA_VERSION=9;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -708,8 +745,13 @@ const PACKAGING_TYPE_NAME={special:'専用資材',box:'段ボール',bag:'袋・
 const CATS=['レトロゲーム','トレカ','ブランド品','古着','電子機器','本・漫画','おもちゃ','その他'];
 const SOURCES=['セカンドストリート','楽天市場','ハードオフ','ブックオフ','メルカリ','ヤフオク','リサイクルショップ','フリマ','不用品','その他'];
 const SOURCE_TYPE_NAME={secondstreet:'セカスト',rakuten:'楽天市場',other:'その他'};
-const PLATFORM_NAME={mercari:'メルカリ','yahoo-flea':'Yahoo!フリマ','yahoo-auction':'ヤフオク',other:'その他'};
-const PLATFORM_FEE={mercari:.10,'yahoo-flea':.05,'yahoo-auction':.10,other:.10};
+const PLATFORM_NAME={mercari:'メルカリ',rakuma:'ラクマ','yahoo-flea':'Yahoo!フリマ','yahoo-auction':'ヤフオク',other:'その他'};
+const PLATFORM_FEE={mercari:.10,rakuma:.10,'yahoo-flea':.05,'yahoo-auction':.10,other:.10};
+const BREAK_EVEN_MARKETS=[
+  {id:'mercari',name:'メルカリ',rate:.10},
+  {id:'rakuma',name:'ラクマ',rate:.10},
+  {id:'yahoo-flea',name:'Yahoo!フリマ',rate:.05}
+];
 const POINT_TYPE_NAME={normal:'通常',limited:'期間限定'};
 const POINT_STATUS_NAME={planned:'予定',confirmed:'確定',used:'使用済み',expired:'失効',canceled:'取消'};
 const POINT_BREAKDOWN_NAME={
@@ -723,6 +765,7 @@ const USAGE_PURPOSE_NAME={
 const SHIPPING_METHODS=[
  {id:'manual',group:'all',name:'手入力',fee:null},
  {id:'none',group:'all',name:'送料0・手渡し',fee:0},
+ {id:'rakuma_manual',group:'rakuma',name:'かんたんラクマパック・その他',fee:null},
  {id:'mercari_mini',group:'mercari',name:'ゆうパケットポストmini',fee:160},
  {id:'mercari_nekopos',group:'mercari',name:'ネコポス',fee:210},
  {id:'mercari_post',group:'mercari',name:'ゆうパケットポスト',fee:215},
@@ -867,6 +910,19 @@ function actualCashOut(item){
   return clampZero(item.cost);
 }
 function packagingCostOf(item){return Math.max(0,safeNum(item.packagingCost))}
+function breakEvenFixedCost(item){
+  return clampZero(pointBeforeCost(item))+clampZero(item.plannedShipFee)+clampZero(item.plannedPackagingCost);
+}
+function breakEvenPrice(item,feeRateValue,extraRate=0){
+  const totalRate=clampZero(feeRateValue)+clampZero(extraRate);
+  if(totalRate>=1)return 0;
+  const fixed=breakEvenFixedCost(item);
+  return fixed>0?Math.ceil(fixed/(1-totalRate)):0;
+}
+function breakEvenForMarket(item,marketId){
+  const market=BREAK_EVEN_MARKETS.find(current=>current.id===marketId);
+  return market?breakEvenPrice(item,market.rate):0;
+}
 function promotionFeeOf(item){
   if(item.platform!=='mercari'||!item.promoUsed)return 0;
   const rate=Number.isFinite(Number(item.promoRate))?Math.max(0,Number(item.promoRate)):0.05;
@@ -947,6 +1003,9 @@ function normalizeItem(raw,index=0){
   item.misc=clampZero(item.misc);
   item.soldDate=item.soldDate||'';
   item.shipMethod=item.shipMethod||guessShipMethod(item);
+  item.plannedShipMethod=item.plannedShipMethod||((isSold(item)&&item.shipMethod)?item.shipMethod:'manual');
+  item.plannedShipFee=clampZero(item.plannedShipFee!==undefined?item.plannedShipFee:(isSold(item)?item.ship:0));
+  item.plannedPackagingCost=clampZero(item.plannedPackagingCost!==undefined?item.plannedPackagingCost:0);
   const legacyPackaging=item.packagingConsumption&&item.packagingConsumption.materialId?[item.packagingConsumption]:[];
   const rawPackaging=Array.isArray(item.packagingConsumptions)?item.packagingConsumptions:legacyPackaging;
   item.packagingConsumptions=rawPackaging.filter(c=>c&&c.materialId).map(c=>({
@@ -1156,7 +1215,7 @@ function itemCard(item){
     :`<div class="item-price">${yen(pointBeforeCost(item))}</div>`;
   const meta=sold
     ?`現金収支 ${yen(cashFlowOf(item))} ／ 売上 ${yen(item.actualPrice||item.price)} ／ ${item.soldDate||'-'}`
-    :`仕入原価 ${yen(pointBeforeCost(item))} ／ 資金支出 ${yen(actualCashOut(item))} ／ ${item.purchaseDate||item.date}`;
+    :`仕入原価 ${yen(pointBeforeCost(item))} ／ 想定送料 ${yen(item.plannedShipFee)} ／ ${item.purchaseDate||item.date}`;
   const actions=item.status==='listed'
     ?`<button class="btn btn-green" onclick="openSold('${item.id}')">売れた</button><button class="btn" onclick="openEdit('${item.id}')">編集</button>`
     :item.status==='sold'
@@ -1173,10 +1232,78 @@ function itemCard(item){
       </div>${right}
     </div>
     <div class="item-meta">${meta}${rakuten?`<br>予定 ${expectedPointsForItem(item).toLocaleString()}pt ／ 確定 ${confirmedPointsForItem(item).toLocaleString()}pt`:''}</div>
+    ${!sold?`<div class="item-break-even">
+      <b>損益分岐点</b>　メルカリ ${yen(breakEvenForMarket(item,'mercari'))} ／ ラクマ ${yen(breakEvenForMarket(item,'rakuma'))} ／ Yahoo ${yen(breakEvenForMarket(item,'yahoo-flea'))}<br>
+      想定：${escapeHtml(shipName(item.plannedShipMethod))} ${yen(item.plannedShipFee)}
+    </div>`:''}
     <div class="item-actions">${actions}</div>
   </div>`;
 }
 
+function plannedShippingOptions(){
+  return SHIPPING_METHODS.filter(method=>method.group==='all'||method.group==='mercari');
+}
+function fillPlannedShippingOptions(prefix){
+  const select=$(prefix+'PlannedShipMethod');if(!select)return;
+  select.innerHTML=plannedShippingOptions().map(method=>`<option value="${method.id}">${method.name}${method.fee===null?'':`（${yen(method.fee)}）`}</option>`).join('');
+}
+function recommendedPackagingCostForShipMethod(methodId){
+  const material=linkedPackagingForShipMethod(methodId);
+  return material?Math.max(0,safeNum(material.unitCost)):0;
+}
+function applyPlannedShipping(prefix){
+  const method=SHIPPING_METHODS.find(current=>current.id===$(prefix+'PlannedShipMethod').value);
+  if(method&&method.fee!==null)$(prefix+'PlannedShipFee').value=method.fee;
+  $(prefix+'PlannedPackagingCost').value=recommendedPackagingCostForShipMethod($(prefix+'PlannedShipMethod').value);
+  updateBreakEvenPreview(prefix);
+}
+function readPlannedListingForm(prefix){
+  return {
+    plannedShipMethod:$(prefix+'PlannedShipMethod')?.value||'manual',
+    plannedShipFee:clampZero($(prefix+'PlannedShipFee')?.value),
+    plannedPackagingCost:clampZero($(prefix+'PlannedPackagingCost')?.value)
+  };
+}
+function formBreakEvenItem(prefix){
+  const sourceType=$(prefix+'PurchaseSourceType')?.value||'other';
+  let cost=0,productAmount=0,couponDiscount=0;
+  if(sourceType==='rakuten'){
+    productAmount=clampZero($(prefix+'ProductAmount')?.value);
+    couponDiscount=clampZero($(prefix+'Coupon')?.value);
+    cost=clampZero(productAmount-couponDiscount);
+  }else{
+    cost=clampZero($(prefix+'Cost')?.value);
+    productAmount=cost;
+  }
+  return {
+    purchaseSourceType:sourceType,
+    cost,productAmount,couponDiscount,
+    ...readPlannedListingForm(prefix)
+  };
+}
+function breakEvenPreviewHtml(item){
+  const fixed=breakEvenFixedCost(item);
+  const mercariPromo=breakEvenPrice(item,.10,.05);
+  return `<div class="break-even-box">
+    <div class="break-even-title">損益分岐点</div>
+    <div class="break-even-grid">
+      ${BREAK_EVEN_MARKETS.map(market=>`<div class="break-even-card">
+        <div class="market">${market.name}</div>
+        <div class="price">${yen(breakEvenPrice(item,market.rate))}</div>
+        <div class="fee">手数料 ${Math.round(market.rate*100)}%</div>
+      </div>`).join('')}
+    </div>
+    <div class="break-even-line">
+      原価 ${yen(pointBeforeCost(item))} ＋ 想定送料 ${yen(item.plannedShipFee)} ＋ 想定梱包費 ${yen(item.plannedPackagingCost)} を回収できる最低価格の目安です。<br>
+      メルカリでプロモーション5%も使う場合：<b>${yen(mercariPromo)}</b><br>
+      楽天の獲得予定ポイントは入れず、仕入原価ベースで保守的に計算しています。
+    </div>
+  </div>`;
+}
+function updateBreakEvenPreview(prefix){
+  const target=$(prefix+'BreakEvenPreview');if(!target)return;
+  target.innerHTML=breakEvenPreviewHtml(formBreakEvenItem(prefix));
+}
 function togglePurchaseFields(prefix){
   const sourceType=$(prefix+'PurchaseSourceType').value;
   const rakuten=sourceType==='rakuten';
@@ -1186,12 +1313,14 @@ function togglePurchaseFields(prefix){
   if(sourceType==='rakuten')$(prefix+'Source').value='楽天市場';
   if(sourceType==='secondstreet')$(prefix+'Source').value='セカンドストリート';
   if(rakuten)updatePurchaseCash(prefix);
+  updateBreakEvenPreview(prefix);
 }
 function updatePurchaseCash(prefix){
   const before=clampZero(safeNum($(prefix+'ProductAmount').value)-safeNum($(prefix+'Coupon').value));
   const cash=clampZero(before-safeNum($(prefix+'UsedNormal').value)-safeNum($(prefix+'UsedLimited').value));
   $(prefix+'BeforeCost').value=Math.round(before);
   $(prefix+'CashPaid').value=Math.round(cash);
+  updateBreakEvenPreview(prefix);
 }
 function currentDrafts(prefix){return prefix==='a'?addPointDrafts:editPointDrafts}
 function setCurrentDrafts(prefix,value){if(prefix==='a')addPointDrafts=value;else editPointDrafts=value}
@@ -1327,7 +1456,8 @@ function openAdd(){
   $('aSource').value=stockType==='fuyohin'?'不用品':'セカンドストリート';
   $('aCost').value='';$('aOrderNo').value='';$('aPurchaseDate').value=today();
   $('aProductAmount').value='';$('aCoupon').value=0;$('aUsedNormal').value=0;$('aUsedLimited').value=0;
-  togglePurchaseFields('a');renderPointDrafts('a');
+  fillPlannedShippingOptions('a');$('aPlannedShipMethod').value='manual';$('aPlannedShipFee').value=0;$('aPlannedPackagingCost').value=0;
+  togglePurchaseFields('a');renderPointDrafts('a');updateBreakEvenPreview('a');
   $('addModal').classList.add('open');
 }
 function replaceItemPointEntries(itemId,drafts){
@@ -1417,7 +1547,7 @@ function addItem(){
     const item=normalizeItem({
       id:uid('item'),name,type:$('aType').value,cat:$('aCat').value,date:$('aDate').value||today(),
       memo:$('aMemo').value.trim(),status:'listed',actualPrice:0,price:0,soldDate:'',ship:0,misc:0,
-      platform:'mercari',feeRate:.10,shipMethod:'manual',...purchase
+      platform:'mercari',feeRate:.10,shipMethod:'manual',...readPlannedListingForm('a'),...purchase
     });
     items.unshift(item);
     if(item.purchaseSourceType==='rakuten'){
@@ -1441,8 +1571,10 @@ function syncStockTabs(){
 function openSold(id){
   const item=items.find(current=>String(current.id)===String(id));if(!item)return;
   $('soldId').value=item.id;$('soldName').textContent=item.name;$('sDate').value=today();$('sPlatform').value='mercari';
-  $('sPrice').value='';$('sShip').value='';$('sMisc').value=0;$('sPromoUsed').checked=false;refreshShipOptions('s');
-  updatePromotionVisibility('s');renderSoldPackagingChoices();calcSoldPreview();
+  $('sPrice').value='';$('sMisc').value=0;$('sPromoUsed').checked=false;refreshShipOptions('s');
+  if([...$('sShipMethod').options].some(option=>option.value===item.plannedShipMethod))$('sShipMethod').value=item.plannedShipMethod;
+  $('sShip').value=item.plannedShipFee||0;
+  updatePromotionVisibility('s');renderShipPackagingNote('s');renderSoldPackagingChoices();calcSoldPreview();
   $('soldModal').classList.add('open');
 }
 function updatePromotionVisibility(prefix){
@@ -1456,7 +1588,7 @@ function updatePromotionVisibility(prefix){
 }
 function refreshShipOptions(prefix){
   const platform=$(prefix+'Platform').value;
-  const group=platform.startsWith('yahoo')?'yahoo':platform==='mercari'?'mercari':'all';
+  const group=platform.startsWith('yahoo')?'yahoo':platform==='mercari'?'mercari':platform==='rakuma'?'rakuma':'all';
   $(prefix+'ShipMethod').innerHTML=SHIPPING_METHODS
     .filter(method=>method.group==='all'||method.group===group)
     .map(method=>`<option value="${method.id}">${method.name}${method.fee===null?'':`（${yen(method.fee)}）`}</option>`).join('');
@@ -1729,13 +1861,16 @@ function openEdit(id){
   $('eCost').value=item.cost;$('eOrderNo').value=item.orderNo||'';$('ePurchaseDate').value=item.purchaseDate||item.date;
   $('eProductAmount').value=item.productAmount||item.cost;$('eCoupon').value=item.couponDiscount||0;
   $('eUsedNormal').value=item.usedNormalPoints||0;$('eUsedLimited').value=item.usedLimitedPoints||0;
+  fillPlannedShippingOptions('e');
+  $('ePlannedShipMethod').value=[...$('ePlannedShipMethod').options].some(option=>option.value===item.plannedShipMethod)?item.plannedShipMethod:'manual';
+  $('ePlannedShipFee').value=item.plannedShipFee||0;$('ePlannedPackagingCost').value=item.plannedPackagingCost||0;
   $('eStatus').value=item.status;$('eMemo').value=item.memo||'';
   $('eSoldDate').value=item.soldDate||today();$('ePlatform').value=item.platform||'mercari';$('ePrice').value=item.actualPrice||item.price||'';
   $('ePromoUsed').checked=Boolean(item.promoUsed);refreshShipOptions('e');updatePromotionVisibility('e');
   $('eShipMethod').value=[...$('eShipMethod').options].some(option=>option.value===item.shipMethod)?item.shipMethod:'manual';
   renderShipPackagingNote('e');
   $('eShip').value=item.ship||0;$('eMisc').value=item.misc||0;
-  togglePurchaseFields('e');updatePurchaseCash('e');renderPointDrafts('e');toggleEditSale();
+  togglePurchaseFields('e');updatePurchaseCash('e');renderPointDrafts('e');updateBreakEvenPreview('e');toggleEditSale();
   $('editModal').classList.add('open');
 }
 function toggleEditSale(){
@@ -1770,7 +1905,7 @@ function saveEdit(){
     }
     Object.assign(item,{
       name:$('eName').value.trim()||item.name,type:$('eType').value,date:$('eDate').value||today(),
-      cat:$('eCat').value,memo:$('eMemo').value.trim(),status:$('eStatus').value,...purchase
+      cat:$('eCat').value,memo:$('eMemo').value.trim(),status:$('eStatus').value,...readPlannedListingForm('e'),...purchase
     });
     if(item.purchaseSourceType==='rakuten'){
       replaceItemPointEntries(item.id,editPointDrafts);
@@ -1960,6 +2095,17 @@ function openItemDetail(id){
         <div class="preview-row"><span>使用通常ポイント</span><b>${safeNum(item.usedNormalPoints).toLocaleString()}pt</b></div>
         <div class="preview-row"><span>使用期間限定ポイント</span><b>${safeNum(item.usedLimitedPoints).toLocaleString()}pt</b></div>
       `:''}
+    </div>
+
+    <div class="detail-summary">
+      <div class="section-title" style="margin-bottom:7px">出品時の想定・損益分岐点</div>
+      <div class="preview-row"><span>想定発送方法</span><b>${escapeHtml(shipName(item.plannedShipMethod))}</b></div>
+      <div class="preview-row"><span>想定送料</span><b>${yen(item.plannedShipFee)}</b></div>
+      <div class="preview-row"><span>想定梱包費</span><b>${yen(item.plannedPackagingCost)}</b></div>
+      <div class="preview-row"><span>メルカリ 10%</span><b>${yen(breakEvenForMarket(item,'mercari'))}</b></div>
+      <div class="preview-row"><span>ラクマ 10%</span><b>${yen(breakEvenForMarket(item,'rakuma'))}</b></div>
+      <div class="preview-row"><span>Yahoo!フリマ 5%</span><b>${yen(breakEvenForMarket(item,'yahoo-flea'))}</b></div>
+      <div class="preview-row"><span>メルカリ＋プロモ5%</span><b>${yen(breakEvenPrice(item,.10,.05))}</b></div>
     </div>
 
     ${Array.isArray(item.packagingSelections)&&item.packagingSelections.length?`
@@ -2314,14 +2460,18 @@ function makeCSV(){
   });
   const header=[
     '商品名','種別','カテゴリ','仕入れ先区分','仕入れ先','楽天注文番号','購入日','商品代金','クーポン',
-    '使用通常ポイント','使用期間限定ポイント','ポイント使用前仕入原価','実際の資金支出','状態','売れた日',
+    '使用通常ポイント','使用期間限定ポイント','ポイント使用前仕入原価','実際の資金支出',
+    '想定発送方法','想定送料','想定梱包費','損益分岐点メルカリ','損益分岐点ラクマ','損益分岐点Yahooフリマ',
+    '状態','売れた日',
     '売上','手数料','メルカリプロモーション使用','プロモーション料','送料','梱包費','その他販売経費','使用梱包材','販売後の手取り','現金収支','獲得予定ポイント',
     '確定ポイント','ポイント込み予想利益','ポイント込み確定利益','販売先','発送方法','メモ'
   ];
   const rows=list.map(item=>[
     item.name,item.type==='fuyohin'?'不用品':'せどり',item.cat,SOURCE_TYPE_NAME[item.purchaseSourceType],item.source,item.orderNo,
     item.purchaseDate,item.productAmount,item.couponDiscount,item.usedNormalPoints,item.usedLimitedPoints,pointBeforeCost(item),
-    actualCashOut(item),statusText(item.status),item.soldDate,item.actualPrice||item.price,feeOf(item),item.promoUsed?'使用':'未使用',promotionFeeOf(item),item.ship,packagingCostOf(item),item.misc,
+    actualCashOut(item),shipName(item.plannedShipMethod),item.plannedShipFee,item.plannedPackagingCost,
+    breakEvenForMarket(item,'mercari'),breakEvenForMarket(item,'rakuma'),breakEvenForMarket(item,'yahoo-flea'),
+    statusText(item.status),item.soldDate,item.actualPrice||item.price,feeOf(item),item.promoUsed?'使用':'未使用',promotionFeeOf(item),item.ship,packagingCostOf(item),item.misc,
     (item.packagingSelections||[]).map(c=>{const m=packagingMaterials.find(x=>String(x.id)===String(c.materialId));return `${m?.name||'削除済み'}×${c.quantity}`}).join(' / '),
     mercariNet(item),cashFlowOf(item),expectedPointsForItem(item),confirmedPointsForItem(item),predictedProfitOf(item),
     confirmedProfitOf(item),PLATFORM_NAME[item.platform]||'',shipName(item.shipMethod),item.memo
@@ -2345,7 +2495,7 @@ function downloadPointCSV(){
 }
 function downloadBackup(){
   const data={
-    version:'2026-08-promotion-v8',schemaVersion:SCHEMA_VERSION,
+    version:'2026-08-break-even-v9',schemaVersion:SCHEMA_VERSION,
     items,pointEntries,pointUsages,packagingMaterials,settings,exportedAt:new Date().toISOString()
   };
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
@@ -2415,6 +2565,15 @@ window.runSedoriSelfTests=function(){
     test('メルカリプロモーション料5%',promotionFeeOf(promoItem)===50,`結果 ${promotionFeeOf(promoItem)}`);
     test('プロモーション料を利益から控除',confirmedProfitOf(promoItem)===616,`結果 ${confirmedProfitOf(promoItem)}`);
 
+    const beItem=normalizeItem({
+      id:'be',name:'損益分岐点テスト',source:'セカンドストリート',cost:1000,status:'listed',
+      plannedShipMethod:'mercari_post',plannedShipFee:215,plannedPackagingCost:19
+    });
+    test('メルカリ損益分岐点10%',breakEvenForMarket(beItem,'mercari')===1372,`結果 ${breakEvenForMarket(beItem,'mercari')}`);
+    test('ラクマ損益分岐点10%',breakEvenForMarket(beItem,'rakuma')===1372,`結果 ${breakEvenForMarket(beItem,'rakuma')}`);
+    test('Yahoo損益分岐点5%',breakEvenForMarket(beItem,'yahoo-flea')===1299,`結果 ${breakEvenForMarket(beItem,'yahoo-flea')}`);
+    test('メルカリプロモ込み損益分岐点15%',breakEvenPrice(beItem,.10,.05)===1452,`結果 ${breakEvenPrice(beItem,.10,.05)}`);
+
     const rakuten=normalizeItem({id:'rakuten',name:'楽天商品',purchaseSourceType:'rakuten',source:'楽天市場',productAmount:5000,couponDiscount:500,usedNormalPoints:500,usedLimitedPoints:0,cost:4500,status:'sold',actualPrice:7000,price:7000,ship:750,misc:0,platform:'mercari',feeRate:.1,soldDate:'2026-07-01'});
     items.push(rakuten);
     pointEntries=[
@@ -2480,6 +2639,19 @@ init();
 </html>
 <!--
 変更履歴
+2026-08-30
+- 商品登録時に「想定発送方法・想定送料・想定梱包費」を登録できるよう追加
+- 想定発送方法を選ぶと送料を自動入力し、紐づく梱包材の単価を想定梱包費として自動入力
+- 登録画面でメルカリ10%・ラクマ10%・Yahoo!フリマ5%の損益分岐点をリアルタイム表示
+- メルカリのプロモーション5%併用時の損益分岐点も補助表示
+- 販売中の商品カードへ3販売先の損益分岐点を表示
+- 売れた記録を開いた時、出品時の想定発送方法・送料を初期値として引き継ぎ、実際の発送方法へ変更可能
+- 販売先にラクマを追加し販売手数料10%として計算
+- 商品編集画面から想定発送方法・送料・梱包費を変更可能
+- 商品詳細とCSVへ想定発送情報・各販売先の損益分岐点を追加
+- 既存商品には安全な初期値を設定し既存利益・楽天ポイント・梱包材在庫を維持
+- schema v9へ更新
+
 2026-08-20
 - 売れた記録画面に「メルカリのプロモーションを使用」チェック欄を追加
 - メルカリ選択時だけチェック欄を表示し、他販売先では自動で解除
