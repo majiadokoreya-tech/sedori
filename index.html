@@ -101,6 +101,12 @@ th{color:var(--muted);font-size:.68rem}
 .preview{background:#f7f8fa;border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
 .preview-row{display:flex;justify-content:space-between;gap:8px;font-size:.76rem;padding:4px 0}
 .danger-zone{border:1px dashed #ef9c96;background:#fff8f7}
+.backup-status{background:#f7f8fa;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;font-size:.74rem;line-height:1.6}
+.backup-status strong{font-size:.82rem}
+.backup-list{display:grid;gap:7px;margin-top:9px}
+.backup-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.backup-row .date{font-size:.73rem;font-weight:900}
+.backup-row .meta{font-size:.64rem;color:var(--muted);margin-top:2px}
 .fixed-add{
   position:fixed;right:15px;bottom:18px;z-index:35;border:0;border-radius:999px;background:var(--accent);
   color:#fff;padding:14px 18px;font-weight:950;box-shadow:0 8px 22px rgba(255,63,104,.32)
@@ -311,10 +317,24 @@ th{color:var(--muted);font-size:.68rem}
 <section id="data" class="page">
   <div class="card">
     <div class="section-head"><div class="section-title">バックアップ</div><div id="dataCount" class="note"></div></div>
-    <div class="help">更新前にバックアップを保存してください。既存商品、ポイント明細、使用履歴、梱包材在庫、設定をまとめて保存します。</div>
-    <button class="btn btn-blue full" onclick="downloadBackup()">バックアップを保存</button>
+    <div class="help">毎日、その日にアプリを最初に開いた時に端末内へ自動バックアップします。過去14日分を保持します。アプリを完全に閉じている間はブラウザの制限により実行されません。</div>
+
+    <div id="autoBackupStatus" class="backup-status">
+      <strong>自動バックアップ</strong><br>確認中…
+    </div>
+
+    <div class="split-buttons">
+      <button class="btn btn-green" onclick="ensureDailyBackup(true)">今日のバックアップを更新</button>
+      <button class="btn btn-purple" onclick="restoreLatestAutoBackup()">最新を復元</button>
+    </div>
+
+    <div id="autoBackupList" class="backup-list"></div>
+
+    <div style="height:12px"></div>
+    <div class="help">端末故障やブラウザデータ削除に備える場合は、下のボタンからJSONファイルも定期的に保存してください。</div>
+    <button class="btn btn-blue full" onclick="downloadBackup()">JSONバックアップを保存</button>
     <label class="btn full" style="display:block;text-align:center;margin-top:8px">
-      バックアップを復元
+      JSONバックアップを復元
       <input type="file" accept=".json" onchange="restoreBackup(event)" style="display:none">
     </label>
   </div>
@@ -726,9 +746,13 @@ const STORAGE={
   usages:'sedori_point_usages',
   packaging:'sedori_packaging_materials',
   settings:'sedori_settings',
-  schema:'sedori_schema_version'
+  schema:'sedori_schema_version',
+  autoBackupFallback:'sedori_daily_backup_fallback'
 };
-const SCHEMA_VERSION=10;
+const AUTO_BACKUP_DB='sedori_daily_backup_db';
+const AUTO_BACKUP_STORE='dailyBackups';
+const AUTO_BACKUP_RETENTION=14;
+const SCHEMA_VERSION=11;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1315,6 +1339,7 @@ function init(){
   $('uDate').value=today();$('mPointDate').value=today();
   loadSettingsForm();
   renderAll();
+  setTimeout(()=>ensureDailyBackup(false),0);
 }
 function renderAll(){
   applyAutomaticExpiry();
@@ -2618,7 +2643,7 @@ function saveSettings(){
 }
 function renderData(){
   $('dataCount').textContent=`商品 ${items.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
-  loadSettingsForm();renderPackagingInventory();
+  loadSettingsForm();renderPackagingInventory();renderAutoBackupStatus();
 }
 function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
 function makeCSV(){
@@ -2663,13 +2688,47 @@ function downloadPointCSV(){
   downloadBlob(new Blob(['\ufeff'+makePointCSV()],{type:'text/csv'}),`sedori_points_${today()}.csv`);
   toast('ポイントCSVを保存しました');
 }
-function downloadBackup(){
-  const data={
-    version:'2026-09-category-source-v10',schemaVersion:SCHEMA_VERSION,
-    items,pointEntries,pointUsages,packagingMaterials,settings,exportedAt:new Date().toISOString()
+function buildBackupData(reason='manual'){
+  return {
+    version:'2026-09-daily-backup-v11',
+    schemaVersion:SCHEMA_VERSION,
+    items:deepClone(items),
+    pointEntries:deepClone(pointEntries),
+    pointUsages:deepClone(pointUsages),
+    packagingMaterials:deepClone(packagingMaterials),
+    settings:deepClone(settings),
+    exportedAt:new Date().toISOString(),
+    backupReason:reason
   };
+}
+function applyBackupData(data){
+  if(Array.isArray(data)){
+    items=data;pointEntries=[];pointUsages=[];packagingMaterials=deepClone(DEFAULT_PACKAGING);settings={...DEFAULT_SETTINGS};
+  }else{
+    if(!data||!Array.isArray(data.items))throw new Error('商品データがありません');
+    items=data.items;
+    pointEntries=Array.isArray(data.pointEntries)?data.pointEntries:[];
+    pointUsages=Array.isArray(data.pointUsages)?data.pointUsages:[];
+    packagingMaterials=Array.isArray(data.packagingMaterials)?data.packagingMaterials:deepClone(DEFAULT_PACKAGING);
+    settings={...DEFAULT_SETTINGS,...(data.settings||{})};
+  }
+  normalizeCandidateSettings();
+  items=items.map(normalizeItem);
+  pointEntries=pointEntries.map(normalizePointEntry);
+  pointUsages=pointUsages.map(normalizeUsage);
+  packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
+  migrateCategorySourceSettingsFromItems();
+  migrateEmbeddedPointDetails();
+  applyAutomaticExpiry();
+  saveAll();
+  refreshStockCategoryFilter();
+  loadSettingsForm();
+  renderAll();
+}
+function downloadBackup(){
+  const data=buildBackupData('json-manual');
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
-  toast('バックアップを保存しました');
+  toast('JSONバックアップを保存しました');
 }
 function restoreBackup(event){
   const file=event.target.files[0];if(!file)return;
@@ -2678,30 +2737,171 @@ function restoreBackup(event){
     try{
       const data=JSON.parse(reader.result);
       if(!confirm('現在のデータを上書きして復元しますか？'))return;
-      if(Array.isArray(data)){
-        items=data;pointEntries=[];pointUsages=[];packagingMaterials=deepClone(DEFAULT_PACKAGING);settings={...DEFAULT_SETTINGS};
-      }else{
-        if(!Array.isArray(data.items))throw new Error('商品データがありません');
-        items=data.items;pointEntries=Array.isArray(data.pointEntries)?data.pointEntries:[];
-        pointUsages=Array.isArray(data.pointUsages)?data.pointUsages:[];
-        packagingMaterials=Array.isArray(data.packagingMaterials)?data.packagingMaterials:deepClone(DEFAULT_PACKAGING);
-        settings={...DEFAULT_SETTINGS,...(data.settings||{})};
-      }
-      items=items.map(normalizeItem);pointEntries=pointEntries.map(normalizePointEntry);pointUsages=pointUsages.map(normalizeUsage);packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
-      migrateEmbeddedPointDetails();applyAutomaticExpiry();saveAll();renderAll();toast('復元しました');
-    }catch(errorObject){toast(`復元できませんでした：${errorObject.message||'形式エラー'}`)}
+      applyBackupData(data);
+      toast('JSONバックアップから復元しました');
+    }catch(errorObject){
+      toast(`復元できませんでした：${errorObject.message||'形式エラー'}`);
+    }
     event.target.value='';
   };
   reader.readAsText(file);
+}
+
+function openAutoBackupDB(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('IndexedDBを利用できません'));return}
+    const request=indexedDB.open(AUTO_BACKUP_DB,1);
+    request.onupgradeneeded=()=>{
+      const db=request.result;
+      if(!db.objectStoreNames.contains(AUTO_BACKUP_STORE)){
+        const store=db.createObjectStore(AUTO_BACKUP_STORE,{keyPath:'date'});
+        store.createIndex('createdAt','createdAt',{unique:false});
+      }
+    };
+    request.onsuccess=()=>resolve(request.result);
+    request.onerror=()=>reject(request.error||new Error('バックアップDBを開けませんでした'));
+  });
+}
+function autoBackupGet(date){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(AUTO_BACKUP_STORE,'readonly');
+    const request=tx.objectStore(AUTO_BACKUP_STORE).get(date);
+    request.onsuccess=()=>resolve(request.result||null);
+    request.onerror=()=>reject(request.error);
+    tx.oncomplete=()=>db.close();
+  }));
+}
+function autoBackupGetAll(){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(AUTO_BACKUP_STORE,'readonly');
+    const request=tx.objectStore(AUTO_BACKUP_STORE).getAll();
+    request.onsuccess=()=>resolve((request.result||[]).sort((a,b)=>String(b.date).localeCompare(String(a.date))));
+    request.onerror=()=>reject(request.error);
+    tx.oncomplete=()=>db.close();
+  }));
+}
+function autoBackupPut(record){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(AUTO_BACKUP_STORE,'readwrite');
+    tx.objectStore(AUTO_BACKUP_STORE).put(record);
+    tx.oncomplete=()=>{db.close();resolve(record)};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  }));
+}
+function autoBackupDelete(date){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(AUTO_BACKUP_STORE,'readwrite');
+    tx.objectStore(AUTO_BACKUP_STORE).delete(date);
+    tx.oncomplete=()=>{db.close();resolve()};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  }));
+}
+async function pruneAutoBackups(){
+  const rows=await autoBackupGetAll();
+  for(const row of rows.slice(AUTO_BACKUP_RETENTION))await autoBackupDelete(row.date);
+}
+function saveFallbackAutoBackup(record){
+  try{localStorage.setItem(STORAGE.autoBackupFallback,JSON.stringify(record));return true}catch{return false}
+}
+function getFallbackAutoBackup(){
+  try{return JSON.parse(localStorage.getItem(STORAGE.autoBackupFallback)||'null')}catch{return null}
+}
+async function ensureDailyBackup(force=false){
+  const date=today();
+  const record={date,createdAt:new Date().toISOString(),data:buildBackupData(force?'daily-manual-update':'daily-auto')};
+  try{
+    const existing=await autoBackupGet(date);
+    if(existing&&!force){await renderAutoBackupStatus();return existing}
+    await autoBackupPut(record);
+    await pruneAutoBackups();
+    saveFallbackAutoBackup(record);
+    await renderAutoBackupStatus();
+    toast(force?'今日のバックアップを更新しました':'本日の自動バックアップを作成しました');
+    return record;
+  }catch(errorObject){
+    const fallback=getFallbackAutoBackup();
+    if(!fallback||fallback.date!==date||force){
+      if(saveFallbackAutoBackup(record)){
+        renderAutoBackupStatus();
+        toast(force?'今日のバックアップを更新しました':'本日の自動バックアップを作成しました');
+        return record;
+      }
+    }
+    console.warn('自動バックアップ失敗',errorObject);
+    renderAutoBackupStatus();
+    return null;
+  }
+}
+async function getAutoBackupRows(){
+  try{
+    const rows=await autoBackupGetAll();
+    if(rows.length)return rows;
+  }catch{}
+  const fallback=getFallbackAutoBackup();
+  return fallback?[fallback]:[];
+}
+function formatBackupTime(iso){
+  if(!iso)return '-';
+  const date=new Date(iso);
+  if(Number.isNaN(date.getTime()))return iso;
+  return date.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+async function renderAutoBackupStatus(){
+  const status=$('autoBackupStatus'),list=$('autoBackupList');
+  if(!status||!list)return;
+  try{
+    const rows=await getAutoBackupRows();
+    if(!rows.length){
+      status.innerHTML='<strong>自動バックアップ：待機中</strong><br>まだ自動バックアップはありません。';
+      list.innerHTML='';
+      return;
+    }
+    const latest=rows[0];
+    status.innerHTML=`<strong>自動バックアップ：ON</strong><br>最終：${escapeHtml(latest.date)} ${escapeHtml(formatBackupTime(latest.createdAt))} ／ 保存 ${rows.length}日分`;
+    list.innerHTML=rows.slice(0,AUTO_BACKUP_RETENTION).map(row=>`
+      <div class="backup-row">
+        <div>
+          <div class="date">${escapeHtml(row.date)}</div>
+          <div class="meta">${escapeHtml(formatBackupTime(row.createdAt))}・商品 ${safeNum(row.data?.items?.length)}件</div>
+        </div>
+        <button class="btn btn-small" onclick="restoreAutoBackup('${escapeHtml(row.date)}')">復元</button>
+      </div>`).join('');
+  }catch{
+    status.innerHTML='<strong>自動バックアップ：確認できません</strong><br>JSONバックアップをご利用ください。';
+    list.innerHTML='';
+  }
+}
+async function restoreLatestAutoBackup(){
+  const rows=await getAutoBackupRows();
+  if(!rows.length){toast('自動バックアップがありません');return}
+  await restoreAutoBackup(rows[0].date);
+}
+async function restoreAutoBackup(date){
+  try{
+    let record=null;
+    try{record=await autoBackupGet(date)}catch{}
+    if(!record){
+      const fallback=getFallbackAutoBackup();
+      if(fallback&&fallback.date===date)record=fallback;
+    }
+    if(!record||!record.data){toast('バックアップが見つかりません');return}
+    if(!confirm(`${date} の自動バックアップへ復元しますか？\n現在のデータは上書きされます。`))return;
+    applyBackupData(record.data);
+    toast(`${date} のバックアップから復元しました`);
+  }catch(errorObject){
+    toast(`復元できませんでした：${errorObject.message||'エラー'}`);
+  }
 }
 function downloadBlob(blob,name){
   const anchor=document.createElement('a');anchor.href=URL.createObjectURL(blob);anchor.download=name;anchor.click();
   setTimeout(()=>URL.revokeObjectURL(anchor.href),1000);
 }
-function deleteAll(){
+async function deleteAll(){
   if(!confirm('商品・ポイント・使用履歴・設定をすべて削除しますか？'))return;
-  if(!confirm('本当に削除します。バックアップは保存しましたか？'))return;
-  items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];settings={...DEFAULT_SETTINGS};saveAll();loadSettingsForm();renderAll();toast('全データを削除しました');
+  if(!confirm('本当に削除しますか？削除前の自動バックアップを作成します。'))return;
+  await ensureDailyBackup(true);
+  items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];settings={...DEFAULT_SETTINGS};
+  normalizeCandidateSettings();saveAll();loadSettingsForm();renderAll();toast('全データを削除しました');
 }
 function openShipping(){
   const groups=[['mercari','メルカリ'],['yahoo','Yahoo!フリマ・ヤフオク']];
@@ -2773,6 +2973,9 @@ window.runSedoriSelfTests=function(){
     const migratedSource=normalizeItem({id:'sourceLegacy',name:'旧ZOZO',source:'ZOZOTOWN',cat:'古着',cost:100,status:'listed'});
     test('旧仕入れ先グループ移行',migratedSource.sourceGroup==='online',migratedSource.sourceGroup);
     test('旧カテゴリ保持',migratedSource.cat==='古着',migratedSource.cat);
+    const backupTest=buildBackupData('self-test');
+    test('バックアップ統合データ',Array.isArray(backupTest.items)&&Array.isArray(backupTest.pointEntries)&&Array.isArray(backupTest.packagingMaterials),backupTest.version);
+    test('自動バックアップ保持日数',AUTO_BACKUP_RETENTION===14,String(AUTO_BACKUP_RETENTION));
 
     packagingMaterials=[
       normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,unitCost:5,linkKey:'mini',lowStockAt:2}),
@@ -2813,6 +3016,17 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-06
+- 毎日、その日にアプリを最初に開いた時に端末内へ自動バックアップを作成する機能を追加
+- 自動バックアップはIndexedDBへ保存し、過去14日分を自動保持
+- IndexedDBが利用できない場合はlocalStorageへ最新1件を退避するフォールバックを追加
+- 設定画面に自動バックアップの最終日時・保存日数・バックアップ一覧を表示
+- 「今日のバックアップを更新」「最新を復元」「日付指定で復元」を追加
+- 全データ削除の直前に自動バックアップを更新する安全処理を追加
+- 従来のJSONファイルによる手動バックアップ・復元はそのまま維持
+- JSONバックアップ作成処理と自動バックアップ処理を共通化し、商品・ポイント・梱包材・設定を一括保存
+- schema v11へ更新
+
 2026-09-06
 - 商品登録のカテゴリを大カテゴリ＋任意の小カテゴリの2段階選択へ変更
 - レディース・メンズ・靴・バッグ・アクセサリー・時計・キッズ・ゲーム・トレカ・ホビー・カメラ・家電・本・アウトドア・生活用品・コスメ等へカテゴリ候補を拡充
