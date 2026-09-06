@@ -317,7 +317,7 @@ th{color:var(--muted);font-size:.68rem}
 <section id="data" class="page">
   <div class="card">
     <div class="section-head"><div class="section-title">バックアップ</div><div id="dataCount" class="note"></div></div>
-    <div class="help">毎日、その日にアプリを最初に開いた時に端末内へ自動バックアップします。過去14日分を保持します。アプリを完全に閉じている間はブラウザの制限により実行されません。</div>
+    <div class="help">毎日、その日にアプリを最初に開いた時に端末内へ自動バックアップし、JSONファイルも自動ダウンロードします。Android Chromeなどが起動直後のダウンロードを制限する場合は、その日の最初の画面操作時に自動ダウンロードします。過去14日分の端末内バックアップも保持します。</div>
 
     <div id="autoBackupStatus" class="backup-status">
       <strong>自動バックアップ</strong><br>確認中…
@@ -331,7 +331,7 @@ th{color:var(--muted);font-size:.68rem}
     <div id="autoBackupList" class="backup-list"></div>
 
     <div style="height:12px"></div>
-    <div class="help">端末故障やブラウザデータ削除に備える場合は、下のボタンからJSONファイルも定期的に保存してください。</div>
+    <div class="help">自動ダウンロードとは別に、必要な時は下のボタンから同じJSONバックアップを再ダウンロードできます。</div>
     <button class="btn btn-blue full" onclick="downloadBackup()">JSONバックアップを保存</button>
     <label class="btn full" style="display:block;text-align:center;margin-top:8px">
       JSONバックアップを復元
@@ -747,12 +747,15 @@ const STORAGE={
   packaging:'sedori_packaging_materials',
   settings:'sedori_settings',
   schema:'sedori_schema_version',
-  autoBackupFallback:'sedori_daily_backup_fallback'
+  autoBackupFallback:'sedori_daily_backup_fallback',
+  autoDownloadDate:'sedori_daily_backup_download_date'
 };
 const AUTO_BACKUP_DB='sedori_daily_backup_db';
 const AUTO_BACKUP_STORE='dailyBackups';
 const AUTO_BACKUP_RETENTION=14;
-const SCHEMA_VERSION=11;
+let pendingDailyDownloadRecord=null;
+let autoDownloadHandlerInstalled=false;
+const SCHEMA_VERSION=13;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1339,6 +1342,7 @@ function init(){
   $('uDate').value=today();$('mPointDate').value=today();
   loadSettingsForm();
   renderAll();
+  installAutoDownloadGestureHandler();
   setTimeout(()=>ensureDailyBackup(false),0);
 }
 function renderAll(){
@@ -2690,7 +2694,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-09-daily-backup-v11',
+    version:'2026-09-japanese-backup-name-v13',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -2725,9 +2729,13 @@ function applyBackupData(data){
   loadSettingsForm();
   renderAll();
 }
+function backupFileName(date=today()){return `せどりバックアップ_${date}.json`}
+function downloadBackupData(data,date=today()){
+  downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),backupFileName(date));
+}
 function downloadBackup(){
   const data=buildBackupData('json-manual');
-  downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
+  downloadBackupData(data,today());
   toast('JSONバックアップを保存しました');
 }
 function restoreBackup(event){
@@ -2806,15 +2814,56 @@ function saveFallbackAutoBackup(record){
 function getFallbackAutoBackup(){
   try{return JSON.parse(localStorage.getItem(STORAGE.autoBackupFallback)||'null')}catch{return null}
 }
+function lastAutoDownloadDate(){
+  try{return localStorage.getItem(STORAGE.autoDownloadDate)||''}catch{return ''}
+}
+function markAutoDownloaded(date){
+  try{localStorage.setItem(STORAGE.autoDownloadDate,date)}catch{}
+}
+function queueDailyBackupDownload(record,force=false){
+  if(!record||!record.data)return;
+  if(!force&&lastAutoDownloadDate()===record.date){
+    if(pendingDailyDownloadRecord?.date===record.date)pendingDailyDownloadRecord=null;
+    return;
+  }
+  pendingDailyDownloadRecord=record;
+  renderAutoBackupStatus();
+}
+function installAutoDownloadGestureHandler(){
+  if(autoDownloadHandlerInstalled)return;
+  autoDownloadHandlerInstalled=true;
+  const handler=()=>{
+    if(!pendingDailyDownloadRecord)return;
+    const record=pendingDailyDownloadRecord;
+    pendingDailyDownloadRecord=null;
+    try{
+      downloadBackupData(record.data,record.date);
+      markAutoDownloaded(record.date);
+      renderAutoBackupStatus();
+      setTimeout(()=>toast(`本日のバックアップを自動ダウンロードしました`),80);
+    }catch(errorObject){
+      pendingDailyDownloadRecord=record;
+      console.warn('自動ダウンロード失敗',errorObject);
+    }
+  };
+  document.addEventListener('pointerdown',handler,{capture:true,passive:true});
+  document.addEventListener('keydown',handler,{capture:true});
+}
 async function ensureDailyBackup(force=false){
   const date=today();
   const record={date,createdAt:new Date().toISOString(),data:buildBackupData(force?'daily-manual-update':'daily-auto')};
   try{
     const existing=await autoBackupGet(date);
-    if(existing&&!force){await renderAutoBackupStatus();return existing}
+    if(existing&&!force){
+      queueDailyBackupDownload(existing,false);
+      await renderAutoBackupStatus();
+      return existing;
+    }
     await autoBackupPut(record);
     await pruneAutoBackups();
     saveFallbackAutoBackup(record);
+    if(force)localStorage.removeItem(STORAGE.autoDownloadDate);
+    queueDailyBackupDownload(record,force);
     await renderAutoBackupStatus();
     toast(force?'今日のバックアップを更新しました':'本日の自動バックアップを作成しました');
     return record;
@@ -2822,14 +2871,18 @@ async function ensureDailyBackup(force=false){
     const fallback=getFallbackAutoBackup();
     if(!fallback||fallback.date!==date||force){
       if(saveFallbackAutoBackup(record)){
+        if(force)localStorage.removeItem(STORAGE.autoDownloadDate);
+        queueDailyBackupDownload(record,force);
         renderAutoBackupStatus();
         toast(force?'今日のバックアップを更新しました':'本日の自動バックアップを作成しました');
         return record;
       }
+    }else{
+      queueDailyBackupDownload(fallback,false);
     }
     console.warn('自動バックアップ失敗',errorObject);
     renderAutoBackupStatus();
-    return null;
+    return fallback||null;
   }
 }
 async function getAutoBackupRows(){
@@ -2857,7 +2910,11 @@ async function renderAutoBackupStatus(){
       return;
     }
     const latest=rows[0];
-    status.innerHTML=`<strong>自動バックアップ：ON</strong><br>最終：${escapeHtml(latest.date)} ${escapeHtml(formatBackupTime(latest.createdAt))} ／ 保存 ${rows.length}日分`;
+    const downloaded=lastAutoDownloadDate()===today();
+    const downloadState=downloaded
+      ?'本日のJSON：自動ダウンロード済み'
+      :(pendingDailyDownloadRecord?.date===today()?'本日のJSON：次の画面操作で自動ダウンロード':'本日のJSON：準備中');
+    status.innerHTML=`<strong>自動バックアップ：ON</strong><br>最終：${escapeHtml(latest.date)} ${escapeHtml(formatBackupTime(latest.createdAt))} ／ 保存 ${rows.length}日分<br>${downloadState}`;
     list.innerHTML=rows.slice(0,AUTO_BACKUP_RETENTION).map(row=>`
       <div class="backup-row">
         <div>
@@ -2976,6 +3033,7 @@ window.runSedoriSelfTests=function(){
     const backupTest=buildBackupData('self-test');
     test('バックアップ統合データ',Array.isArray(backupTest.items)&&Array.isArray(backupTest.pointEntries)&&Array.isArray(backupTest.packagingMaterials),backupTest.version);
     test('自動バックアップ保持日数',AUTO_BACKUP_RETENTION===14,String(AUTO_BACKUP_RETENTION));
+    test('自動ダウンロードファイル名',backupFileName('2026-09-07')==='せどりバックアップ_2026-09-07.json',backupFileName('2026-09-07'));
 
     packagingMaterials=[
       normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,unitCost:5,linkKey:'mini',lowStockAt:2}),
@@ -3016,6 +3074,22 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-07
+- 自動・手動JSONバックアップのファイル名を「せどりバックアップ_YYYY-MM-DD.json」に変更
+- 日本語ファイル名＋日付で、スマホのダウンロード一覧から判別しやすい形式へ統一
+- 自動ダウンロード・14日分端末内バックアップ・復元機能はそのまま維持
+- schema v13へ更新
+
+2026-09-07
+- 毎日の端末内自動バックアップに加えてJSONファイルの自動ダウンロードを追加
+- その日のバックアップが未ダウンロードなら自動でダウンロード待機状態にする処理を追加
+- Android Chrome等の起動直後ダウンロード制限に対応し、その日の最初の画面操作で自動ダウンロードする方式を追加
+- 同じ日に何度アプリを開いてもJSONファイルを重複ダウンロードしない日付記録を追加
+- 「今日のバックアップを更新」を実行した場合は、その日のJSONを再度自動ダウンロード対象にするよう変更
+- 設定画面に「本日のJSON：自動ダウンロード済み／次の画面操作で自動ダウンロード」を表示
+- 従来の手動JSONダウンロード・14日分端末内バックアップ・日付復元はそのまま維持
+- schema v12へ更新
+
 2026-09-06
 - 毎日、その日にアプリを最初に開いた時に端末内へ自動バックアップを作成する機能を追加
 - 自動バックアップはIndexedDBへ保存し、過去14日分を自動保持
