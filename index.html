@@ -218,8 +218,11 @@ th{color:var(--muted);font-size:.68rem}
       <div><label>仕入れ先区分</label>
         <select id="stockPurchaseSource" onchange="renderStock()">
           <option value="all">すべて</option>
-          <option value="secondstreet">セカスト</option>
-          <option value="rakuten">楽天市場</option>
+          <option value="reuse">リユース店舗</option>
+          <option value="online">ネットショップ</option>
+          <option value="marketplace">フリマ・オークション</option>
+          <option value="retail">新品店舗・アウトレット</option>
+          <option value="wholesale">卸・仕入れ</option>
           <option value="other">その他</option>
         </select>
       </div>
@@ -382,14 +385,13 @@ th{color:var(--muted);font-size:.68rem}
     </div>
     <div class="form-grid one"><div><label>商品名</label><input id="aName" placeholder="例：ワンピース"></div></div>
     <div class="form-grid">
-      <div><label>カテゴリ</label><select id="aCat"></select></div>
-      <div><label>仕入れ先区分</label>
-        <select id="aPurchaseSourceType" onchange="togglePurchaseFields('a')">
-          <option value="secondstreet">セカスト</option><option value="rakuten">楽天市場</option><option value="other">その他</option>
-        </select>
-      </div>
+      <div><label>カテゴリ</label><select id="aCat" onchange="handleCategoryChange('a')"></select></div>
+      <div><label>小カテゴリ（任意）</label><select id="aSubCat" onchange="handleSubCategoryChange('a')"></select></div>
     </div>
-    <div id="aSourceWrap" class="form-grid one"><div><label>仕入れ先</label><select id="aSource"></select></div></div>
+    <div class="form-grid">
+      <div><label>仕入れ先区分</label><select id="aSourceGroup" onchange="handleSourceGroupChange('a')"></select></div>
+      <div><label>仕入れ先</label><select id="aSource" onchange="handleSourceChange('a')"></select></div>
+    </div>
     <div id="aSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="aCost" type="number" inputmode="numeric" min="0" placeholder="0" oninput="updateBreakEvenPreview('a')"></div></div>
 
     <div id="aRakutenPurchase" class="rakuten-area">
@@ -493,14 +495,13 @@ th{color:var(--muted);font-size:.68rem}
     </div>
     <div class="form-grid one"><div><label>商品名</label><input id="eName"></div></div>
     <div class="form-grid">
-      <div><label>カテゴリ</label><select id="eCat"></select></div>
-      <div><label>仕入れ先区分</label>
-        <select id="ePurchaseSourceType" onchange="togglePurchaseFields('e')">
-          <option value="secondstreet">セカスト</option><option value="rakuten">楽天市場</option><option value="other">その他</option>
-        </select>
-      </div>
+      <div><label>カテゴリ</label><select id="eCat" onchange="handleCategoryChange('e')"></select></div>
+      <div><label>小カテゴリ（任意）</label><select id="eSubCat" onchange="handleSubCategoryChange('e')"></select></div>
     </div>
-    <div id="eSourceWrap" class="form-grid one"><div><label>仕入れ先</label><select id="eSource"></select></div></div>
+    <div class="form-grid">
+      <div><label>仕入れ先区分</label><select id="eSourceGroup" onchange="handleSourceGroupChange('e')"></select></div>
+      <div><label>仕入れ先</label><select id="eSource" onchange="handleSourceChange('e')"></select></div>
+    </div>
     <div id="eSimplePurchase" class="form-grid one"><div><label>仕入れ値</label><input id="eCost" type="number" inputmode="numeric" oninput="updateBreakEvenPreview('e')"></div></div>
 
     <div id="eRakutenPurchase" class="rakuten-area">
@@ -727,7 +728,7 @@ const STORAGE={
   settings:'sedori_settings',
   schema:'sedori_schema_version'
 };
-const SCHEMA_VERSION=9;
+const SCHEMA_VERSION=10;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -735,15 +736,47 @@ const DEFAULT_SETTINGS={
   pointValue:1,
   expiryWarningDays:30,
   monthlyPointCap:0,
-  lastCategory:'その他'
+  lastCategory:'その他',
+  lastSubCategory:'',
+  lastSourceGroup:'reuse',
+  lastSource:'セカンドストリート',
+  customCategories:[],
+  customSubCategories:{},
+  customSources:{}
 };
 const DEFAULT_PACKAGING=[
   {id:'pack_mini_default',name:'ゆうパケットポストmini 専用封筒',stock:0,unitCost:0,linkKey:'mini',materialType:'special',boxSize:'',lowStockAt:3,createdAt:'2026-08-12T00:00:00.000Z'}
 ];
 const BOX_SIZES=[60,80,100,120,140,160,170,180,200];
 const PACKAGING_TYPE_NAME={special:'専用資材',box:'段ボール',bag:'袋・封筒',tape:'テープ・シール',other:'その他'};
-const CATS=['レトロゲーム','トレカ','ブランド品','古着','電子機器','本・漫画','おもちゃ','その他'];
-const SOURCES=['セカンドストリート','楽天市場','ハードオフ','ブックオフ','メルカリ','ヤフオク','リサイクルショップ','フリマ','不用品','その他'];
+const CATEGORY_TREE={
+  'レディースファッション':['ワンピース','コート','ジャケット','パンツ','デニム','スカート','ニット','トップス','セットアップ','その他'],
+  'メンズファッション':['ジャケット','コート','シャツ','Tシャツ','パンツ','デニム','ニット','スウェット','セットアップ','その他'],
+  '靴':['スニーカー','革靴','パンプス','ブーツ','サンダル','その他'],
+  'バッグ':['ショルダーバッグ','トートバッグ','ハンドバッグ','リュック','財布・小物','その他'],
+  'アクセサリー':['リング','ネックレス','ピアス・イヤリング','ブレスレット','その他'],
+  '時計':['腕時計','スマートウォッチ','その他'],
+  'キッズ・ベビー':['子ども服','子ども靴','ベビー用品','キッズ用品','その他'],
+  'ゲーム':['Nintendo Switch','Switch 2','PlayStation','レトロゲーム','ゲーム本体','ゲームソフト','周辺機器','その他'],
+  'トレカ':['ポケモンカード','遊戯王','ワンピースカード','MTG','その他'],
+  'おもちゃ・ホビー':['フィギュア','プラモデル','LEGO','ぬいぐるみ','キャラクターグッズ','その他'],
+  'カメラ':['一眼レフ','ミラーレス','コンデジ','レンズ','カメラ用品','その他'],
+  '家電・電子機器':['スマホ','PC・タブレット','オーディオ','生活家電','周辺機器','その他'],
+  '本・漫画':['漫画','書籍','雑誌','写真集','その他'],
+  'スポーツ・アウトドア':['キャンプ','ゴルフ','釣り','スポーツ用品','アウトドア用品','その他'],
+  '生活用品':['食器','インテリア','キッチン用品','日用品','文具','その他'],
+  'コスメ・美容':['化粧品','香水','ヘアケア','美容家電','その他'],
+  'その他':['その他']
+};
+const CATS=Object.keys(CATEGORY_TREE);
+const SOURCE_GROUPS={
+  reuse:{name:'リユース店舗',sources:['セカンドストリート','ハードオフ','オフハウス','ブックオフ','モードオフ','トレジャーファクトリー','リサイクルショップ']},
+  online:{name:'ネットショップ',sources:['楽天市場','Amazon','Yahoo!ショッピング','ZOZOTOWN','ロコンド','マガシーク','SHOPLIST','公式オンラインストア']},
+  marketplace:{name:'フリマ・オークション',sources:['メルカリ','Yahoo!フリマ','ヤフオク','ラクマ']},
+  retail:{name:'新品店舗・アウトレット',sources:['ユニクロ','GU','しまむら','アウトレット','百貨店','家電量販店','その他実店舗']},
+  wholesale:{name:'卸・仕入れ',sources:['Alibaba','AliExpress','卸サイト','業者仕入れ']},
+  other:{name:'その他',sources:['不用品','もらい物','家族所有','その他']}
+};
 const SOURCE_TYPE_NAME={secondstreet:'セカスト',rakuten:'楽天市場',other:'その他'};
 const PLATFORM_NAME={mercari:'メルカリ',rakuma:'ラクマ','yahoo-flea':'Yahoo!フリマ','yahoo-auction':'ヤフオク',other:'その他'};
 const PLATFORM_FEE={mercari:.10,rakuma:.10,'yahoo-flea':.05,'yahoo-auction':.10,other:.10};
@@ -895,6 +928,53 @@ function inferPurchaseSourceType(source){
   if(value.includes('セカ')||value.includes('second'))return 'secondstreet';
   return 'other';
 }
+function inferSourceGroup(source){
+  const value=String(source||'');
+  for(const [group,config] of Object.entries(SOURCE_GROUPS)){
+    if(config.sources.includes(value))return group;
+  }
+  return 'other';
+}
+function sourceGroupName(group){return SOURCE_GROUPS[group]?.name||'その他'}
+function normalizeCandidateSettings(){
+  if(!Array.isArray(settings.customCategories))settings.customCategories=[];
+  if(!settings.customSubCategories||typeof settings.customSubCategories!=='object'||Array.isArray(settings.customSubCategories))settings.customSubCategories={};
+  if(!settings.customSources||typeof settings.customSources!=='object'||Array.isArray(settings.customSources))settings.customSources={};
+  for(const group of Object.keys(SOURCE_GROUPS)){
+    if(!Array.isArray(settings.customSources[group]))settings.customSources[group]=[];
+  }
+  if(!settings.lastCategory)settings.lastCategory='その他';
+  if(settings.lastSubCategory===undefined)settings.lastSubCategory='';
+  if(!SOURCE_GROUPS[settings.lastSourceGroup])settings.lastSourceGroup='reuse';
+  if(!settings.lastSource)settings.lastSource='セカンドストリート';
+}
+function allCategories(){
+  return [...new Set([...CATS,...settings.customCategories])];
+}
+function allSubCategories(category){
+  const builtIn=CATEGORY_TREE[category]||[];
+  const custom=Array.isArray(settings.customSubCategories[category])?settings.customSubCategories[category]:[];
+  return [...new Set([...builtIn,...custom])];
+}
+function allSourcesForGroup(group){
+  const builtIn=SOURCE_GROUPS[group]?.sources||[];
+  const custom=Array.isArray(settings.customSources[group])?settings.customSources[group]:[];
+  return [...new Set([...builtIn,...custom])];
+}
+function migrateCategorySourceSettingsFromItems(){
+  normalizeCandidateSettings();
+  items.forEach(item=>{
+    if(item.cat&&!CATS.includes(item.cat)&&!settings.customCategories.includes(item.cat))settings.customCategories.push(item.cat);
+    const group=item.sourceGroup||inferSourceGroup(item.source);
+    if(item.source&&!allSourcesForGroup(group).includes(item.source)){
+      settings.customSources[group].push(item.source);
+    }
+    if(item.subCat&&item.cat&&!allSubCategories(item.cat).includes(item.subCat)){
+      if(!Array.isArray(settings.customSubCategories[item.cat]))settings.customSubCategories[item.cat]=[];
+      settings.customSubCategories[item.cat].push(item.subCat);
+    }
+  });
+}
 function pointValueYen(points){return safeNum(points)*safeNum(settings.pointValue)}
 
 function pointBeforeCost(item){
@@ -988,7 +1068,9 @@ function normalizeItem(raw,index=0){
   item.name=item.name||'無題';
   item.type=['sedori','fuyohin'].includes(item.type)?item.type:(item.source==='不用品'?'fuyohin':'sedori');
   item.cat=item.cat||'その他';
+  item.subCat=item.subCat||'';
   item.source=item.source||'その他';
+  item.sourceGroup=SOURCE_GROUPS[item.sourceGroup]?item.sourceGroup:inferSourceGroup(item.source);
   item.date=item.date||today();
   item.memo=item.memo||'';
   item.status=['listed','sold','shipped'].includes(item.status)?item.status:'listed';
@@ -1129,6 +1211,7 @@ function loadAll(){
   const packagingRaw=localStorage.getItem(STORAGE.packaging);
   packagingMaterials=packagingRaw===null?deepClone(DEFAULT_PACKAGING):parseStorage(STORAGE.packaging,[]);
   settings={...DEFAULT_SETTINGS,...parseStorage(STORAGE.settings,{})};
+  normalizeCandidateSettings();
   if(!Array.isArray(items))items=[];
   if(!Array.isArray(pointEntries))pointEntries=[];
   if(!Array.isArray(pointUsages))pointUsages=[];
@@ -1137,6 +1220,7 @@ function loadAll(){
   pointEntries=pointEntries.map(normalizePointEntry);
   pointUsages=pointUsages.map(normalizeUsage);
   packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
+  migrateCategorySourceSettingsFromItems();
   migrateEmbeddedPointDetails();
   applyAutomaticExpiry();
   saveAll();
@@ -1145,11 +1229,88 @@ function loadAll(){
 function fillSelect(id,values,includeAll=false){
   $(id).innerHTML=(includeAll?'<option value="all">すべて</option>':'')+values.map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
 }
+function fillCategorySelect(prefix,selected=''){
+  const select=$(prefix+'Cat');if(!select)return;
+  const values=allCategories();
+  const legacy=selected&&!values.includes(selected)?[selected]:[];
+  select.innerHTML=[...legacy,...values].map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('')+
+    '<option value="__add__">＋ カテゴリを追加</option>';
+  const target=selected&&[...legacy,...values].includes(selected)?selected:(settings.lastCategory&&values.includes(settings.lastCategory)?settings.lastCategory:values[0]);
+  select.value=target||'その他';
+}
+function fillSubCategorySelect(prefix,category,selected=''){
+  const select=$(prefix+'SubCat');if(!select)return;
+  const values=allSubCategories(category);
+  const legacy=selected&&!values.includes(selected)?[selected]:[];
+  select.innerHTML='<option value="">未設定</option>'+
+    [...legacy,...values].map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('')+
+    '<option value="__add__">＋ 小カテゴリを追加</option>';
+  select.value=selected&&[...legacy,...values].includes(selected)?selected:'';
+}
+function fillSourceGroupSelect(prefix,selected=''){
+  const select=$(prefix+'SourceGroup');if(!select)return;
+  select.innerHTML=Object.entries(SOURCE_GROUPS).map(([key,config])=>`<option value="${key}">${config.name}</option>`).join('');
+  select.value=SOURCE_GROUPS[selected]?selected:'reuse';
+}
+function fillSourceSelect(prefix,group,selected=''){
+  const select=$(prefix+'Source');if(!select)return;
+  const values=allSourcesForGroup(group);
+  const legacy=selected&&!values.includes(selected)?[selected]:[];
+  select.innerHTML=[...legacy,...values].map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('')+
+    '<option value="__add__">＋ 仕入れ先を追加</option>';
+  select.value=selected&&[...legacy,...values].includes(selected)?selected:(values[0]||'その他');
+}
+function refreshStockCategoryFilter(){
+  const current=$('stockCat')?.value||'all';
+  const values=[...new Set([...allCategories(),...items.map(item=>item.cat).filter(Boolean)])];
+  $('stockCat').innerHTML='<option value="all">すべて</option>'+values.map(value=>`<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('');
+  $('stockCat').value=values.includes(current)||current==='all'?current:'all';
+}
+function handleCategoryChange(prefix){
+  const select=$(prefix+'Cat');
+  if(select.value==='__add__'){
+    const name=(prompt('追加するカテゴリ名を入力してください')||'').trim();
+    if(!name){fillCategorySelect(prefix,settings.lastCategory);fillSubCategorySelect(prefix,$(prefix+'Cat').value,'');return}
+    if(!allCategories().includes(name))settings.customCategories.push(name);
+    saveAll();fillCategorySelect(prefix,name);fillSubCategorySelect(prefix,name,'');refreshStockCategoryFilter();toast(`カテゴリ「${name}」を追加しました`);
+  }else{
+    fillSubCategorySelect(prefix,select.value,'');
+  }
+  updateBreakEvenPreview(prefix);
+}
+function handleSubCategoryChange(prefix){
+  const select=$(prefix+'SubCat');
+  if(select.value!=='__add__')return;
+  const category=$(prefix+'Cat').value;
+  const name=(prompt(`${category}に追加する小カテゴリ名を入力してください`)||'').trim();
+  if(!name){fillSubCategorySelect(prefix,category,'');return}
+  if(!Array.isArray(settings.customSubCategories[category]))settings.customSubCategories[category]=[];
+  if(!allSubCategories(category).includes(name))settings.customSubCategories[category].push(name);
+  saveAll();fillSubCategorySelect(prefix,category,name);toast(`小カテゴリ「${name}」を追加しました`);
+}
+function handleSourceGroupChange(prefix){
+  const group=$(prefix+'SourceGroup').value;
+  fillSourceSelect(prefix,group,'');
+  togglePurchaseFields(prefix);
+}
+function handleSourceChange(prefix){
+  const select=$(prefix+'Source');
+  if(select.value==='__add__'){
+    const group=$(prefix+'SourceGroup').value;
+    const name=(prompt(`${sourceGroupName(group)}に追加する仕入れ先名を入力してください`)||'').trim();
+    if(!name){fillSourceSelect(prefix,group,settings.lastSource);togglePurchaseFields(prefix);return}
+    if(!allSourcesForGroup(group).includes(name))settings.customSources[group].push(name);
+    saveAll();fillSourceSelect(prefix,group,name);toast(`仕入れ先「${name}」を追加しました`);
+  }
+  togglePurchaseFields(prefix);
+}
 function init(){
   loadAll();
-  ['aCat','eCat'].forEach(id=>fillSelect(id,CATS));
-  ['aSource','eSource'].forEach(id=>fillSelect(id,SOURCES));
-  fillSelect('stockCat',CATS,true);
+  fillCategorySelect('a',settings.lastCategory);fillSubCategorySelect('a',settings.lastCategory,settings.lastSubCategory);
+  fillCategorySelect('e','その他');fillSubCategorySelect('e','その他','');
+  fillSourceGroupSelect('a',settings.lastSourceGroup);fillSourceSelect('a',settings.lastSourceGroup,settings.lastSource);
+  fillSourceGroupSelect('e','reuse');fillSourceSelect('e','reuse','セカンドストリート');
+  refreshStockCategoryFilter();
   $('aDate').value=today();$('aPurchaseDate').value=today();$('sDate').value=today();
   $('uDate').value=today();$('mPointDate').value=today();
   loadSettingsForm();
@@ -1196,7 +1357,7 @@ function renderStock(){
   if(stockStatus==='history')list=list.filter(item=>item.status==='shipped');
   if(query)list=list.filter(item=>(`${item.name} ${item.cat} ${item.source} ${item.memo} ${item.orderNo}`).toLowerCase().includes(query));
   if(cat!=='all')list=list.filter(item=>item.cat===cat);
-  if(purchaseSource!=='all')list=list.filter(item=>item.purchaseSourceType===purchaseSource);
+  if(purchaseSource!=='all')list=list.filter(item=>item.sourceGroup===purchaseSource);
   list.sort((a,b)=>{
     if(sort==='old')return String(a.date).localeCompare(String(b.date));
     if(sort==='profit')return confirmedProfitOf(b)-confirmedProfitOf(a);
@@ -1226,7 +1387,7 @@ function itemCard(item){
       <div><div class="item-name">${escapeHtml(item.name)}</div>
         <div class="badges">
           <span class="badge ${stateClass}">${statusText(item.status)}</span>
-          <span class="badge">${escapeHtml(item.cat)}</span>
+          <span class="badge">${escapeHtml(item.cat)}${item.subCat?` / ${escapeHtml(item.subCat)}`:''}</span>
           ${rakuten?'<span class="badge rakuten">楽天市場</span>':''}
         </div>
       </div>${right}
@@ -1265,7 +1426,8 @@ function readPlannedListingForm(prefix){
   };
 }
 function formBreakEvenItem(prefix){
-  const sourceType=$(prefix+'PurchaseSourceType')?.value||'other';
+  const source=($(prefix+'Source')?.value||'その他');
+  const sourceType=inferPurchaseSourceType(source);
   let cost=0,productAmount=0,couponDiscount=0;
   if(sourceType==='rakuten'){
     productAmount=clampZero($(prefix+'ProductAmount')?.value);
@@ -1305,13 +1467,11 @@ function updateBreakEvenPreview(prefix){
   target.innerHTML=breakEvenPreviewHtml(formBreakEvenItem(prefix));
 }
 function togglePurchaseFields(prefix){
-  const sourceType=$(prefix+'PurchaseSourceType').value;
+  const source=$(prefix+'Source')?.value||'その他';
+  const sourceType=inferPurchaseSourceType(source);
   const rakuten=sourceType==='rakuten';
   $(prefix+'RakutenPurchase').classList.toggle('open',rakuten);
   $(prefix+'SimplePurchase').style.display=rakuten?'none':'grid';
-  $(prefix+'SourceWrap').style.display=sourceType==='other'?'grid':'none';
-  if(sourceType==='rakuten')$(prefix+'Source').value='楽天市場';
-  if(sourceType==='secondstreet')$(prefix+'Source').value='セカンドストリート';
   if(rakuten)updatePurchaseCash(prefix);
   updateBreakEvenPreview(prefix);
 }
@@ -1418,7 +1578,9 @@ function addEstimatedPointDrafts(prefix){
   toast('簡易見積りを追加しました');
 }
 function readPurchaseForm(prefix){
-  const sourceType=$(prefix+'PurchaseSourceType').value;
+  const source=$(prefix+'Source').value;
+  const sourceGroup=$(prefix+'SourceGroup').value;
+  const sourceType=inferPurchaseSourceType(source);
   const rakuten=sourceType==='rakuten';
   const productAmount=rakuten?clampZero($(prefix+'ProductAmount').value):clampZero($(prefix+'Cost').value);
   const coupon=rakuten?clampZero($(prefix+'Coupon').value):0;
@@ -1427,8 +1589,7 @@ function readPurchaseForm(prefix){
   const before=clampZero(productAmount-coupon);
   const cash=clampZero(before-usedNormal-usedLimited);
   return {
-    purchaseSourceType:sourceType,
-    source:sourceType==='rakuten'?'楽天市場':sourceType==='secondstreet'?'セカンドストリート':$(prefix+'Source').value,
+    purchaseSourceType:sourceType,sourceGroup,source,
     orderNo:rakuten?$(prefix+'OrderNo').value.trim():'',
     purchaseDate:rakuten?($(prefix+'PurchaseDate').value||$(prefix+'Date').value):$(prefix+'Date').value,
     productAmount,couponDiscount:coupon,usedNormalPoints:usedNormal,usedLimitedPoints:usedLimited,
@@ -1451,9 +1612,12 @@ function validatePurchaseForm(prefix,purchase){
 function openAdd(){
   addPointDrafts=[];
   $('aType').value=stockType;
-  $('aDate').value=today();$('aName').value='';$('aCat').value=CATS.includes(settings.lastCategory)?settings.lastCategory:CATS[0];$('aMemo').value='';
-  $('aPurchaseSourceType').value=stockType==='fuyohin'?'other':'secondstreet';
-  $('aSource').value=stockType==='fuyohin'?'不用品':'セカンドストリート';
+  $('aDate').value=today();$('aName').value='';$('aMemo').value='';
+  const category=allCategories().includes(settings.lastCategory)?settings.lastCategory:'その他';
+  fillCategorySelect('a',category);fillSubCategorySelect('a',category,settings.lastSubCategory||'');
+  const sourceGroup=stockType==='fuyohin'?'other':(SOURCE_GROUPS[settings.lastSourceGroup]?settings.lastSourceGroup:'reuse');
+  const source=stockType==='fuyohin'?'不用品':settings.lastSource;
+  fillSourceGroupSelect('a',sourceGroup);fillSourceSelect('a',sourceGroup,allSourcesForGroup(sourceGroup).includes(source)?source:allSourcesForGroup(sourceGroup)[0]);
   $('aCost').value='';$('aOrderNo').value='';$('aPurchaseDate').value=today();
   $('aProductAmount').value='';$('aCoupon').value=0;$('aUsedNormal').value=0;$('aUsedLimited').value=0;
   fillPlannedShippingOptions('a');$('aPlannedShipMethod').value='manual';$('aPlannedShipFee').value=0;$('aPlannedPackagingCost').value=0;
@@ -1545,7 +1709,7 @@ function addItem(){
   const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials)};
   try{
     const item=normalizeItem({
-      id:uid('item'),name,type:$('aType').value,cat:$('aCat').value,date:$('aDate').value||today(),
+      id:uid('item'),name,type:$('aType').value,cat:$('aCat').value,subCat:$('aSubCat').value,date:$('aDate').value||today(),
       memo:$('aMemo').value.trim(),status:'listed',actualPrice:0,price:0,soldDate:'',ship:0,misc:0,
       platform:'mercari',feeRate:.10,shipMethod:'manual',...readPlannedListingForm('a'),...purchase
     });
@@ -1555,7 +1719,10 @@ function addItem(){
       syncPurchasePointUsages(item);
     }
     settings.lastCategory=item.cat;
-    saveAll();closeModal('addModal');
+    settings.lastSubCategory=item.subCat||'';
+    settings.lastSourceGroup=item.sourceGroup;
+    settings.lastSource=item.source;
+    saveAll();closeModal('addModal');refreshStockCategoryFilter();
     stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録しました');
   }catch(errorObject){
     items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
@@ -1856,8 +2023,9 @@ function confirmShipment(){
 function openEdit(id){
   const item=items.find(current=>String(current.id)===String(id));if(!item)return;
   editPointDrafts=itemPointEntries(item.id).map(deepClone);
-  $('eId').value=item.id;$('eType').value=item.type;$('eDate').value=item.date;$('eName').value=item.name;$('eCat').value=item.cat;
-  $('ePurchaseSourceType').value=item.purchaseSourceType;$('eSource').value=SOURCES.includes(item.source)?item.source:'その他';
+  $('eId').value=item.id;$('eType').value=item.type;$('eDate').value=item.date;$('eName').value=item.name;
+  fillCategorySelect('e',item.cat);fillSubCategorySelect('e',item.cat,item.subCat||'');
+  fillSourceGroupSelect('e',item.sourceGroup||inferSourceGroup(item.source));fillSourceSelect('e',item.sourceGroup||inferSourceGroup(item.source),item.source);
   $('eCost').value=item.cost;$('eOrderNo').value=item.orderNo||'';$('ePurchaseDate').value=item.purchaseDate||item.date;
   $('eProductAmount').value=item.productAmount||item.cost;$('eCoupon').value=item.couponDiscount||0;
   $('eUsedNormal').value=item.usedNormalPoints||0;$('eUsedLimited').value=item.usedLimitedPoints||0;
@@ -1905,7 +2073,7 @@ function saveEdit(){
     }
     Object.assign(item,{
       name:$('eName').value.trim()||item.name,type:$('eType').value,date:$('eDate').value||today(),
-      cat:$('eCat').value,memo:$('eMemo').value.trim(),status:$('eStatus').value,...readPlannedListingForm('e'),...purchase
+      cat:$('eCat').value,subCat:$('eSubCat').value,memo:$('eMemo').value.trim(),status:$('eStatus').value,...readPlannedListingForm('e'),...purchase
     });
     if(item.purchaseSourceType==='rakuten'){
       replaceItemPointEntries(item.id,editPointDrafts);
@@ -2085,7 +2253,8 @@ function openItemDetail(id){
 
     <div class="detail-summary">
       <div class="section-title" style="margin-bottom:7px">仕入れ情報</div>
-      <div class="preview-row"><span>仕入れ先区分</span><b>${SOURCE_TYPE_NAME[item.purchaseSourceType]||'その他'}</b></div>
+      <div class="preview-row"><span>カテゴリ</span><b>${escapeHtml(item.cat)}${item.subCat?` / ${escapeHtml(item.subCat)}`:''}</b></div>
+      <div class="preview-row"><span>仕入れ先区分</span><b>${escapeHtml(sourceGroupName(item.sourceGroup))}</b></div>
       <div class="preview-row"><span>仕入れ先</span><b>${escapeHtml(item.source||'-')}</b></div>
       <div class="preview-row"><span>購入日</span><b>${escapeHtml(item.purchaseDate||item.date||'-')}</b></div>
       ${isRakuten?`
@@ -2437,6 +2606,7 @@ function loadSettingsForm(){
 }
 function saveSettings(){
   settings={
+    ...settings,
     spuMultiplier:clampZero($('setSpu').value),
     buyAroundMultiplier:clampZero($('setBuyAround').value),
     purchaseBudget:clampZero($('setBudget').value),
@@ -2444,7 +2614,7 @@ function saveSettings(){
     expiryWarningDays:Math.max(1,Math.round(clampZero($('setExpiryDays').value)||30)),
     monthlyPointCap:clampZero($('setMonthlyCap').value)
   };
-  saveAll();renderAll();toast('設定を保存しました');
+  normalizeCandidateSettings();saveAll();renderAll();toast('設定を保存しました');
 }
 function renderData(){
   $('dataCount').textContent=`商品 ${items.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
@@ -2459,7 +2629,7 @@ function makeCSV(){
     return (!start||month>=start)&&(!end||month<=end);
   });
   const header=[
-    '商品名','種別','カテゴリ','仕入れ先区分','仕入れ先','楽天注文番号','購入日','商品代金','クーポン',
+    '商品名','種別','カテゴリ','小カテゴリ','仕入れ先区分','仕入れ先','楽天注文番号','購入日','商品代金','クーポン',
     '使用通常ポイント','使用期間限定ポイント','ポイント使用前仕入原価','実際の資金支出',
     '想定発送方法','想定送料','想定梱包費','損益分岐点メルカリ','損益分岐点ラクマ','損益分岐点Yahooフリマ',
     '状態','売れた日',
@@ -2467,7 +2637,7 @@ function makeCSV(){
     '確定ポイント','ポイント込み予想利益','ポイント込み確定利益','販売先','発送方法','メモ'
   ];
   const rows=list.map(item=>[
-    item.name,item.type==='fuyohin'?'不用品':'せどり',item.cat,SOURCE_TYPE_NAME[item.purchaseSourceType],item.source,item.orderNo,
+    item.name,item.type==='fuyohin'?'不用品':'せどり',item.cat,item.subCat||'',sourceGroupName(item.sourceGroup),item.source,item.orderNo,
     item.purchaseDate,item.productAmount,item.couponDiscount,item.usedNormalPoints,item.usedLimitedPoints,pointBeforeCost(item),
     actualCashOut(item),shipName(item.plannedShipMethod),item.plannedShipFee,item.plannedPackagingCost,
     breakEvenForMarket(item,'mercari'),breakEvenForMarket(item,'rakuma'),breakEvenForMarket(item,'yahoo-flea'),
@@ -2495,7 +2665,7 @@ function downloadPointCSV(){
 }
 function downloadBackup(){
   const data={
-    version:'2026-08-break-even-v9',schemaVersion:SCHEMA_VERSION,
+    version:'2026-09-category-source-v10',schemaVersion:SCHEMA_VERSION,
     items,pointEntries,pointUsages,packagingMaterials,settings,exportedAt:new Date().toISOString()
   };
   downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),`sedori_backup_${today()}.json`);
@@ -2597,8 +2767,12 @@ window.runSedoriSelfTests=function(){
     const migrated=normalizeItem({id:'old',name:'旧商品',cost:1200,source:'リサイクルショップ',status:'listed'});
     test('既存データ移行',migrated.cost===1200&&migrated.purchaseSourceType==='other'&&migrated.productAmount===1200,JSON.stringify(migrated));
 
-    settings.lastCategory='古着';
-    test('前回カテゴリ保持',settings.lastCategory==='古着',settings.lastCategory);
+    settings.lastCategory='レディースファッション';settings.lastSubCategory='ワンピース';settings.lastSourceGroup='online';settings.lastSource='ZOZOTOWN';
+    test('前回カテゴリ保持',settings.lastCategory==='レディースファッション'&&settings.lastSubCategory==='ワンピース',`${settings.lastCategory}/${settings.lastSubCategory}`);
+    test('前回仕入れ先保持',settings.lastSourceGroup==='online'&&settings.lastSource==='ZOZOTOWN',`${settings.lastSourceGroup}/${settings.lastSource}`);
+    const migratedSource=normalizeItem({id:'sourceLegacy',name:'旧ZOZO',source:'ZOZOTOWN',cat:'古着',cost:100,status:'listed'});
+    test('旧仕入れ先グループ移行',migratedSource.sourceGroup==='online',migratedSource.sourceGroup);
+    test('旧カテゴリ保持',migratedSource.cat==='古着',migratedSource.cat);
 
     packagingMaterials=[
       normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,unitCost:5,linkKey:'mini',lowStockAt:2}),
@@ -2639,6 +2813,20 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-06
+- 商品登録のカテゴリを大カテゴリ＋任意の小カテゴリの2段階選択へ変更
+- レディース・メンズ・靴・バッグ・アクセサリー・時計・キッズ・ゲーム・トレカ・ホビー・カメラ・家電・本・アウトドア・生活用品・コスメ等へカテゴリ候補を拡充
+- 仕入れ先を「リユース店舗／ネットショップ／フリマ・オークション／新品店舗・アウトレット／卸・仕入れ／その他」の大分類方式へ変更
+- セカスト、ハードオフ、オフハウス、ブックオフ、トレファク、楽天、Amazon、Yahoo!ショッピング、ZOZO、ロコンド、マガシーク、メルカリ、ヤフフリ、ヤフオク、ラクマ、Alibaba等の候補を追加
+- 前回使った大カテゴリ・小カテゴリ・仕入れ先区分・仕入れ先を次の商品追加時に自動選択
+- カテゴリ・小カテゴリ・仕入れ先を「＋追加」からユーザーが自由に追加し、端末へ保存できる機能を追加
+- 楽天市場を仕入れ先に選んだ時だけ従来の楽天ポイント入力欄を表示する仕様を維持
+- 在庫絞り込みの仕入れ先区分を新しい6分類へ更新
+- 既存商品の旧カテゴリ・旧仕入れ先は削除せず、そのまま表示・編集可能な移行処理を追加
+- 商品詳細・CSVへ小カテゴリと新しい仕入れ先区分を追加
+- 設定保存時に前回選択値や追加候補が消える問題も修正
+- schema v10へ更新
+
 2026-08-30
 - 商品登録時に「想定発送方法・想定送料・想定梱包費」を登録できるよう追加
 - 想定発送方法を選ぶと送料を自動入力し、紐づく梱包材の単価を想定梱包費として自動入力
