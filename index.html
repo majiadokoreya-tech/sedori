@@ -584,10 +584,21 @@ th{color:var(--muted);font-size:.68rem}
         <label for="ePromoUsed" style="margin:0;color:var(--text)">メルカリのプロモーションを使用（販売価格の5%）</label>
       </div>
       <div class="form-grid">
-        <div><label>発送方法</label><select id="eShipMethod" onchange="applyShipFee('e');calcEditPreview()"></select></div>
+        <div><label>発送方法</label><select id="eShipMethod" onchange="applyShipFee('e');renderEditPackagingChoices();calcEditPreview()"></select></div>
         <div><label>送料</label><input id="eShip" type="number" inputmode="numeric" oninput="calcEditPreview()"></div>
       </div>
       <div id="ePackStockNote" class="note" style="margin:-3px 0 9px"></div>
+
+      <div class="sub-card">
+        <div class="section-head">
+          <div class="section-title" id="editPackagingTitle">使用する梱包材</div>
+          <div class="note">複数選択OK</div>
+        </div>
+        <div id="editPackagingChoices"></div>
+        <div id="editPackagingTotal" class="pack-total"></div>
+        <div id="editPackagingHelp" class="note"></div>
+      </div>
+
       <div class="form-grid one"><div><label>その他販売経費</label><input id="eMisc" type="number" inputmode="numeric" oninput="calcEditPreview()"></div></div>
       <div class="preview" id="editPreview"></div>
     </div>
@@ -755,7 +766,7 @@ const AUTO_BACKUP_STORE='dailyBackups';
 const AUTO_BACKUP_RETENTION=14;
 let pendingDailyDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
-const SCHEMA_VERSION=13;
+const SCHEMA_VERSION=14;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1410,7 +1421,7 @@ function itemCard(item){
     ?`<button class="btn btn-green" onclick="openSold('${item.id}')">売れた</button><button class="btn" onclick="openEdit('${item.id}')">編集</button>`
     :item.status==='sold'
       ?`<button class="btn btn-blue" onclick="markShipped('${item.id}')">発送済みにする</button><button class="btn" onclick="openEdit('${item.id}')">編集</button>`
-      :`<button class="btn" onclick="openEdit('${item.id}')">編集</button><button class="btn" onclick="openItemDetail('${item.id}')">詳細</button>`;
+      :`<button class="btn btn-blue" onclick="openEdit('${item.id}')">発送後編集</button><button class="btn" onclick="openItemDetail('${item.id}')">詳細</button>`;
   return `<div class="item">
     <div class="item-top">
       <div><div class="item-name">${escapeHtml(item.name)}</div>
@@ -1863,6 +1874,103 @@ function updateSoldPackagingTotal(){
   }
   calcSoldPreview();
 }
+function editPackagingAvailableStock(item,materialId){
+  const material=packagingMaterials.find(current=>String(current.id)===String(materialId));
+  if(!material)return 0;
+  const currentlyUsed=item?.status==='shipped'
+    ?(item.packagingConsumptions||[]).filter(c=>String(c.materialId)===String(materialId)).reduce((sum,c)=>sum+Math.max(1,Math.floor(safeNum(c.quantity)||1)),0)
+    :0;
+  return Math.max(0,Math.floor(safeNum(material.stock)))+currentlyUsed;
+}
+function currentEditPackagingSelections(){
+  const item=items.find(current=>String(current.id)===String($('eId')?.value));
+  if(!item)return [];
+  return packagingMaterials.map(material=>{
+    const check=$(`editPackCheck_${material.id}`);
+    if(!check||!check.checked)return null;
+    const qty=Math.max(1,Math.floor(safeNum($(`editPackQty_${material.id}`)?.value)||1));
+    return {
+      materialId:String(material.id),
+      quantity:qty,
+      unitCost:Math.max(0,safeNum(material.unitCost)),
+      shipMethod:$('eShipMethod')?.value||item.shipMethod||'manual'
+    };
+  }).filter(Boolean);
+}
+function editPackagingCost(){
+  return currentEditPackagingSelections().reduce((sum,selection)=>sum+(selection.unitCost*selection.quantity),0);
+}
+function updateEditPackagingTotal(){
+  const selections=currentEditPackagingSelections();
+  const total=selections.reduce((sum,selection)=>sum+(selection.unitCost*selection.quantity),0);
+  const count=selections.reduce((sum,selection)=>sum+selection.quantity,0);
+  const target=$('editPackagingTotal');
+  if(target){
+    target.innerHTML=`<div class="preview-row"><span>選択</span><b>${selections.length}種類・${count}個</b></div>
+      <div class="preview-row"><span>梱包費</span><strong>${yen(total)}</strong></div>`;
+  }
+  calcEditPreview();
+}
+function renderEditPackagingChoices(){
+  const target=$('editPackagingChoices');
+  const item=items.find(current=>String(current.id)===String($('eId')?.value));
+  if(!target||!item)return;
+
+  const shipMethod=$('eShipMethod')?.value||item.shipMethod||'manual';
+  const recommendedKey=packagingLinkKey(shipMethod);
+  const existing=Array.isArray(item.packagingSelections)?item.packagingSelections:[];
+  const previous=currentEditPackagingSelections();
+  const sourceSelections=previous.length?previous:existing;
+  const selectionMap=new Map(sourceSelections.map(selection=>[String(selection.materialId),selection]));
+
+  const sorted=[...packagingMaterials].sort((a,b)=>{
+    const ar=a.linkKey===recommendedKey?0:1;
+    const br=b.linkKey===recommendedKey?0:1;
+    if(ar!==br)return ar-br;
+    return String(a.name).localeCompare(String(b.name),'ja');
+  });
+
+  if(!sorted.length){
+    target.innerHTML='<div class="empty" style="padding:14px">梱包材が未登録です。設定画面から追加できます。</div>';
+    updateEditPackagingTotal();
+    return;
+  }
+
+  target.innerHTML=sorted.map(material=>{
+    const old=selectionMap.get(String(material.id));
+    const checked=Boolean(old);
+    const qty=old?.quantity||1;
+    const available=editPackagingAvailableStock(item,material.id);
+    const recommended=material.linkKey===recommendedKey&&recommendedKey!=='none';
+    const disabled=available<=0&&!checked?'disabled':'';
+    return `<div class="pack-choice ${recommended?'recommended':''}">
+      <input id="editPackCheck_${material.id}" type="checkbox" data-pack-id="${material.id}" onchange="updateEditPackagingTotal()" ${checked?'checked':''} ${disabled}>
+      <label for="editPackCheck_${material.id}">
+        <div class="pack-choice-name">${escapeHtml(material.name)} ${recommended?'<span class="badge rakuten">おすすめ</span>':''}</div>
+        <div class="pack-choice-meta">利用可能 ${available}個 ／ 単価 ${yen(material.unitCost)}${material.boxSize?` ／ ${material.boxSize}サイズ`:''}</div>
+      </label>
+      <input id="editPackQty_${material.id}" type="number" min="1" max="${Math.max(1,available)}" value="${qty}" inputmode="numeric" onchange="updateEditPackagingTotal()" oninput="updateEditPackagingTotal()" ${disabled}>
+    </div>`;
+  }).join('');
+
+  const title=$('editPackagingTitle');
+  const help=$('editPackagingHelp');
+  if(title)title.textContent=item.status==='shipped'?'発送時に使用した梱包材':'発送予定の梱包材';
+  if(help){
+    help.textContent=item.status==='shipped'
+      ?'発送済み商品を保存すると、元の使用分を在庫へ戻してから、新しく選んだ梱包材を再度在庫から差し引きます。'
+      :'未発送の商品では、ここで選んでも在庫はまだ減りません。発送済みにした時に減ります。';
+  }
+  updateEditPackagingTotal();
+}
+function validatePackagingSelectionsForEdit(item,selections){
+  for(const selection of selections){
+    const material=packagingMaterials.find(current=>String(current.id)===String(selection.materialId));
+    if(!material)throw new Error('選択した梱包材が見つかりません');
+    const available=editPackagingAvailableStock(item,selection.materialId);
+    if(selection.quantity>available)throw new Error(`${material.name}は利用可能${available}個です`);
+  }
+}
 function validatePackagingSelections(selections){
   for(const selection of selections){
     const material=packagingMaterials.find(current=>String(current.id)===String(selection.materialId));
@@ -2068,15 +2176,19 @@ function openEdit(id){
   renderShipPackagingNote('e');
   $('eShip').value=item.ship||0;$('eMisc').value=item.misc||0;
   togglePurchaseFields('e');updatePurchaseCash('e');renderPointDrafts('e');updateBreakEvenPreview('e');toggleEditSale();
+  renderEditPackagingChoices();
   $('editModal').classList.add('open');
 }
 function toggleEditSale(){
-  $('editSaleArea').style.display=['sold','shipped'].includes($('eStatus').value)?'block':'none';
+  const saleMode=['sold','shipped'].includes($('eStatus').value);
+  $('editSaleArea').style.display=saleMode?'block':'none';
+  if(saleMode)renderEditPackagingChoices();
   calcEditPreview();
 }
 function calcEditPreview(){
   const item=items.find(current=>String(current.id)===String($('eId').value));if(!item)return;
-  const draftItem={...item,...readPurchaseForm('e')};
+  const saleMode=['sold','shipped'].includes($('eStatus')?.value);
+  const draftItem={...item,...readPurchaseForm('e'),packagingCost:saleMode?editPackagingCost():0};
   const preview=salePreview(draftItem,$('ePrice').value,$('ePlatform').value,$('eShip').value,$('eMisc').value,$('ePromoUsed').checked);
   $('editPreview').innerHTML=previewHtml(preview,draftItem);
 }
@@ -2085,44 +2197,117 @@ function saveEdit(){
   const purchase=readPurchaseForm('e');
   const error=validatePurchaseForm('e',purchase);
   if(error){toast(error);return}
-  const snapshot={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials)};
+
+  const snapshot={
+    items:deepClone(items),
+    points:deepClone(pointEntries),
+    usages:deepClone(pointUsages),
+    packaging:deepClone(packagingMaterials)
+  };
+
   try{
     const previousStatus=item.status;
     const requestedStatus=$('eStatus').value;
+    const editSelections=['sold','shipped'].includes(requestedStatus)?currentEditPackagingSelections():[];
+
     if(previousStatus!=='shipped'&&requestedStatus==='shipped'){
-      throw new Error('発送済みへの変更は、在庫一覧の「発送済みにする」から梱包材を選択して行ってください');
+      throw new Error('発送済みへの変更は、在庫一覧の「発送済みにする」から行ってください');
     }
+
+    if(previousStatus==='shipped'){
+      validatePackagingSelectionsForEdit(item,editSelections);
+      restorePackagingConsumptions(item);
+    }else if(requestedStatus==='sold'){
+      validatePackagingSelections(editSelections);
+    }
+
     const oldSourceType=item.purchaseSourceType;
     const existingPoints=itemPointEntries(item.id);
+
     if(oldSourceType==='rakuten'&&purchase.purchaseSourceType!=='rakuten'){
       if(existingPoints.some(entry=>entry.usedAmount>0))throw new Error('使用履歴がある楽天ポイント明細があるため、仕入れ先区分を変更できません');
       if(existingPoints.length&&!confirm('楽天ポイント明細と購入時ポイント使用履歴を削除して、仕入れ先区分を変更しますか？'))return;
       removeAutoPurchaseUsages(item.id);
       pointEntries=pointEntries.filter(entry=>String(entry.itemId)!==String(item.id));
     }
+
     Object.assign(item,{
-      name:$('eName').value.trim()||item.name,type:$('eType').value,date:$('eDate').value||today(),
-      cat:$('eCat').value,subCat:$('eSubCat').value,memo:$('eMemo').value.trim(),status:$('eStatus').value,...readPlannedListingForm('e'),...purchase
+      name:$('eName').value.trim()||item.name,
+      type:$('eType').value,
+      date:$('eDate').value||today(),
+      cat:$('eCat').value,
+      subCat:$('eSubCat').value,
+      memo:$('eMemo').value.trim(),
+      status:requestedStatus,
+      ...readPlannedListingForm('e'),
+      ...purchase
     });
+
     if(item.purchaseSourceType==='rakuten'){
       replaceItemPointEntries(item.id,editPointDrafts);
       syncPurchasePointUsages(item);
     }
+
     if(['sold','shipped'].includes(item.status)){
-      item.soldDate=$('eSoldDate').value||today();item.platform=$('ePlatform').value;item.feeRate=feeRate(item.platform);
-      item.promoUsed=item.platform==='mercari'&&$('ePromoUsed').checked;item.promoRate=0.05;
-      item.actualPrice=clampZero($('ePrice').value);item.price=item.actualPrice;item.ship=clampZero($('eShip').value);
-      item.misc=clampZero($('eMisc').value);item.shipMethod=$('eShipMethod').value;
+      item.soldDate=$('eSoldDate').value||today();
+      item.platform=$('ePlatform').value;
+      item.feeRate=feeRate(item.platform);
+      item.promoUsed=item.platform==='mercari'&&$('ePromoUsed').checked;
+      item.promoRate=0.05;
+      item.actualPrice=clampZero($('ePrice').value);
+      item.price=item.actualPrice;
+      item.ship=clampZero($('eShip').value);
+      item.misc=clampZero($('eMisc').value);
+      item.shipMethod=$('eShipMethod').value;
+
       if(item.actualPrice<=0)throw new Error('販売価格を入力してください');
+
+      item.packagingSelections=editSelections.map(selection=>({
+        ...selection,
+        shipMethod:item.shipMethod
+      }));
+      item.packagingCost=item.packagingSelections.reduce(
+        (sum,selection)=>sum+(safeNum(selection.unitCost)*Math.max(1,Math.floor(safeNum(selection.quantity)||1))),
+        0
+      );
+
+      if(item.status==='shipped'){
+        validatePackagingSelections(item.packagingSelections);
+        consumePackagingSelections(item,item.packagingSelections);
+      }else{
+        item.packagingConsumptions=[];
+      }
     }else{
-      item.status='listed';item.soldDate='';item.actualPrice=0;item.price=0;item.ship=0;item.misc=0;item.shipMethod='manual';item.promoUsed=false;
-      item.packagingSelections=[];item.packagingCost=0;
+      item.status='listed';
+      item.soldDate='';
+      item.actualPrice=0;
+      item.price=0;
+      item.ship=0;
+      item.misc=0;
+      item.shipMethod='manual';
+      item.promoUsed=false;
+      item.packagingSelections=[];
+      item.packagingConsumptions=[];
+      item.packagingCost=0;
     }
+
     item.cashPaid=actualCashOut(item);
-    syncPackagingForItem(item);
-    saveAll();closeModal('editModal');renderAll();toast('保存しました');
+
+    settings.lastCategory=item.cat;
+    settings.lastSubCategory=item.subCat||'';
+    settings.lastSourceGroup=item.sourceGroup;
+    settings.lastSource=item.source;
+
+    saveAll();
+    closeModal('editModal');
+    renderAll();
+    toast(previousStatus==='shipped'?'発送済み商品の編集を保存しました':'保存しました');
+
   }catch(errorObject){
-    items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
+    items=snapshot.items;
+    pointEntries=snapshot.points;
+    pointUsages=snapshot.usages;
+    packagingMaterials=snapshot.packaging;
     toast(errorObject.message||'保存できませんでした');
   }
 }
@@ -2694,7 +2879,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-09-japanese-backup-name-v13',
+    version:'2026-09-shipped-edit-v14',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3050,6 +3235,11 @@ window.runSedoriSelfTests=function(){
     test('発送済み時に選択した複数梱包材を減算',packagingMaterials[0].stock===4&&packagingMaterials[1].stock===9,`mini=${packagingMaterials[0].stock} OPP=${packagingMaterials[1].stock}`);
     shipped.status='sold';syncPackagingForItem(shipped);
     test('発送済み取消で在庫を戻し選択・梱包費は保持',packagingMaterials[0].stock===5&&packagingMaterials[1].stock===10&&packagingCostOf(shipped)===8&&shipped.packagingSelections.length===2,`mini=${packagingMaterials[0].stock} OPP=${packagingMaterials[1].stock} cost=${packagingCostOf(shipped)}`);
+    consumePackagingSelections(shipped,[{materialId:packagingMaterials[0].id,quantity:1,unitCost:packagingMaterials[0].unitCost,shipMethod:'mercari_mini'}]);
+    const beforeEditStock=packagingMaterials[0].stock;
+    restorePackagingConsumptions(shipped);
+    consumePackagingSelections(shipped,[{materialId:packagingMaterials[1].id,quantity:2,unitCost:packagingMaterials[1].unitCost,shipMethod:'mercari_post'}]);
+    test('発送後梱包材変更で旧在庫復元・新在庫減算',packagingMaterials[0].stock===beforeEditStock+1&&packagingMaterials[1].stock===8,`mini=${packagingMaterials[0].stock} OPP=${packagingMaterials[1].stock}`);
 
     packagingMaterials=[
       normalizePackagingMaterial({id:'box60',name:'ダンボール 60サイズ',materialType:'box',boxSize:'60',stock:3,unitCost:50,linkKey:'size60',lowStockAt:1}),
@@ -3074,6 +3264,18 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-08
+- 発送済み商品の「編集」ボタンを「発送後編集」として分かりやすく表示
+- 発送完了後でも販売価格・売れた日・販売先・発送方法・送料・プロモーション利用・その他販売経費を編集可能
+- 発送済み商品の使用梱包材を編集画面から変更できる機能を追加
+- 発送済み商品の梱包材変更時は、元の使用分を在庫へ戻してから新しい使用分を再減算し、在庫ズレを防止
+- 梱包材の数量変更・複数選択変更にも対応
+- 発送後編集画面の利益プレビューへ変更後の梱包費を即時反映
+- 発送済みから未発送へ戻した場合は使用済み梱包材在庫を自動復元
+- 発送済みから販売中へ戻した場合も在庫を自動復元し、販売情報・梱包情報をクリア
+- 既存の楽天ポイント・損益分岐点・自動バックアップ・JSON自動ダウンロード等をすべて維持
+- schema v14へ更新
+
 2026-09-07
 - 自動・手動JSONバックアップのファイル名を「せどりバックアップ_YYYY-MM-DD.json」に変更
 - 日本語ファイル名＋日付で、スマホのダウンロード一覧から判別しやすい形式へ統一
