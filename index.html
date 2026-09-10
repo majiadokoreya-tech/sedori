@@ -27,7 +27,7 @@ h1 span{color:var(--accent)}
 .save-state{font-size:.7rem;color:var(--muted);font-weight:750;text-align:right}
 nav{
   position:sticky;top:54px;z-index:29;background:#fff;border-bottom:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(4,1fr)
+  display:grid;grid-template-columns:repeat(5,1fr)
 }
 .tab{border:0;background:#fff;padding:12px 2px;color:var(--muted);font-size:.78rem;font-weight:900;border-bottom:3px solid transparent}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -107,6 +107,35 @@ th{color:var(--muted);font-size:.68rem}
 .backup-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .backup-row .date{font-size:.73rem;font-weight:900}
 .backup-row .meta{font-size:.64rem;color:var(--muted);margin-top:2px}
+.tax-guide{background:linear-gradient(180deg,#fffaf1,#fff);border:1px solid #f2dfb5}
+.tax-steps{display:grid;gap:8px;margin-top:10px}
+.tax-step{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px}
+.tax-step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#fff0c8;font-weight:1000;font-size:.75rem}
+.tax-step-title{font-size:.78rem;font-weight:1000}
+.tax-step-text{font-size:.69rem;color:var(--muted);line-height:1.55;margin-top:2px}
+.tax-summary-main{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tax-number{background:#fff;border:1px solid var(--line);border-radius:13px;padding:10px}
+.tax-number .label{font-size:.66rem;color:var(--muted);font-weight:900}
+.tax-number .value{font-size:1.15rem;font-weight:1000;margin-top:4px;font-variant-numeric:tabular-nums}
+.tax-table-row{display:grid;grid-template-columns:1fr auto;gap:12px;padding:8px 0;border-bottom:1px solid #eceef2;font-size:.74rem;align-items:center}
+.tax-table-row:last-child{border-bottom:0}
+.tax-table-row .name{font-weight:850}
+.tax-table-row .hint{display:block;color:var(--muted);font-size:.63rem;font-weight:500;margin-top:2px;line-height:1.45}
+.tax-table-row .amount{font-weight:1000;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tax-total-row{border-top:2px solid #dfe1e5;margin-top:3px;padding-top:11px}
+.tax-warning{background:#fff8e8;border:1px solid #f1d69a;border-radius:12px;padding:10px;font-size:.69rem;line-height:1.6;color:#72581d;margin:9px 0}
+.tax-ok{background:#f0fbf5;border:1px solid #b9e5ca;border-radius:12px;padding:10px;font-size:.69rem;line-height:1.6;color:#27613d;margin:9px 0}
+.tax-expense-row{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:7px}
+.tax-expense-top{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.tax-expense-title{font-size:.76rem;font-weight:1000}
+.tax-expense-amount{font-size:.9rem;font-weight:1000;white-space:nowrap}
+.tax-expense-meta{font-size:.65rem;color:var(--muted);line-height:1.5;margin-top:4px}
+details.tax-help{background:#fff;border:1px solid var(--line);border-radius:12px;margin-top:8px;overflow:hidden}
+details.tax-help summary{cursor:pointer;padding:11px 12px;font-size:.75rem;font-weight:950;list-style:none}
+details.tax-help summary::-webkit-details-marker{display:none}
+details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;color:var(--muted)}
+.tax-yearbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+@media(max-width:390px){.tab{font-size:.7rem}.tax-summary-main{grid-template-columns:1fr 1fr}}
 .fixed-add{
   position:fixed;right:15px;bottom:18px;z-index:35;border:0;border-radius:999px;background:var(--accent);
   color:#fff;padding:14px 18px;font-weight:950;box-shadow:0 8px 22px rgba(255,63,104,.32)
@@ -200,6 +229,7 @@ th{color:var(--muted);font-size:.68rem}
   <button class="tab active" data-page="stock" onclick="showPage('stock',this)">在庫</button>
   <button class="tab" data-page="analysis" onclick="showPage('analysis',this)">分析</button>
   <button class="tab" data-page="points" onclick="showPage('points',this)">ポイント</button>
+  <button class="tab" data-page="tax" onclick="showPage('tax',this)">確定申告</button>
   <button class="tab" data-page="data" onclick="showPage('data',this)">設定</button>
 </nav>
 
@@ -311,6 +341,121 @@ th{color:var(--muted);font-size:.68rem}
     </div>
     <button class="btn btn-small" onclick="clearHistoryFilter()" style="margin-bottom:10px">絞り込み解除</button>
     <div id="pointHistory" class="item-list"></div>
+  </div>
+</section>
+
+
+<section id="tax" class="page">
+  <div class="card tax-guide">
+    <div class="section-head">
+      <div>
+        <div class="section-title">はじめての白色申告ガイド</div>
+        <div class="note">この画面は「せどり」の記録から申告準備をするための補助です。</div>
+      </div>
+    </div>
+
+    <div class="tax-steps">
+      <div class="tax-step">
+        <div class="tax-step-num">1</div>
+        <div><div class="tax-step-title">売れた商品を記録</div><div class="tax-step-text">販売価格・販売日・手数料・送料を今まで通り登録。確定申告画面へ自動集計します。</div></div>
+      </div>
+      <div class="tax-step">
+        <div class="tax-step-num">2</div>
+        <div><div class="tax-step-title">商品以外の経費を記録</div><div class="tax-step-text">通信費、交通費、消耗品などは下の「＋経費を登録」。私用と共用なら事業使用割合も入力します。</div></div>
+      </div>
+      <div class="tax-step">
+        <div class="tax-step-num">3</div>
+        <div><div class="tax-step-title">12月31日に売れ残りを確認</div><div class="tax-step-text">売れていない商品は「期末棚卸」。アプリが自動計算しますが、記録漏れがあれば実際の棚卸額で上書きできます。</div></div>
+      </div>
+      <div class="tax-step">
+        <div class="tax-step-num">4</div>
+        <div><div class="tax-step-title">収支内訳書へ転記</div><div class="tax-step-text">年を選ぶと、売上・仕入・棚卸・必要経費・所得目安をまとめます。国税庁の確定申告書等作成コーナーへ数字を入力する時の下書きとして使います。</div></div>
+      </div>
+    </div>
+
+    <details class="tax-help">
+      <summary>📘 用語が分からない時はこちら</summary>
+      <div class="inside">
+        <b>売上</b>：その年に売れた商品の販売価格の合計。<br>
+        <b>仕入金額</b>：その年に仕入れた販売用商品の原価。楽天ポイント使用分は現在、実際の資金支出を基準に集計します。<br>
+        <b>期首棚卸</b>：1月1日時点で残っていた販売用商品。<br>
+        <b>期末棚卸</b>：12月31日時点で売れ残っている販売用商品。<br>
+        <b>売上原価</b>：期首棚卸＋仕入－期末棚卸。売れた商品の原価に近い数字です。<br>
+        <b>必要経費</b>：販売手数料、送料、通信費、交通費など事業のために必要だった費用。<br>
+        <b>所得</b>：売上などの収入から売上原価と必要経費を引いた金額。税額そのものではありません。
+      </div>
+    </details>
+
+    <details class="tax-help">
+      <summary>🧾 何を保存しておけばいい？</summary>
+      <div class="inside">
+        このアプリの帳簿だけでなく、仕入れや経費を確認できる領収書・レシート・請求書・ネット注文履歴なども保存してください。
+        法定帳簿は原則7年、請求書・領収書などの書類は原則5年が目安です。電子で受け取った取引情報は電子データのまま保存が必要になる場合があります。
+      </div>
+    </details>
+
+    <div class="tax-warning">
+      <b>大事：</b>「不用品」はこの画面の自動集計から除外しています。また、事業所得か雑所得か、ポイント・家事按分・減価償却などの税務判断は状況によって変わるため、このアプリだけで最終判断はしません。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tax-yearbar">
+      <div>
+        <label>申告する年</label>
+        <select id="taxYear" onchange="changeTaxYear()"></select>
+      </div>
+      <button class="btn btn-small btn-green" onclick="downloadTaxCSV()">申告まとめCSV</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <div class="section-title">今年の申告用まとめ</div>
+      <div class="note">せどりのみ</div>
+    </div>
+    <div id="taxSummaryCards" class="tax-summary-main"></div>
+    <div id="taxDataWarning"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-head"><div class="section-title">収支内訳書の下書き</div><div class="note">金額を確認して転記</div></div>
+    <div id="taxStatement"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:8px">棚卸・その他収入の調整</div>
+    <div class="help">空欄なら商品データから自動計算します。初年度や過去データ不足で自動値が合わない時だけ、実際に数えた棚卸額を入力してください。</div>
+    <div class="form-grid">
+      <div><label>期首棚卸 上書き</label><input id="taxOpeningOverride" type="number" min="0" inputmode="numeric" placeholder="空欄＝自動"></div>
+      <div><label>期末棚卸 上書き</label><input id="taxClosingOverride" type="number" min="0" inputmode="numeric" placeholder="空欄＝自動"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>家事消費</label><input id="taxHomeConsumption" type="number" min="0" inputmode="numeric" value="0"></div>
+      <div><label>その他の収入</label><input id="taxOtherIncome" type="number" min="0" inputmode="numeric" value="0"></div>
+    </div>
+    <button class="btn btn-primary full" onclick="saveTaxYearSettings()">この年の調整値を保存</button>
+    <div id="taxInventoryHint" class="note" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-head">
+      <div>
+        <div class="section-title">商品以外の経費帳</div>
+        <div class="note">通信費・交通費・消耗品など</div>
+      </div>
+      <button class="btn btn-small btn-primary" onclick="openTaxExpense()">＋ 経費を登録</button>
+    </div>
+    <div class="tax-warning">
+      メルカリ等の<b>販売手数料・プロモーション料・商品ごとの送料・売れた時に登録した梱包費</b>は、商品データから自動で経費に入ります。ここへ同じ金額をもう一度登録すると二重計上になるので注意してください。
+    </div>
+    <div id="taxExpenseSummary"></div>
+    <div id="taxExpenseList"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title" style="margin-bottom:8px">申告前チェック</div>
+    <div id="taxChecklist"></div>
   </div>
 </section>
 
@@ -737,6 +882,38 @@ th{color:var(--muted);font-size:.68rem}
   </div>
 </div>
 
+
+<!-- 確定申告 経費編集 -->
+<div class="modal" id="taxExpenseModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="taxExpenseModalTitle">経費を登録</h2><button class="close" onclick="closeModal('taxExpenseModal')">×</button></div>
+    <input id="taxExpenseId" type="hidden">
+    <div class="form-grid">
+      <div><label>日付</label><input id="taxExpenseDate" type="date"></div>
+      <div><label>勘定科目</label><select id="taxExpenseCategory"></select></div>
+    </div>
+    <div class="form-grid one"><div><label>内容</label><input id="taxExpenseDescription" placeholder="例：仕入れ店舗までの駐車場代"></div></div>
+    <div class="form-grid">
+      <div><label>支払先</label><input id="taxExpensePayee" placeholder="例：○○駐車場"></div>
+      <div><label>支払金額</label><input id="taxExpenseAmount" type="number" min="0" inputmode="numeric" oninput="renderTaxExpensePreview()"></div>
+    </div>
+    <div class="form-grid">
+      <div><label>事業使用割合</label><input id="taxExpenseBusinessRate" type="number" min="0" max="100" step="1" inputmode="numeric" value="100" oninput="renderTaxExpensePreview()"></div>
+      <div><label>支払方法</label>
+        <select id="taxExpensePayment">
+          <option>クレジットカード</option><option>現金</option><option>銀行振込</option><option>電子マネー・QR</option><option>その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="preview" id="taxExpensePreview"></div>
+    <div class="form-grid one"><div><label>領収書・明細メモ（任意）</label><input id="taxExpenseReceipt" placeholder="例：楽天注文番号、PDF名、レシート保管場所"></div></div>
+    <div class="form-grid one"><div><label>メモ（任意）</label><textarea id="taxExpenseMemo"></textarea></div></div>
+    <div class="help">事業使用割合：仕事だけなら100%。自宅の通信費など私用と共用する費用は、合理的に説明できる割合を入力してください。</div>
+    <button class="btn btn-primary full" onclick="saveTaxExpense()">保存する</button>
+    <button id="taxExpenseDelete" class="btn btn-danger full" style="display:none;margin-top:8px" onclick="deleteTaxExpense()">この経費を削除</button>
+  </div>
+</div>
+
 <!-- 送料 -->
 <div class="modal" id="shipModal">
   <div class="modal-box">
@@ -759,14 +936,16 @@ const STORAGE={
   settings:'sedori_settings',
   schema:'sedori_schema_version',
   autoBackupFallback:'sedori_daily_backup_fallback',
-  autoDownloadDate:'sedori_daily_backup_download_date'
+  autoDownloadDate:'sedori_daily_backup_download_date',
+  taxExpenses:'sedori_tax_expenses',
+  taxSettings:'sedori_tax_settings'
 };
 const AUTO_BACKUP_DB='sedori_daily_backup_db';
 const AUTO_BACKUP_STORE='dailyBackups';
 const AUTO_BACKUP_RETENTION=14;
 let pendingDailyDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
-const SCHEMA_VERSION=14;
+const SCHEMA_VERSION=15;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -818,6 +997,11 @@ const SOURCE_GROUPS={
 const SOURCE_TYPE_NAME={secondstreet:'セカスト',rakuten:'楽天市場',other:'その他'};
 const PLATFORM_NAME={mercari:'メルカリ',rakuma:'ラクマ','yahoo-flea':'Yahoo!フリマ','yahoo-auction':'ヤフオク',other:'その他'};
 const PLATFORM_FEE={mercari:.10,rakuma:.10,'yahoo-flea':.05,'yahoo-auction':.10,other:.10};
+const TAX_EXPENSE_CATEGORIES=[
+  '給料賃金','外注工賃','減価償却費','貸倒金','地代家賃','利子割引料',
+  '租税公課','荷造運賃','水道光熱費','旅費交通費','通信費','広告宣伝費',
+  '接待交際費','損害保険料','修繕費','消耗品費','福利厚生費','支払手数料','車両費','雑費'
+];
 const BREAK_EVEN_MARKETS=[
   {id:'mercari',name:'メルカリ',rate:.10},
   {id:'rakuma',name:'ラクマ',rate:.10},
@@ -900,6 +1084,9 @@ let viewMonth=new Date();
 let addPointDrafts=[];
 let editPointDrafts=[];
 let pointEditorContext={prefix:'a',index:-1};
+let taxExpenses=[];
+let taxSettings={years:{}};
+let taxYear=String(new Date().getFullYear());
 
 function today(){return localDate(new Date())}
 function localDate(date){
@@ -1097,6 +1284,8 @@ function saveAll(){
   localStorage.setItem(STORAGE.usages,JSON.stringify(pointUsages));
   localStorage.setItem(STORAGE.packaging,JSON.stringify(packagingMaterials));
   localStorage.setItem(STORAGE.settings,JSON.stringify(settings));
+  localStorage.setItem(STORAGE.taxExpenses,JSON.stringify(taxExpenses));
+  localStorage.setItem(STORAGE.taxSettings,JSON.stringify(taxSettings));
   localStorage.setItem(STORAGE.schema,String(SCHEMA_VERSION));
   setSaveState('保存済み');
 }
@@ -1242,6 +1431,27 @@ function applyAutomaticExpiry(){
   });
   return changed;
 }
+function normalizeTaxExpense(raw,index=0){
+  const expense={...raw};
+  expense.id=expense.id||uid(`expense${index}`);
+  expense.date=expense.date||today();
+  expense.category=TAX_EXPENSE_CATEGORIES.includes(expense.category)?expense.category:'雑費';
+  expense.description=expense.description||'経費';
+  expense.payee=expense.payee||'';
+  expense.amount=clampZero(expense.amount);
+  expense.businessRate=Math.min(100,Math.max(0,safeNum(expense.businessRate===undefined?100:expense.businessRate)));
+  expense.payment=expense.payment||'クレジットカード';
+  expense.receiptRef=expense.receiptRef||'';
+  expense.memo=expense.memo||'';
+  return expense;
+}
+function normalizeTaxSettings(){
+  if(!taxSettings||typeof taxSettings!=='object'||Array.isArray(taxSettings))taxSettings={years:{}};
+  if(!taxSettings.years||typeof taxSettings.years!=='object'||Array.isArray(taxSettings.years))taxSettings.years={};
+}
+function deductibleExpense(expense){
+  return Math.round(clampZero(expense.amount)*Math.min(100,Math.max(0,safeNum(expense.businessRate)))/100);
+}
 function loadAll(){
   items=parseStorage(STORAGE.items,[]);
   pointEntries=parseStorage(STORAGE.points,[]);
@@ -1249,15 +1459,20 @@ function loadAll(){
   const packagingRaw=localStorage.getItem(STORAGE.packaging);
   packagingMaterials=packagingRaw===null?deepClone(DEFAULT_PACKAGING):parseStorage(STORAGE.packaging,[]);
   settings={...DEFAULT_SETTINGS,...parseStorage(STORAGE.settings,{})};
+  taxExpenses=parseStorage(STORAGE.taxExpenses,[]);
+  taxSettings=parseStorage(STORAGE.taxSettings,{years:{}});
   normalizeCandidateSettings();
+  normalizeTaxSettings();
   if(!Array.isArray(items))items=[];
   if(!Array.isArray(pointEntries))pointEntries=[];
   if(!Array.isArray(pointUsages))pointUsages=[];
   if(!Array.isArray(packagingMaterials))packagingMaterials=deepClone(DEFAULT_PACKAGING);
+  if(!Array.isArray(taxExpenses))taxExpenses=[];
   items=items.map(normalizeItem);
   pointEntries=pointEntries.map(normalizePointEntry);
   pointUsages=pointUsages.map(normalizeUsage);
   packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
+  taxExpenses=taxExpenses.map(normalizeTaxExpense);
   migrateCategorySourceSettingsFromItems();
   migrateEmbeddedPointDetails();
   applyAutomaticExpiry();
@@ -1352,6 +1567,7 @@ function init(){
   $('aDate').value=today();$('aPurchaseDate').value=today();$('sDate').value=today();
   $('uDate').value=today();$('mPointDate').value=today();
   loadSettingsForm();
+  renderTaxYearSelect();
   renderAll();
   installAutoDownloadGestureHandler();
   setTimeout(()=>ensureDailyBackup(false),0);
@@ -1361,6 +1577,7 @@ function renderAll(){
   renderStock();
   renderAnalysis();
   renderPointPage();
+  renderTax();
   renderData();
 }
 function showPage(id,button){
@@ -1372,6 +1589,7 @@ function showPage(id,button){
   $('addButton').style.display=id==='stock'?'block':'none';
   if(id==='analysis')renderAnalysis();
   if(id==='points')renderPointPage();
+  if(id==='tax')renderTax();
   if(id==='data')renderData();
 }
 function activate(parent,button){
@@ -2830,8 +3048,279 @@ function saveSettings(){
   };
   normalizeCandidateSettings();saveAll();renderAll();toast('設定を保存しました');
 }
+
+function taxPurchaseDate(item){return String(item.purchaseDate||item.date||'')}
+function taxSaleDate(item){return String(item.soldDate||'')}
+function taxPurchaseBasis(item){
+  if(item.purchaseSourceType==='rakuten')return actualCashOut(item);
+  return pointBeforeCost(item);
+}
+function taxSedoriItems(){return items.filter(item=>item.type==='sedori')}
+function taxYearExpenseSettings(year){
+  normalizeTaxSettings();
+  if(!taxSettings.years[year])taxSettings.years[year]={openingOverride:null,closingOverride:null,homeConsumption:0,otherIncome:0};
+  return taxSettings.years[year];
+}
+function hasTaxOverride(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))}
+function taxOpeningInventoryAuto(year){
+  const start=`${year}-01-01`;
+  return taxSedoriItems().filter(item=>{
+    const purchased=taxPurchaseDate(item);
+    const sold=taxSaleDate(item);
+    return purchased&&purchased<start&&(!sold||sold>=start);
+  }).reduce((sum,item)=>sum+taxPurchaseBasis(item),0);
+}
+function taxClosingInventoryAuto(year){
+  const end=`${year}-12-31`;
+  return taxSedoriItems().filter(item=>{
+    const purchased=taxPurchaseDate(item);
+    const sold=taxSaleDate(item);
+    return purchased&&purchased<=end&&(!sold||sold>end);
+  }).reduce((sum,item)=>sum+taxPurchaseBasis(item),0);
+}
+function taxPurchases(year){
+  return taxSedoriItems().filter(item=>taxPurchaseDate(item).startsWith(year))
+    .reduce((sum,item)=>sum+taxPurchaseBasis(item),0);
+}
+function taxSoldForYear(year){
+  return taxSedoriItems().filter(item=>isSold(item)&&taxSaleDate(item).startsWith(year));
+}
+function taxManualExpensesForYear(year){
+  return taxExpenses.filter(expense=>String(expense.date||'').startsWith(year));
+}
+function taxAutoExpenseBreakdown(year){
+  const sold=taxSoldForYear(year);
+  return {
+    fees:sold.reduce((sum,item)=>sum+feeOf(item)+promotionFeeOf(item),0),
+    shipping:sold.reduce((sum,item)=>sum+safeNum(item.ship)+packagingCostOf(item),0),
+    misc:sold.reduce((sum,item)=>sum+safeNum(item.misc),0)
+  };
+}
+function taxManualExpenseBreakdown(year){
+  const result={};
+  TAX_EXPENSE_CATEGORIES.forEach(cat=>result[cat]=0);
+  taxManualExpensesForYear(year).forEach(expense=>{
+    result[expense.category]=(result[expense.category]||0)+deductibleExpense(expense);
+  });
+  return result;
+}
+function taxSummary(year){
+  const cfg=taxYearExpenseSettings(year);
+  const openingAuto=taxOpeningInventoryAuto(year);
+  const closingAuto=taxClosingInventoryAuto(year);
+  const opening=hasTaxOverride(cfg.openingOverride)?clampZero(cfg.openingOverride):openingAuto;
+  const closing=hasTaxOverride(cfg.closingOverride)?clampZero(cfg.closingOverride):closingAuto;
+  const purchases=taxPurchases(year);
+  const sales=taxSoldForYear(year).reduce((sum,item)=>sum+safeNum(item.actualPrice||item.price),0);
+  const homeConsumption=clampZero(cfg.homeConsumption);
+  const otherIncome=clampZero(cfg.otherIncome);
+  const grossRevenue=sales+homeConsumption+otherIncome;
+  const cogs=opening+purchases-closing;
+  const grossProfit=grossRevenue-cogs;
+  const auto=taxAutoExpenseBreakdown(year);
+  const manual=taxManualExpenseBreakdown(year);
+  const manualTotal=Object.values(manual).reduce((sum,value)=>sum+safeNum(value),0);
+  const autoTotal=auto.fees+auto.shipping+auto.misc;
+  const expenses=manualTotal+autoTotal;
+  const income=grossProfit-expenses;
+  return {year,sales,homeConsumption,otherIncome,grossRevenue,openingAuto,closingAuto,opening,closing,purchases,cogs,grossProfit,auto,manual,manualTotal,autoTotal,expenses,income};
+}
+function renderTaxYearSelect(){
+  const select=$('taxYear');if(!select)return;
+  const years=new Set([String(new Date().getFullYear())]);
+  taxSedoriItems().forEach(item=>{
+    const p=taxPurchaseDate(item).slice(0,4),s=taxSaleDate(item).slice(0,4);
+    if(/^\d{4}$/.test(p))years.add(p);
+    if(/^\d{4}$/.test(s))years.add(s);
+  });
+  taxExpenses.forEach(expense=>{const y=String(expense.date||'').slice(0,4);if(/^\d{4}$/.test(y))years.add(y)});
+  const sorted=[...years].sort((a,b)=>Number(b)-Number(a));
+  if(!sorted.includes(taxYear))sorted.push(taxYear);
+  sorted.sort((a,b)=>Number(b)-Number(a));
+  select.innerHTML=sorted.map(year=>`<option value="${year}">${year}年分</option>`).join('');
+  select.value=taxYear;
+}
+function changeTaxYear(){
+  taxYear=$('taxYear').value;
+  renderTax();
+}
+function taxRow(name,amount,hint='',className=''){
+  return `<div class="tax-table-row ${className}"><div class="name">${name}${hint?`<span class="hint">${hint}</span>`:''}</div><div class="amount">${yen(amount)}</div></div>`;
+}
+function renderTax(){
+  if(!$('taxYear'))return;
+  renderTaxYearSelect();
+  $('taxYear').value=taxYear;
+  const summary=taxSummary(taxYear);
+  const cfg=taxYearExpenseSettings(taxYear);
+
+  $('taxSummaryCards').innerHTML=`
+    <div class="tax-number"><div class="label">売上</div><div class="value orange">${yen(summary.sales)}</div></div>
+    <div class="tax-number"><div class="label">売上原価</div><div class="value">${yen(summary.cogs)}</div></div>
+    <div class="tax-number"><div class="label">必要経費</div><div class="value">${yen(summary.expenses)}</div></div>
+    <div class="tax-number"><div class="label">所得の目安</div><div class="value ${summary.income>=0?'green':'red'}">${yen(summary.income)}</div></div>`;
+
+  const warnings=[];
+  if(summary.cogs<0)warnings.push('売上原価がマイナスです。過去の仕入データや期首・期末棚卸の上書き額を確認してください。');
+  if(summary.openingAuto===0&&taxSedoriItems().some(item=>taxPurchaseDate(item)<`${taxYear}-01-01`&&!taxSaleDate(item)))warnings.push('前年以前の商品があります。期首棚卸の自動値を確認してください。');
+  const currentYear=String(new Date().getFullYear());
+  if(taxYear===currentYear)warnings.push('今年分は年の途中なので、期末棚卸と所得は現時点の暫定値です。12月31日にもう一度確認してください。');
+  $('taxDataWarning').innerHTML=warnings.length?`<div class="tax-warning">${warnings.map(w=>`• ${escapeHtml(w)}`).join('<br>')}</div>`:`<div class="tax-ok">商品データから大きな集計エラーは見つかっていません。領収書・注文履歴と照合して最終確認してください。</div>`;
+
+  $('taxStatement').innerHTML=
+    taxRow('① 売上（収入）金額',summary.sales,'その年に売れた「せどり」商品の販売価格')+
+    taxRow('② 家事消費',summary.homeConsumption,'事業の商品を自分や家族で使った場合など。通常0ならそのまま')+
+    taxRow('③ その他の収入',summary.otherIncome,'事業に関係するその他収入がある場合')+
+    taxRow('④ 収入金額 合計',summary.grossRevenue,'①＋②＋③','tax-total-row')+
+    taxRow('⑤ 期首商品棚卸高',summary.opening,hasTaxOverride(cfg.openingOverride)?`手入力上書き（自動 ${yen(summary.openingAuto)}）`:'1月1日時点の売れ残りを自動計算')+
+    taxRow('⑥ 仕入金額',summary.purchases,'その年に仕入れた販売用商品。楽天は実支払額ベース')+
+    taxRow('⑧ 期末商品棚卸高',summary.closing,hasTaxOverride(cfg.closingOverride)?`手入力上書き（自動 ${yen(summary.closingAuto)}）`:'12月31日時点の売れ残りを自動計算')+
+    taxRow('⑨ 売上原価',summary.cogs,'期首棚卸＋仕入－期末棚卸','tax-total-row')+
+    taxRow('販売手数料等（自動）',summary.auto.fees,'販売手数料＋メルカリプロモーション料')+
+    taxRow('荷造運賃（自動）',summary.auto.shipping,'売れた商品の送料＋登録済み梱包費')+
+    taxRow('その他販売経費（自動）',summary.auto.misc,'商品画面の「その他販売経費」')+
+    Object.entries(summary.manual).filter(([,amount])=>amount>0).map(([category,amount])=>taxRow(category,amount,'経費帳から集計')).join('')+
+    taxRow('必要経費 合計',summary.expenses,`商品から自動 ${yen(summary.autoTotal)} ＋ 経費帳 ${yen(summary.manualTotal)}`,'tax-total-row')+
+    taxRow('所得の目安',summary.income,'収入合計－売上原価－必要経費。税額ではありません','tax-total-row');
+
+  $('taxOpeningOverride').value=hasTaxOverride(cfg.openingOverride)?cfg.openingOverride:'';
+  $('taxClosingOverride').value=hasTaxOverride(cfg.closingOverride)?cfg.closingOverride:'';
+  $('taxHomeConsumption').value=clampZero(cfg.homeConsumption);
+  $('taxOtherIncome').value=clampZero(cfg.otherIncome);
+  $('taxInventoryHint').innerHTML=`自動計算：期首 <b>${yen(summary.openingAuto)}</b> ／ 期末 <b>${yen(summary.closingAuto)}</b>。商品データがすべて入っているなら基本は空欄のままでOKです。`;
+
+  renderTaxExpenses(summary);
+  renderTaxChecklist(summary);
+}
+function saveTaxYearSettings(){
+  const cfg=taxYearExpenseSettings(taxYear);
+  const openingRaw=$('taxOpeningOverride').value.trim();
+  const closingRaw=$('taxClosingOverride').value.trim();
+  cfg.openingOverride=openingRaw===''?null:clampZero(openingRaw);
+  cfg.closingOverride=closingRaw===''?null:clampZero(closingRaw);
+  cfg.homeConsumption=clampZero($('taxHomeConsumption').value);
+  cfg.otherIncome=clampZero($('taxOtherIncome').value);
+  saveAll();renderTax();toast(`${taxYear}年分の調整値を保存しました`);
+}
+function renderTaxExpenses(summary=taxSummary(taxYear)){
+  const auto=summary.auto;
+  $('taxExpenseSummary').innerHTML=`
+    <div class="preview">
+      <div class="preview-row"><span>商品データから自動</span><b>${yen(summary.autoTotal)}</b></div>
+      <div class="preview-row"><span>経費帳から</span><b>${yen(summary.manualTotal)}</b></div>
+      <div class="preview-row"><span>必要経費 合計</span><strong>${yen(summary.expenses)}</strong></div>
+    </div>`;
+  const list=taxManualExpensesForYear(taxYear).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  $('taxExpenseList').innerHTML=list.length?list.map(expense=>`
+    <div class="tax-expense-row">
+      <div class="tax-expense-top">
+        <div>
+          <div class="tax-expense-title">${escapeHtml(expense.category)}・${escapeHtml(expense.description)}</div>
+          <div class="tax-expense-meta">${escapeHtml(expense.date)} ／ ${escapeHtml(expense.payee||'支払先未入力')} ／ 事業 ${expense.businessRate}%<br>${escapeHtml(expense.payment)}${expense.receiptRef?` ／ 証憑：${escapeHtml(expense.receiptRef)}`:''}</div>
+        </div>
+        <div class="tax-expense-amount">${yen(deductibleExpense(expense))}</div>
+      </div>
+      <button class="btn btn-small" style="margin-top:7px" onclick="openTaxExpense('${expense.id}')">編集</button>
+    </div>`).join(''):'<div class="empty">この年の経費帳はまだありません。</div>';
+}
+function renderTaxChecklist(summary){
+  const hasManualExpenses=taxManualExpensesForYear(taxYear).length>0;
+  const checks=[
+    {ok:taxSoldForYear(taxYear).length>0,text:'売れた商品の販売価格・販売日を記録した'},
+    {ok:true,text:'販売手数料・送料は商品データから自動集計'},
+    {ok:hasManualExpenses,text:'通信費・交通費など商品以外の経費を確認した'},
+    {ok:hasTaxOverride(taxYearExpenseSettings(taxYear).closingOverride)||taxYear!==String(new Date().getFullYear()),text:'12月31日の売れ残り商品を確認した'},
+    {ok:false,text:'レシート・領収書・ネット注文履歴を別途保存した（アプリでは自動判定できません）'}
+  ];
+  $('taxChecklist').innerHTML=checks.map(check=>`<div class="tax-table-row"><div class="name">${check.ok?'✅':'⬜'} ${escapeHtml(check.text)}</div></div>`).join('');
+}
+function openTaxExpense(id=''){
+  const expense=id?taxExpenses.find(current=>String(current.id)===String(id)):null;
+  $('taxExpenseId').value=expense?.id||'';
+  $('taxExpenseModalTitle').textContent=expense?'経費を編集':'経費を登録';
+  $('taxExpenseDate').value=expense?.date||today();
+  $('taxExpenseCategory').innerHTML=TAX_EXPENSE_CATEGORIES.map(category=>`<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
+  $('taxExpenseCategory').value=expense?.category||'旅費交通費';
+  $('taxExpenseDescription').value=expense?.description||'';
+  $('taxExpensePayee').value=expense?.payee||'';
+  $('taxExpenseAmount').value=expense?.amount||'';
+  $('taxExpenseBusinessRate').value=expense?.businessRate??100;
+  $('taxExpensePayment').value=expense?.payment||'クレジットカード';
+  $('taxExpenseReceipt').value=expense?.receiptRef||'';
+  $('taxExpenseMemo').value=expense?.memo||'';
+  $('taxExpenseDelete').style.display=expense?'block':'none';
+  renderTaxExpensePreview();
+  $('taxExpenseModal').classList.add('open');
+}
+function renderTaxExpensePreview(){
+  if(!$('taxExpensePreview'))return;
+  const amount=clampZero($('taxExpenseAmount')?.value);
+  const rate=Math.min(100,Math.max(0,safeNum($('taxExpenseBusinessRate')?.value)));
+  const deductible=Math.round(amount*rate/100);
+  $('taxExpensePreview').innerHTML=`<div class="preview-row"><span>支払金額</span><b>${yen(amount)}</b></div>
+    <div class="preview-row"><span>事業使用割合</span><b>${rate}%</b></div>
+    <div class="preview-row"><span>必要経費に入れる金額</span><strong>${yen(deductible)}</strong></div>`;
+}
+function saveTaxExpense(){
+  const id=$('taxExpenseId').value;
+  const date=$('taxExpenseDate').value;
+  const description=$('taxExpenseDescription').value.trim();
+  const amount=clampZero($('taxExpenseAmount').value);
+  if(!date){toast('日付を入力してください');return}
+  if(!description){toast('経費の内容を入力してください');return}
+  if(amount<=0){toast('支払金額を入力してください');return}
+  const data=normalizeTaxExpense({
+    id:id||uid('expense'),date,category:$('taxExpenseCategory').value,description,
+    payee:$('taxExpensePayee').value.trim(),amount,
+    businessRate:$('taxExpenseBusinessRate').value,payment:$('taxExpensePayment').value,
+    receiptRef:$('taxExpenseReceipt').value.trim(),memo:$('taxExpenseMemo').value.trim()
+  });
+  const index=taxExpenses.findIndex(current=>String(current.id)===String(id));
+  if(index>=0)taxExpenses[index]=data;else taxExpenses.push(data);
+  saveAll();closeModal('taxExpenseModal');renderTax();toast('経費を保存しました');
+}
+function deleteTaxExpense(){
+  const id=$('taxExpenseId').value;
+  const expense=taxExpenses.find(current=>String(current.id)===String(id));if(!expense)return;
+  if(!confirm(`${expense.description} を削除しますか？`))return;
+  taxExpenses=taxExpenses.filter(current=>String(current.id)!==String(id));
+  saveAll();closeModal('taxExpenseModal');renderTax();toast('経費を削除しました');
+}
+function makeTaxCSV(){
+  const summary=taxSummary(taxYear);
+  const rows=[
+    ['白色申告まとめ',`${taxYear}年分`],
+    ['売上（収入）金額',summary.sales],
+    ['家事消費',summary.homeConsumption],
+    ['その他の収入',summary.otherIncome],
+    ['収入金額合計',summary.grossRevenue],
+    ['期首商品棚卸高',summary.opening],
+    ['仕入金額',summary.purchases],
+    ['期末商品棚卸高',summary.closing],
+    ['売上原価',summary.cogs],
+    ['販売手数料等（自動）',summary.auto.fees],
+    ['荷造運賃（自動）',summary.auto.shipping],
+    ['その他販売経費（自動）',summary.auto.misc],
+    ...Object.entries(summary.manual).filter(([,amount])=>amount>0),
+    ['必要経費合計',summary.expenses],
+    ['所得の目安',summary.income],
+    [],
+    ['経費帳'],
+    ['日付','科目','内容','支払先','支払金額','事業使用割合','必要経費算入額','支払方法','証憑メモ','メモ'],
+    ...taxManualExpensesForYear(taxYear).sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(expense=>[
+      expense.date,expense.category,expense.description,expense.payee,expense.amount,`${expense.businessRate}%`,
+      deductibleExpense(expense),expense.payment,expense.receiptRef,expense.memo
+    ])
+  ];
+  return rows.map(row=>row.map(csvEscape).join(',')).join('\n');
+}
+function downloadTaxCSV(){
+  downloadBlob(new Blob(['\ufeff'+makeTaxCSV()],{type:'text/csv'}),`白色申告まとめ_${taxYear}年.csv`);
+  toast(`${taxYear}年分の申告まとめCSVを保存しました`);
+}
+
 function renderData(){
-  $('dataCount').textContent=`商品 ${items.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
+  $('dataCount').textContent=`商品 ${items.length}件・経費 ${taxExpenses.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
   loadSettingsForm();renderPackagingInventory();renderAutoBackupStatus();
 }
 function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
@@ -2879,20 +3368,22 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-09-shipped-edit-v14',
+    version:'2026-09-white-tax-v15',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
     pointUsages:deepClone(pointUsages),
     packagingMaterials:deepClone(packagingMaterials),
     settings:deepClone(settings),
+    taxExpenses:deepClone(taxExpenses),
+    taxSettings:deepClone(taxSettings),
     exportedAt:new Date().toISOString(),
     backupReason:reason
   };
 }
 function applyBackupData(data){
   if(Array.isArray(data)){
-    items=data;pointEntries=[];pointUsages=[];packagingMaterials=deepClone(DEFAULT_PACKAGING);settings={...DEFAULT_SETTINGS};
+    items=data;pointEntries=[];pointUsages=[];packagingMaterials=deepClone(DEFAULT_PACKAGING);settings={...DEFAULT_SETTINGS};taxExpenses=[];taxSettings={years:{}};
   }else{
     if(!data||!Array.isArray(data.items))throw new Error('商品データがありません');
     items=data.items;
@@ -2900,12 +3391,17 @@ function applyBackupData(data){
     pointUsages=Array.isArray(data.pointUsages)?data.pointUsages:[];
     packagingMaterials=Array.isArray(data.packagingMaterials)?data.packagingMaterials:deepClone(DEFAULT_PACKAGING);
     settings={...DEFAULT_SETTINGS,...(data.settings||{})};
+    taxExpenses=Array.isArray(data.taxExpenses)?data.taxExpenses:[];
+    taxSettings=data.taxSettings&&typeof data.taxSettings==='object'?data.taxSettings:{years:{}};
   }
   normalizeCandidateSettings();
+  normalizeTaxSettings();
+  if(!Array.isArray(taxExpenses))taxExpenses=[];
   items=items.map(normalizeItem);
   pointEntries=pointEntries.map(normalizePointEntry);
   pointUsages=pointUsages.map(normalizeUsage);
   packagingMaterials=packagingMaterials.map(normalizePackagingMaterial);
+  taxExpenses=taxExpenses.map(normalizeTaxExpense);
   migrateCategorySourceSettingsFromItems();
   migrateEmbeddedPointDetails();
   applyAutomaticExpiry();
@@ -3139,11 +3635,11 @@ function downloadBlob(blob,name){
   setTimeout(()=>URL.revokeObjectURL(anchor.href),1000);
 }
 async function deleteAll(){
-  if(!confirm('商品・ポイント・使用履歴・設定をすべて削除しますか？'))return;
+  if(!confirm('商品・経費・ポイント・使用履歴・設定をすべて削除しますか？'))return;
   if(!confirm('本当に削除しますか？削除前の自動バックアップを作成します。'))return;
   await ensureDailyBackup(true);
-  items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];settings={...DEFAULT_SETTINGS};
-  normalizeCandidateSettings();saveAll();loadSettingsForm();renderAll();toast('全データを削除しました');
+  items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];taxExpenses=[];taxSettings={years:{}};settings={...DEFAULT_SETTINGS};
+  normalizeCandidateSettings();normalizeTaxSettings();saveAll();loadSettingsForm();renderTaxYearSelect();renderAll();toast('全データを削除しました');
 }
 function openShipping(){
   const groups=[['mercari','メルカリ'],['yahoo','Yahoo!フリマ・ヤフオク']];
@@ -3159,12 +3655,12 @@ function closeModal(id){$(id).classList.remove('open')}
 
 /* 内部検証。通常画面からは実行しません。 */
 window.runSedoriSelfTests=function(){
-  const original={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials),settings:deepClone(settings)};
+  const original={items:deepClone(items),points:deepClone(pointEntries),usages:deepClone(pointUsages),packaging:deepClone(packagingMaterials),settings:deepClone(settings),taxExpenses:deepClone(taxExpenses),taxSettings:deepClone(taxSettings)};
   const results=[];
   const test=(name,condition,details='')=>results.push({name,passed:Boolean(condition),details});
   try{
     settings={...DEFAULT_SETTINGS,pointValue:1};
-    items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];
+    items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];taxExpenses=[];taxSettings={years:{}};
     const legacy=normalizeItem({id:'legacy',name:'セカスト商品',source:'セカンドストリート',cost:1000,status:'sold',actualPrice:3000,price:3000,ship:210,misc:0,platform:'mercari',feeRate:.1,soldDate:'2026-07-01'});
     items=[legacy];
     test('既存セカスト利益',confirmedProfitOf(legacy)===1490,`結果 ${confirmedProfitOf(legacy)}`);
@@ -3220,6 +3716,19 @@ window.runSedoriSelfTests=function(){
     test('自動バックアップ保持日数',AUTO_BACKUP_RETENTION===14,String(AUTO_BACKUP_RETENTION));
     test('自動ダウンロードファイル名',backupFileName('2026-09-07')==='せどりバックアップ_2026-09-07.json',backupFileName('2026-09-07'));
 
+    items=[
+      normalizeItem({id:'tax_open',name:'前年在庫',type:'sedori',source:'セカンドストリート',purchaseDate:'2025-12-01',date:'2025-12-01',cost:1000,status:'shipped',actualPrice:2000,price:2000,soldDate:'2026-02-01',ship:200,platform:'mercari',feeRate:.1}),
+      normalizeItem({id:'tax_buy',name:'当年仕入未売',type:'sedori',source:'セカンドストリート',purchaseDate:'2026-03-01',date:'2026-03-01',cost:500,status:'listed'}),
+      normalizeItem({id:'personal',name:'不用品',type:'fuyohin',source:'不用品',purchaseDate:'2026-01-01',date:'2026-01-01',cost:0,status:'shipped',actualPrice:9999,price:9999,soldDate:'2026-04-01',ship:0,platform:'mercari',feeRate:.1})
+    ];
+    taxExpenses=[normalizeTaxExpense({id:'expense_test',date:'2026-05-01',category:'通信費',description:'通信費',amount:1000,businessRate:50})];
+    taxSettings={years:{}};
+    const taxTest=taxSummary('2026');
+    test('白色申告売上はせどりのみ',taxTest.sales===2000,`結果 ${taxTest.sales}`);
+    test('期首棚卸自動計算',taxTest.opening===1000,`結果 ${taxTest.opening}`);
+    test('期末棚卸自動計算',taxTest.closing===500,`結果 ${taxTest.closing}`);
+    test('家事按分経費',taxTest.manual['通信費']===500,`結果 ${taxTest.manual['通信費']}`);
+
     packagingMaterials=[
       normalizePackagingMaterial({id:'miniPack',name:'mini封筒',stock:5,unitCost:5,linkKey:'mini',lowStockAt:2}),
       normalizePackagingMaterial({id:'oppPack',name:'OPP袋',stock:10,unitCost:3,linkKey:'none',materialType:'bag',lowStockAt:2})
@@ -3252,7 +3761,7 @@ window.runSedoriSelfTests=function(){
   }catch(errorObject){
     results.push({name:'テスト実行',passed:false,details:errorObject.message});
   }finally{
-    items=original.items;pointEntries=original.points;pointUsages=original.usages;packagingMaterials=original.packaging;settings=original.settings;
+    items=original.items;pointEntries=original.points;pointUsages=original.usages;packagingMaterials=original.packaging;settings=original.settings;taxExpenses=original.taxExpenses;taxSettings=original.taxSettings;
   }
   return {passed:results.every(result=>result.passed),results};
 };
@@ -3264,6 +3773,25 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-11
+- 初めての白色申告向け「確定申告」タブを新設
+- 白色申告を「売れた商品を記録 → 商品以外の経費を記録 → 12/31棚卸 → 収支内訳書へ転記」の4ステップで説明
+- 売上・仕入・期首棚卸・期末棚卸・売上原価・必要経費・所得目安を年別に自動集計
+- 確定申告の自動集計は「せどり」のみとし、不用品を自動除外
+- 期首・期末棚卸を商品データから自動計算し、初年度やデータ不足時だけ手入力で上書きできる機能を追加
+- 家事消費・その他の収入の年別入力欄を追加
+- 商品以外の「経費帳」を追加し、日付・勘定科目・内容・支払先・金額・事業使用割合・支払方法・証憑メモ・備考を保存可能
+- 経費帳に国税庁の収支内訳書で使う主要科目と、せどり向けの支払手数料・車両費を追加
+- 家事按分用に事業使用割合を設定し、必要経費算入額を自動計算
+- 商品の販売手数料・プロモーション料・送料・売れた時の梱包費・その他販売経費は商品データから自動で必要経費へ集計
+- 商品経費と経費帳の二重計上を防ぐ注意表示を追加
+- 「収支内訳書の下書き」として売上・棚卸・仕入・経費・所得を転記しやすい順番で表示
+- 白色申告の基本用語・帳簿/領収書保存の説明・申告前チェックリストを追加
+- 年別の「白色申告まとめCSV」を出力可能に変更
+- 経費帳・申告調整値を自動バックアップ／JSONバックアップの対象へ追加
+- 既存の在庫・発送後編集・楽天ポイント・損益分岐点・梱包材・毎日自動バックアップをすべて維持
+- schema v15へ更新
+
 2026-09-08
 - 発送済み商品の「編集」ボタンを「発送後編集」として分かりやすく表示
 - 発送完了後でも販売価格・売れた日・販売先・発送方法・送料・プロモーション利用・その他販売経費を編集可能
