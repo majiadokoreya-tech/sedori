@@ -107,6 +107,12 @@ th{color:var(--muted);font-size:.68rem}
 .backup-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .backup-row .date{font-size:.73rem;font-weight:900}
 .backup-row .meta{font-size:.64rem;color:var(--muted);margin-top:2px}
+.backup-system-box{background:#f7f8fa;border:1px solid var(--line);border-radius:13px;padding:11px;margin:10px 0}
+.backup-system-title{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.78rem;font-weight:1000}
+.backup-system-badge{font-size:.62rem;font-weight:1000;background:#e8f7ee;color:#237646;border-radius:999px;padding:3px 7px}
+.backup-system-meta{font-size:.68rem;color:var(--muted);line-height:1.6;margin-top:5px}
+.backup-history-scroll{max-height:360px;overflow:auto;padding-right:2px}
+.backup-reason{display:inline-block;font-size:.59rem;font-weight:900;background:#eef1f5;border-radius:999px;padding:2px 6px;margin-left:4px}
 .tax-guide{background:linear-gradient(180deg,#fffaf1,#fff);border:1px solid #f2dfb5}
 .tax-steps{display:grid;gap:8px;margin-top:10px}
 .tax-step{display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:start;background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px}
@@ -462,18 +468,42 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 <section id="data" class="page">
   <div class="card">
     <div class="section-head"><div class="section-title">バックアップ</div><div id="dataCount" class="note"></div></div>
-    <div class="help">毎日、その日にアプリを最初に開いた時に端末内へ自動バックアップし、JSONファイルも自動ダウンロードします。Android Chromeなどが起動直後のダウンロードを制限する場合は、その日の最初の画面操作時に自動ダウンロードします。過去14日分の端末内バックアップも保持します。</div>
+    <div class="help">運転日報と同じ考え方で、商品登録・売れた記録・発送・編集・ポイント・梱包材・経費などを<strong>保存するたび</strong>に自動バックアップします。さらに従来の1日1回バックアップも残しています。</div>
 
-    <div id="autoBackupStatus" class="backup-status">
-      <strong>自動バックアップ</strong><br>確認中…
+    <div class="backup-system-box">
+      <div class="backup-system-title">
+        <span>保存操作バックアップ</span><span class="backup-system-badge">ON・30世代</span>
+      </div>
+      <div id="saveBackupStatus" class="backup-system-meta">確認中…</div>
+      <div class="split-buttons" style="margin-top:8px">
+        <button class="btn btn-green" onclick="createSaveBackup('手動スナップショット',true)">今すぐ保存</button>
+        <button class="btn btn-purple" onclick="restoreLatestSaveBackup()">最新を復元</button>
+      </div>
+      <details class="tax-help">
+        <summary>保存操作バックアップ履歴を表示</summary>
+        <div class="inside">
+          <div id="saveBackupList" class="backup-list backup-history-scroll"></div>
+        </div>
+      </details>
     </div>
 
-    <div class="split-buttons">
-      <button class="btn btn-green" onclick="ensureDailyBackup(true)">今日のバックアップを更新</button>
-      <button class="btn btn-purple" onclick="restoreLatestAutoBackup()">最新を復元</button>
+    <div class="backup-system-box">
+      <div class="backup-system-title">
+        <span>日次バックアップ</span><span class="backup-system-badge">14日分</span>
+      </div>
+      <div class="backup-system-meta">その日に初めてアプリを開いた時のバックアップです。</div>
+      <div id="autoBackupStatus" class="backup-status">
+        <strong>日次バックアップ</strong><br>確認中…
+      </div>
+      <div class="split-buttons">
+        <button class="btn btn-green" onclick="ensureDailyBackup(true)">今日分を更新</button>
+        <button class="btn btn-purple" onclick="restoreLatestAutoBackup()">最新を復元</button>
+      </div>
+      <details class="tax-help">
+        <summary>日次バックアップ履歴を表示</summary>
+        <div class="inside"><div id="autoBackupList" class="backup-list"></div></div>
+      </details>
     </div>
-
-    <div id="autoBackupList" class="backup-list"></div>
 
     <div style="height:12px"></div>
     <div class="help">自動ダウンロードとは別に、必要な時は下のボタンから同じJSONバックアップを再ダウンロードできます。</div>
@@ -943,9 +973,14 @@ const STORAGE={
 const AUTO_BACKUP_DB='sedori_daily_backup_db';
 const AUTO_BACKUP_STORE='dailyBackups';
 const AUTO_BACKUP_RETENTION=14;
+const SAVE_BACKUP_STORE='saveBackups';
+const SAVE_BACKUP_RETENTION=30;
 let pendingDailyDownloadRecord=null;
+let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
-const SCHEMA_VERSION=15;
+let autoSaveBackupReady=false;
+let lastSaveBackupDownloadAt=0;
+const SCHEMA_VERSION=16;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1277,7 +1312,7 @@ function toast(text){
   toast.timer=setTimeout(()=>element.classList.remove('show'),2200);
 }
 function setSaveState(text){$('saveState').textContent=text}
-function saveAll(){
+function saveAll(backupReason=''){
   setSaveState('保存中…');
   localStorage.setItem(STORAGE.items,JSON.stringify(items));
   localStorage.setItem(STORAGE.points,JSON.stringify(pointEntries));
@@ -1288,6 +1323,7 @@ function saveAll(){
   localStorage.setItem(STORAGE.taxSettings,JSON.stringify(taxSettings));
   localStorage.setItem(STORAGE.schema,String(SCHEMA_VERSION));
   setSaveState('保存済み');
+  if(autoSaveBackupReady&&backupReason)createSaveBackup(backupReason,true);
 }
 function normalizeItem(raw,index=0){
   const item={...raw};
@@ -1525,7 +1561,7 @@ function handleCategoryChange(prefix){
     const name=(prompt('追加するカテゴリ名を入力してください')||'').trim();
     if(!name){fillCategorySelect(prefix,settings.lastCategory);fillSubCategorySelect(prefix,$(prefix+'Cat').value,'');return}
     if(!allCategories().includes(name))settings.customCategories.push(name);
-    saveAll();fillCategorySelect(prefix,name);fillSubCategorySelect(prefix,name,'');refreshStockCategoryFilter();toast(`カテゴリ「${name}」を追加しました`);
+    saveAll('カテゴリ追加');fillCategorySelect(prefix,name);fillSubCategorySelect(prefix,name,'');refreshStockCategoryFilter();toast(`カテゴリ「${name}」を追加しました`);
   }else{
     fillSubCategorySelect(prefix,select.value,'');
   }
@@ -1539,7 +1575,7 @@ function handleSubCategoryChange(prefix){
   if(!name){fillSubCategorySelect(prefix,category,'');return}
   if(!Array.isArray(settings.customSubCategories[category]))settings.customSubCategories[category]=[];
   if(!allSubCategories(category).includes(name))settings.customSubCategories[category].push(name);
-  saveAll();fillSubCategorySelect(prefix,category,name);toast(`小カテゴリ「${name}」を追加しました`);
+  saveAll('小カテゴリ追加');fillSubCategorySelect(prefix,category,name);toast(`小カテゴリ「${name}」を追加しました`);
 }
 function handleSourceGroupChange(prefix){
   const group=$(prefix+'SourceGroup').value;
@@ -1553,7 +1589,7 @@ function handleSourceChange(prefix){
     const name=(prompt(`${sourceGroupName(group)}に追加する仕入れ先名を入力してください`)||'').trim();
     if(!name){fillSourceSelect(prefix,group,settings.lastSource);togglePurchaseFields(prefix);return}
     if(!allSourcesForGroup(group).includes(name))settings.customSources[group].push(name);
-    saveAll();fillSourceSelect(prefix,group,name);toast(`仕入れ先「${name}」を追加しました`);
+    saveAll('仕入れ先追加');fillSourceSelect(prefix,group,name);toast(`仕入れ先「${name}」を追加しました`);
   }
   togglePurchaseFields(prefix);
 }
@@ -1570,7 +1606,8 @@ function init(){
   renderTaxYearSelect();
   renderAll();
   installAutoDownloadGestureHandler();
-  setTimeout(()=>ensureDailyBackup(false),0);
+  autoSaveBackupReady=true;
+  setTimeout(()=>{ensureDailyBackup(false);renderSaveBackupStatus();},0);
 }
 function renderAll(){
   applyAutomaticExpiry();
@@ -1980,7 +2017,7 @@ function addItem(){
     settings.lastSubCategory=item.subCat||'';
     settings.lastSourceGroup=item.sourceGroup;
     settings.lastSource=item.source;
-    saveAll();closeModal('addModal');refreshStockCategoryFilter();
+    saveAll('商品登録');closeModal('addModal');refreshStockCategoryFilter();
     stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録しました');
   }catch(errorObject){
     items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
@@ -2242,7 +2279,7 @@ function saveSold(){
   item.packagingSelections=selections.map(selection=>({...selection}));
   item.packagingCost=item.packagingSelections.reduce((sum,selection)=>sum+(selection.unitCost*selection.quantity),0);
   item.packagingConsumptions=[];
-  saveAll();closeModal('soldModal');stockStatus='waiting';syncStockTabs();renderAll();
+  saveAll('売れた記録');closeModal('soldModal');stockStatus='waiting';syncStockTabs();renderAll();
   toast(selections.length?`売れた記録を保存：梱包費 ${yen(item.packagingCost)}`:'売れた記録を保存しました');
 }
 function restorePackagingConsumptions(item){
@@ -2278,7 +2315,7 @@ function markShipped(id){
     validatePackagingSelections(selections);
     item.status='shipped';
     consumePackagingSelections(item,selections);
-    saveAll();renderAll();
+    saveAll('発送完了');renderAll();
     const totalQty=selections.reduce((sum,selection)=>sum+selection.quantity,0);
     toast(`発送済み：梱包材 ${totalQty}個を在庫から減らしました`);
   }catch(errorObject){
@@ -2366,7 +2403,7 @@ function confirmShipment(){
   try{
     item.status='shipped';
     consumePackagingSelections(item,selections);
-    saveAll();closeModal('shippingCompleteModal');renderAll();
+    saveAll('発送完了');closeModal('shippingCompleteModal');renderAll();
     const totalQty=selections.reduce((sum,s)=>sum+s.quantity,0);
     toast(selections.length?`発送済み：梱包材 ${totalQty}個・梱包費 ${yen(item.packagingCost)}`:'発送済みにしました');
   }catch(errorObject){
@@ -2516,7 +2553,7 @@ function saveEdit(){
     settings.lastSourceGroup=item.sourceGroup;
     settings.lastSource=item.source;
 
-    saveAll();
+    saveAll(previousStatus==='shipped'?'発送後編集':'商品編集');
     closeModal('editModal');
     renderAll();
     toast(previousStatus==='shipped'?'発送済み商品の編集を保存しました':'保存しました');
@@ -2537,7 +2574,7 @@ function deleteCurrentEdit(){
   removeAutoPurchaseUsages(id);
   pointEntries=pointEntries.filter(entry=>String(entry.itemId)!==String(id));
   items=items.filter(item=>String(item.id)!==String(id));
-  saveAll();closeModal('editModal');renderAll();toast('削除しました');
+  saveAll('商品削除');closeModal('editModal');renderAll();toast('削除しました');
 }
 
 function soldItems(type='all'){return items.filter(item=>typeMatches(item,type)&&isSold(item))}
@@ -2883,7 +2920,7 @@ function savePointUsage(){
       date:$('uDate').value||today(),type,amount,purpose:$('uPurpose').value,scope:$('uScope').value,
       relatedItemId:$('uRelatedItem').value,note:$('uNote').value.trim(),autoPurchase:false
     });
-    saveAll();closeModal('pointUsageModal');renderAll();toast('ポイント使用を登録しました');
+    saveAll('ポイント使用登録');closeModal('pointUsageModal');renderAll();toast('ポイント使用を登録しました');
   }catch(errorObject){
     pointEntries=snapshot.points;pointUsages=snapshot.usages;toast(errorObject.message);
   }
@@ -2902,7 +2939,7 @@ function saveManualPoint(){
     plannedDate:$('mPointDate').value||today(),actualDate:$('mPointDate').value||today(),
     expiryDate:$('mPointExpiry').value,note:$('mPointNote').value.trim()||'繰越・調整ポイント'
   }));
-  saveAll();closeModal('manualPointModal');renderAll();toast('繰越・調整ポイントを登録しました');
+  saveAll('ポイント調整');closeModal('manualPointModal');renderAll();toast('繰越・調整ポイントを登録しました');
 }
 
 function renderPackagingInventory(){
@@ -2926,7 +2963,7 @@ function adjustPackagingStock(id,delta){
   const material=packagingMaterials.find(current=>String(current.id)===String(id));if(!material)return;
   const next=material.stock+delta;
   if(next<0){toast('在庫は0個未満にできません');return}
-  material.stock=next;saveAll();renderPackagingInventory();renderShipPackagingNote('s');renderShipPackagingNote('e');
+  material.stock=next;saveAll('梱包材在庫変更');renderPackagingInventory();renderShipPackagingNote('s');renderShipPackagingNote('e');
 }
 function packagingDefaultName(kind,boxSize){
   if(kind==='box'&&boxSize)return `ダンボール ${boxSize}サイズ`;
@@ -2966,7 +3003,7 @@ function addCardboardSet(){
       materialType:'box',boxSize:String(size),linkKey:conflict?'none':linkKey
     }));
   });
-  saveAll();renderPackagingInventory();renderData();
+  saveAll('段ボール一括追加');renderPackagingInventory();renderData();
   toast('段ボールをサイズ別に追加しました');
 }
 function openPackagingEditor(id=''){
@@ -3018,7 +3055,7 @@ function savePackagingMaterial(){
   }else{
     packagingMaterials.push(normalizePackagingMaterial({id:uid('pack'),...values}));
   }
-  saveAll();closeModal('packagingModal');renderData();renderShipPackagingNote('s');renderShipPackagingNote('e');
+  saveAll('梱包材保存');closeModal('packagingModal');renderData();renderShipPackagingNote('s');renderShipPackagingNote('e');
   toast(materialType==='box'?`${boxSize}サイズ段ボールを保存しました`:'梱包材を保存しました');
 }
 function deletePackagingMaterial(){
@@ -3028,7 +3065,7 @@ function deletePackagingMaterial(){
     (Array.isArray(item.packagingSelections)&&item.packagingSelections.some(c=>String(c.materialId)===String(id)))
   )){toast('販売記録または発送履歴で使用中の梱包材は削除できません');return}
   if(!confirm('この梱包材を削除しますか？'))return;
-  packagingMaterials=packagingMaterials.filter(material=>String(material.id)!==String(id));saveAll();closeModal('packagingModal');renderData();toast('梱包材を削除しました');
+  packagingMaterials=packagingMaterials.filter(material=>String(material.id)!==String(id));saveAll('梱包材削除');closeModal('packagingModal');renderData();toast('梱包材を削除しました');
 }
 
 function loadSettingsForm(){
@@ -3046,7 +3083,7 @@ function saveSettings(){
     expiryWarningDays:Math.max(1,Math.round(clampZero($('setExpiryDays').value)||30)),
     monthlyPointCap:clampZero($('setMonthlyCap').value)
   };
-  normalizeCandidateSettings();saveAll();renderAll();toast('設定を保存しました');
+  normalizeCandidateSettings();saveAll('設定保存');renderAll();toast('設定を保存しました');
 }
 
 function taxPurchaseDate(item){return String(item.purchaseDate||item.date||'')}
@@ -3200,7 +3237,7 @@ function saveTaxYearSettings(){
   cfg.closingOverride=closingRaw===''?null:clampZero(closingRaw);
   cfg.homeConsumption=clampZero($('taxHomeConsumption').value);
   cfg.otherIncome=clampZero($('taxOtherIncome').value);
-  saveAll();renderTax();toast(`${taxYear}年分の調整値を保存しました`);
+  saveAll('確定申告調整値');renderTax();toast(`${taxYear}年分の調整値を保存しました`);
 }
 function renderTaxExpenses(summary=taxSummary(taxYear)){
   const auto=summary.auto;
@@ -3277,14 +3314,14 @@ function saveTaxExpense(){
   });
   const index=taxExpenses.findIndex(current=>String(current.id)===String(id));
   if(index>=0)taxExpenses[index]=data;else taxExpenses.push(data);
-  saveAll();closeModal('taxExpenseModal');renderTax();toast('経費を保存しました');
+  saveAll('経費保存');closeModal('taxExpenseModal');renderTax();toast('経費を保存しました');
 }
 function deleteTaxExpense(){
   const id=$('taxExpenseId').value;
   const expense=taxExpenses.find(current=>String(current.id)===String(id));if(!expense)return;
   if(!confirm(`${expense.description} を削除しますか？`))return;
   taxExpenses=taxExpenses.filter(current=>String(current.id)!==String(id));
-  saveAll();closeModal('taxExpenseModal');renderTax();toast('経費を削除しました');
+  saveAll('経費削除');closeModal('taxExpenseModal');renderTax();toast('経費を削除しました');
 }
 function makeTaxCSV(){
   const summary=taxSummary(taxYear);
@@ -3321,7 +3358,7 @@ function downloadTaxCSV(){
 
 function renderData(){
   $('dataCount').textContent=`商品 ${items.length}件・経費 ${taxExpenses.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
-  loadSettingsForm();renderPackagingInventory();renderAutoBackupStatus();
+  loadSettingsForm();renderPackagingInventory();renderSaveBackupStatus();renderAutoBackupStatus();
 }
 function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
 function makeCSV(){
@@ -3368,7 +3405,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-09-white-tax-v15',
+    version:'2026-09-operation-backup-v16',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3411,21 +3448,32 @@ function applyBackupData(data){
   renderAll();
 }
 function backupFileName(date=today()){return `せどりバックアップ_${date}.json`}
+function dateTimeFileStamp(iso=new Date().toISOString()){
+  const date=new Date(iso);
+  const pad=value=>String(value).padStart(2,'0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}`;
+}
+function saveBackupFileName(createdAt=new Date().toISOString()){return `せどり_自動バックアップ_${dateTimeFileStamp(createdAt)}.json`}
+function manualBackupFileName(createdAt=new Date().toISOString()){return `せどり_手動バックアップ_${dateTimeFileStamp(createdAt)}.json`}
+function downloadBackupNamed(data,name){
+  downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),name);
+}
 function downloadBackupData(data,date=today()){
-  downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),backupFileName(date));
+  downloadBackupNamed(data,backupFileName(date));
 }
 function downloadBackup(){
   const data=buildBackupData('json-manual');
-  downloadBackupData(data,today());
+  downloadBackupNamed(data,manualBackupFileName(data.exportedAt));
   toast('JSONバックアップを保存しました');
 }
 function restoreBackup(event){
   const file=event.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=()=>{
+  reader.onload=async()=>{
     try{
       const data=JSON.parse(reader.result);
-      if(!confirm('現在のデータを上書きして復元しますか？'))return;
+      if(!confirm('現在のデータを上書きして復元しますか？\n現在の状態は復元前バックアップとして保存します。'))return;
+      await createSaveBackup('JSON復元前',false);
       applyBackupData(data);
       toast('JSONバックアップから復元しました');
     }catch(errorObject){
@@ -3439,11 +3487,15 @@ function restoreBackup(event){
 function openAutoBackupDB(){
   return new Promise((resolve,reject)=>{
     if(!('indexedDB' in window)){reject(new Error('IndexedDBを利用できません'));return}
-    const request=indexedDB.open(AUTO_BACKUP_DB,1);
+    const request=indexedDB.open(AUTO_BACKUP_DB,2);
     request.onupgradeneeded=()=>{
       const db=request.result;
       if(!db.objectStoreNames.contains(AUTO_BACKUP_STORE)){
         const store=db.createObjectStore(AUTO_BACKUP_STORE,{keyPath:'date'});
+        store.createIndex('createdAt','createdAt',{unique:false});
+      }
+      if(!db.objectStoreNames.contains(SAVE_BACKUP_STORE)){
+        const store=db.createObjectStore(SAVE_BACKUP_STORE,{keyPath:'id'});
         store.createIndex('createdAt','createdAt',{unique:false});
       }
     };
@@ -3451,6 +3503,137 @@ function openAutoBackupDB(){
     request.onerror=()=>reject(request.error||new Error('バックアップDBを開けませんでした'));
   });
 }
+function saveBackupPut(record){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(SAVE_BACKUP_STORE,'readwrite');
+    tx.objectStore(SAVE_BACKUP_STORE).put(record);
+    tx.oncomplete=()=>{db.close();resolve(record)};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  }));
+}
+function saveBackupGet(id){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(SAVE_BACKUP_STORE,'readonly');
+    const request=tx.objectStore(SAVE_BACKUP_STORE).get(id);
+    request.onsuccess=()=>resolve(request.result||null);
+    request.onerror=()=>reject(request.error);
+    tx.oncomplete=()=>db.close();
+  }));
+}
+function saveBackupGetAll(){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(SAVE_BACKUP_STORE,'readonly');
+    const request=tx.objectStore(SAVE_BACKUP_STORE).getAll();
+    request.onsuccess=()=>resolve((request.result||[]).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))));
+    request.onerror=()=>reject(request.error);
+    tx.oncomplete=()=>db.close();
+  }));
+}
+function saveBackupDelete(id){
+  return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
+    const tx=db.transaction(SAVE_BACKUP_STORE,'readwrite');
+    tx.objectStore(SAVE_BACKUP_STORE).delete(id);
+    tx.oncomplete=()=>{db.close();resolve()};
+    tx.onerror=()=>{db.close();reject(tx.error)};
+  }));
+}
+async function pruneSaveBackups(){
+  const rows=await saveBackupGetAll();
+  for(const row of rows.slice(SAVE_BACKUP_RETENTION))await saveBackupDelete(row.id);
+}
+function makeSaveBackupRecord(reason='自動保存'){
+  const createdAt=new Date().toISOString();
+  return {
+    id:`${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+    date:today(),
+    createdAt,
+    reason,
+    data:buildBackupData(`save-auto:${reason}`)
+  };
+}
+function tryDownloadSaveBackup(record){
+  if(!record?.data)return false;
+
+  // 保存ボタンを押した直後なら、そのユーザー操作を使ってその場でダウンロード。
+  const userActive=Boolean(navigator.userActivation?.isActive);
+  const now=Date.now();
+
+  // 1回の保存処理中に saveAll が複数回走っても連続ダウンロードしない。
+  if(userActive&&now-lastSaveBackupDownloadAt>1500){
+    downloadBackupNamed(record.data,saveBackupFileName(record.createdAt));
+    lastSaveBackupDownloadAt=now;
+    pendingSaveDownloadRecord=null;
+
+    // 同じ操作で日次JSONまで重複ダウンロードしない。
+    if(pendingDailyDownloadRecord?.date===record.date){
+      pendingDailyDownloadRecord=null;
+      markAutoDownloaded(record.date);
+    }
+    return true;
+  }
+
+  // ブラウザが自動ダウンロードを止めた場合は次のタップで実行。
+  pendingSaveDownloadRecord=record;
+  return false;
+}
+async function createSaveBackup(reason='自動保存',autoDownload=true){
+  const record=makeSaveBackupRecord(reason);
+  try{
+    await saveBackupPut(record);
+    await pruneSaveBackups();
+  }catch(errorObject){
+    console.warn('保存操作バックアップの端末内保存に失敗',errorObject);
+  }
+
+  if(autoDownload)tryDownloadSaveBackup(record);
+  renderSaveBackupStatus();
+  return record;
+}
+async function getSaveBackupRows(){
+  try{return await saveBackupGetAll()}catch{return []}
+}
+async function renderSaveBackupStatus(){
+  const status=$('saveBackupStatus'),list=$('saveBackupList');
+  if(!status||!list)return;
+  const rows=await getSaveBackupRows();
+  if(!rows.length){
+    status.innerHTML='まだ保存操作バックアップはありません。商品などを保存すると自動作成されます。';
+    list.innerHTML='<div class="empty">バックアップ履歴なし</div>';
+    return;
+  }
+  const latest=rows[0];
+  status.innerHTML=`最終：<b>${escapeHtml(formatBackupTime(latest.createdAt))}</b> <span class="backup-reason">${escapeHtml(latest.reason||'保存')}</span><br>
+    端末内 ${rows.length}/${SAVE_BACKUP_RETENTION}世代 ／ 保存操作ごとに自動作成`;
+  list.innerHTML=rows.slice(0,SAVE_BACKUP_RETENTION).map(row=>`
+    <div class="backup-row">
+      <div>
+        <div class="date">${escapeHtml(formatBackupTime(row.createdAt))}<span class="backup-reason">${escapeHtml(row.reason||'保存')}</span></div>
+        <div class="meta">商品 ${safeNum(row.data?.items?.length)}件・経費 ${safeNum(row.data?.taxExpenses?.length)}件</div>
+      </div>
+      <button class="btn btn-small" onclick="restoreSaveBackup('${escapeHtml(row.id)}')">復元</button>
+    </div>`).join('');
+}
+async function restoreLatestSaveBackup(){
+  const rows=await getSaveBackupRows();
+  if(!rows.length){toast('保存操作バックアップがありません');return}
+  await restoreSaveBackup(rows[0].id);
+}
+async function restoreSaveBackup(id){
+  try{
+    const record=await saveBackupGet(id);
+    if(!record?.data){toast('バックアップが見つかりません');return}
+    if(!confirm(`${formatBackupTime(record.createdAt)} のバックアップへ復元しますか？\n現在の状態は復元前バックアップとして保存します。`))return;
+
+    // 復元前の現在状態も1世代残す。JSONの自動DLはしない。
+    await createSaveBackup('復元前',false);
+    applyBackupData(record.data);
+    renderSaveBackupStatus();
+    toast(`${formatBackupTime(record.createdAt)} の状態へ復元しました`);
+  }catch(errorObject){
+    toast(`復元できませんでした：${errorObject.message||'エラー'}`);
+  }
+}
+
 function autoBackupGet(date){
   return openAutoBackupDB().then(db=>new Promise((resolve,reject)=>{
     const tx=db.transaction(AUTO_BACKUP_STORE,'readonly');
@@ -3514,6 +3697,25 @@ function installAutoDownloadGestureHandler(){
   if(autoDownloadHandlerInstalled)return;
   autoDownloadHandlerInstalled=true;
   const handler=()=>{
+    if(pendingSaveDownloadRecord){
+      const record=pendingSaveDownloadRecord;
+      pendingSaveDownloadRecord=null;
+      try{
+        downloadBackupNamed(record.data,saveBackupFileName(record.createdAt));
+        lastSaveBackupDownloadAt=Date.now();
+        if(pendingDailyDownloadRecord?.date===record.date){
+          pendingDailyDownloadRecord=null;
+          markAutoDownloaded(record.date);
+        }
+        renderSaveBackupStatus();renderAutoBackupStatus();
+        setTimeout(()=>toast(`保存バックアップを自動ダウンロードしました`),80);
+      }catch(errorObject){
+        pendingSaveDownloadRecord=record;
+        console.warn('保存バックアップの自動ダウンロード失敗',errorObject);
+      }
+      return;
+    }
+
     if(!pendingDailyDownloadRecord)return;
     const record=pendingDailyDownloadRecord;
     pendingDailyDownloadRecord=null;
@@ -3623,7 +3825,8 @@ async function restoreAutoBackup(date){
       if(fallback&&fallback.date===date)record=fallback;
     }
     if(!record||!record.data){toast('バックアップが見つかりません');return}
-    if(!confirm(`${date} の自動バックアップへ復元しますか？\n現在のデータは上書きされます。`))return;
+    if(!confirm(`${date} の日次バックアップへ復元しますか？\n現在の状態は復元前バックアップとして保存します。`))return;
+    await createSaveBackup('日次復元前',false);
     applyBackupData(record.data);
     toast(`${date} のバックアップから復元しました`);
   }catch(errorObject){
@@ -3639,7 +3842,7 @@ async function deleteAll(){
   if(!confirm('本当に削除しますか？削除前の自動バックアップを作成します。'))return;
   await ensureDailyBackup(true);
   items=[];pointEntries=[];pointUsages=[];packagingMaterials=[];taxExpenses=[];taxSettings={years:{}};settings={...DEFAULT_SETTINGS};
-  normalizeCandidateSettings();normalizeTaxSettings();saveAll();loadSettingsForm();renderTaxYearSelect();renderAll();toast('全データを削除しました');
+  normalizeCandidateSettings();normalizeTaxSettings();saveAll('全データ削除後');loadSettingsForm();renderTaxYearSelect();renderAll();toast('全データを削除しました');
 }
 function openShipping(){
   const groups=[['mercari','メルカリ'],['yahoo','Yahoo!フリマ・ヤフオク']];
@@ -3715,6 +3918,9 @@ window.runSedoriSelfTests=function(){
     test('バックアップ統合データ',Array.isArray(backupTest.items)&&Array.isArray(backupTest.pointEntries)&&Array.isArray(backupTest.packagingMaterials),backupTest.version);
     test('自動バックアップ保持日数',AUTO_BACKUP_RETENTION===14,String(AUTO_BACKUP_RETENTION));
     test('自動ダウンロードファイル名',backupFileName('2026-09-07')==='せどりバックアップ_2026-09-07.json',backupFileName('2026-09-07'));
+    test('保存操作バックアップ保持数',SAVE_BACKUP_RETENTION===30,String(SAVE_BACKUP_RETENTION));
+    const backupNameTest=saveBackupFileName('2026-09-12T00:44:00.000Z');
+    test('保存操作バックアップ時刻入り',backupNameTest.includes('せどり_自動バックアップ_')&&backupNameTest.endsWith('.json'),backupNameTest);
 
     items=[
       normalizeItem({id:'tax_open',name:'前年在庫',type:'sedori',source:'セカンドストリート',purchaseDate:'2025-12-01',date:'2025-12-01',cost:1000,status:'shipped',actualPrice:2000,price:2000,soldDate:'2026-02-01',ship:200,platform:'mercari',feeRate:.1}),
@@ -3773,6 +3979,21 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-12
+- 運転日報方式の「保存操作バックアップ」を追加
+- 商品登録・商品編集・発送後編集・売れた記録・発送完了・商品削除・ポイント登録・梱包材変更・設定保存・確定申告経費など、主要データを保存するたびに自動バックアップ
+- 保存操作バックアップはIndexedDBへ最大30世代を保持し、同じ日でも時刻別に複数世代を保存
+- 自動JSONファイル名を「せどり_自動バックアップ_YYYY-MM-DD_HH-MM.json」とし、保存操作時に自動ダウンロード
+- Android Chrome等で保存直後の自動ダウンロードが制限された場合は、次の画面タップで自動ダウンロード
+- 同一保存処理で複数回saveAllが走った場合の連続ダウンロードを抑制
+- 設定画面に保存操作バックアップの最終時刻・保存理由・30世代履歴・個別復元を追加
+- 「今すぐ保存」「最新を復元」を追加
+- バックアップから復元する直前に、現在の状態を「復元前」として自動保存する安全処理を追加
+- 従来の1日1回・14日分の日次バックアップも第2の安全網として維持
+- 手動JSONは「せどり_手動バックアップ_YYYY-MM-DD_HH-MM.json」に変更
+- 白色申告・経費帳・楽天ポイント・梱包材・損益分岐点・発送後編集など既存機能をすべて維持
+- schema v16へ更新
+
 2026-09-11
 - 初めての白色申告向け「確定申告」タブを新設
 - 白色申告を「売れた商品を記録 → 商品以外の経費を記録 → 12/31棚卸 → 収支内訳書へ転記」の4ステップで説明
