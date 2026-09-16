@@ -489,6 +489,43 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 
     <div class="backup-system-box">
       <div class="backup-system-title">
+        <span>Google Drive自動バックアップ</span><span id="driveBackupBadge" class="backup-system-badge">設定待ち</span>
+      </div>
+      <div class="backup-system-meta">運転日報と同じApps Script方式です。1日1回自動保存し、必要な時は「今すぐDriveへ保存」も使えます。</div>
+      <div id="driveBackupStatus" class="backup-status">
+        <strong>Google Drive</strong><br>確認中…
+      </div>
+      <div class="form-grid one">
+        <div>
+          <label>Apps Script ウェブアプリURL</label>
+          <input id="driveGasUrl" type="url" autocomplete="off" oninput="saveDriveBackupSettings(false)" onblur="saveDriveBackupSettings(true)">
+        </div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label>バックアップ用合言葉</label>
+          <input id="driveGasKey" type="password" autocomplete="off" placeholder="Apps Scriptと同じ合言葉" oninput="saveDriveBackupSettings(false)" onblur="saveDriveBackupSettings(true)">
+        </div>
+        <div>
+          <label>Driveに残す件数</label>
+          <select id="driveRetention" onchange="saveDriveBackupSettings(true)">
+            <option value="5">5件</option><option value="6">6件</option><option value="7">7件</option><option value="8">8件</option><option value="9">9件</option><option value="10">10件</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin:2px 0 10px;color:var(--text);font-size:.74rem">
+        <input id="driveBackupEnabled" type="checkbox" style="width:auto" onchange="saveDriveBackupSettings(true)">
+        Google Driveの1日1回自動バックアップを有効にする
+      </label>
+      <div class="split-buttons">
+        <button class="btn btn-blue" onclick="testDriveBackupConnection()">接続テスト</button>
+        <button class="btn btn-green" onclick="manualDriveBackup()">今すぐDriveへ保存</button>
+      </div>
+      <div class="note" style="margin-top:8px">合言葉はこの端末だけに保存し、JSONバックアップやDriveへ送るバックアップ本体には含めません。</div>
+    </div>
+
+    <div class="backup-system-box">
+      <div class="backup-system-title">
         <span>日次バックアップ</span><span class="backup-system-badge">14日分</span>
       </div>
       <div class="backup-system-meta">その日に初めてアプリを開いた時のバックアップです。</div>
@@ -975,12 +1012,25 @@ const AUTO_BACKUP_STORE='dailyBackups';
 const AUTO_BACKUP_RETENTION=14;
 const SAVE_BACKUP_STORE='saveBackups';
 const SAVE_BACKUP_RETENTION=30;
+const DRIVE_BACKUP_DEFAULT_URL='https://script.google.com/macros/s/AKfycbwrWN4sHPpXwYK8ACB2FfSvWchfqpq8Vu8CrhduL2zWWVkMUdzowPAZAE9uZUTaeEUP/exec';
+const DRIVE_BACKUP_MESSAGE_TYPE='SEDORI_GAS_BACKUP_RESULT';
+const DRIVE_BACKUP_STORAGE={
+  url:'sedori_drive_gas_url',
+  key:'sedori_drive_gas_key',
+  retention:'sedori_drive_gas_retention',
+  enabled:'sedori_drive_gas_enabled',
+  lastDate:'sedori_drive_gas_last_date',
+  lastSuccess:'sedori_drive_gas_last_success',
+  lastFile:'sedori_drive_gas_last_file'
+};
+let pendingDriveBackupRequest=null;
+let driveBackupSequence=0;
 let pendingDailyDownloadRecord=null;
 let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=16;
+const SCHEMA_VERSION=17;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1603,11 +1653,12 @@ function init(){
   $('aDate').value=today();$('aPurchaseDate').value=today();$('sDate').value=today();
   $('uDate').value=today();$('mPointDate').value=today();
   loadSettingsForm();
+  loadDriveBackupSettings();
   renderTaxYearSelect();
   renderAll();
   installAutoDownloadGestureHandler();
   autoSaveBackupReady=true;
-  setTimeout(()=>{ensureDailyBackup(false);renderSaveBackupStatus();},0);
+  setTimeout(()=>{ensureDailyBackup(false);renderSaveBackupStatus();ensureDriveDailyBackup(false);},0);
 }
 function renderAll(){
   applyAutomaticExpiry();
@@ -3358,7 +3409,7 @@ function downloadTaxCSV(){
 
 function renderData(){
   $('dataCount').textContent=`商品 ${items.length}件・経費 ${taxExpenses.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
-  loadSettingsForm();renderPackagingInventory();renderSaveBackupStatus();renderAutoBackupStatus();
+  loadSettingsForm();loadDriveBackupSettings();renderPackagingInventory();renderSaveBackupStatus();renderAutoBackupStatus();renderDriveBackupStatus();
 }
 function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
 function makeCSV(){
@@ -3403,9 +3454,185 @@ function downloadPointCSV(){
   downloadBlob(new Blob(['\ufeff'+makePointCSV()],{type:'text/csv'}),`sedori_points_${today()}.csv`);
   toast('ポイントCSVを保存しました');
 }
+function driveGasValidUrl(url){
+  return /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec(?:[?#].*)?$/i.test(String(url||'').trim());
+}
+function driveBackupSettings(){
+  const rawRetention=parseInt(localStorage.getItem(DRIVE_BACKUP_STORAGE.retention)||'7',10);
+  return {
+    url:String(localStorage.getItem(DRIVE_BACKUP_STORAGE.url)||DRIVE_BACKUP_DEFAULT_URL).trim(),
+    key:String(localStorage.getItem(DRIVE_BACKUP_STORAGE.key)||'').trim(),
+    retention:Math.max(5,Math.min(10,Number.isFinite(rawRetention)?rawRetention:7)),
+    enabled:localStorage.getItem(DRIVE_BACKUP_STORAGE.enabled)!=='0'
+  };
+}
+function driveBackupReady(){
+  const current=driveBackupSettings();
+  return current.enabled&&driveGasValidUrl(current.url)&&Boolean(current.key);
+}
+function loadDriveBackupSettings(){
+  const current=driveBackupSettings();
+  if($('driveGasUrl'))$('driveGasUrl').value=current.url;
+  if($('driveGasKey'))$('driveGasKey').value=current.key;
+  if($('driveRetention'))$('driveRetention').value=String(current.retention);
+  if($('driveBackupEnabled'))$('driveBackupEnabled').checked=current.enabled;
+  renderDriveBackupStatus();
+}
+function saveDriveBackupSettings(showSaved=true){
+  const url=$('driveGasUrl')?String($('driveGasUrl').value||'').trim():driveBackupSettings().url;
+  const key=$('driveGasKey')?String($('driveGasKey').value||'').trim():driveBackupSettings().key;
+  const retention=$('driveRetention')?Math.max(5,Math.min(10,parseInt($('driveRetention').value||'7',10)||7)):driveBackupSettings().retention;
+  const enabled=$('driveBackupEnabled')?$('driveBackupEnabled').checked:driveBackupSettings().enabled;
+  localStorage.setItem(DRIVE_BACKUP_STORAGE.url,url||DRIVE_BACKUP_DEFAULT_URL);
+  localStorage.setItem(DRIVE_BACKUP_STORAGE.key,key);
+  localStorage.setItem(DRIVE_BACKUP_STORAGE.retention,String(retention));
+  localStorage.setItem(DRIVE_BACKUP_STORAGE.enabled,enabled?'1':'0');
+  renderDriveBackupStatus();
+  if(showSaved){
+    toast('Google Driveバックアップ設定を保存しました');
+    if(driveBackupReady())setTimeout(()=>ensureDriveDailyBackup(false),100);
+  }
+}
+function renderDriveBackupStatus(extra=''){
+  const status=$('driveBackupStatus');
+  const badge=$('driveBackupBadge');
+  if(!status||!badge)return;
+  const current=driveBackupSettings();
+  const lastSuccess=localStorage.getItem(DRIVE_BACKUP_STORAGE.lastSuccess)||'';
+  const lastFile=localStorage.getItem(DRIVE_BACKUP_STORAGE.lastFile)||'';
+  if(!current.enabled){
+    badge.textContent='OFF';
+    status.innerHTML='<strong>Google Drive：OFF</strong><br>自動バックアップは停止中です。';
+    return;
+  }
+  if(!driveGasValidUrl(current.url)){
+    badge.textContent='URL確認';
+    status.innerHTML='<strong>Google Drive：設定待ち</strong><br>Apps ScriptのウェブアプリURLを確認してください。';
+    return;
+  }
+  if(!current.key){
+    badge.textContent='合言葉待ち';
+    status.innerHTML='<strong>Google Drive：設定待ち</strong><br>Apps Scriptで設定したバックアップ用合言葉を入力してください。';
+    return;
+  }
+  badge.textContent='ON';
+  let detail=lastSuccess?`最終成功：${escapeHtml(formatBackupTime(lastSuccess))}`:'まだDriveへの保存成功記録はありません。';
+  if(lastFile)detail+=`<br>最新ファイル：${escapeHtml(lastFile)}`;
+  if(extra)detail+=`<br>${escapeHtml(extra)}`;
+  status.innerHTML=`<strong>Google Drive：ON</strong><br>${detail}<br>保持 ${current.retention}件`; 
+}
+function buildDriveBackupPayload(mode='manual'){
+  const payload=buildBackupData(`drive-${mode}`);
+  payload.app='sedori';
+  payload.environment='PROD';
+  payload.appsScriptBackup=true;
+  payload.backupMode=mode;
+  payload.requestedAt=new Date().toISOString();
+  return payload;
+}
+function cleanupDriveRequest(){
+  const current=pendingDriveBackupRequest;
+  if(!current)return;
+  clearTimeout(current.timer);
+  try{current.form?.remove()}catch(errorObject){}
+  try{current.iframe?.remove()}catch(errorObject){}
+  pendingDriveBackupRequest=null;
+}
+function driveGasPost(action,mode='manual',options={}){
+  saveDriveBackupSettings(false);
+  const current=driveBackupSettings();
+  if(!driveGasValidUrl(current.url)){
+    toast('Apps ScriptのURLを確認してください');
+    renderDriveBackupStatus('URLエラー');
+    return false;
+  }
+  if(!current.key){
+    toast('バックアップ用合言葉を入力してください');
+    renderDriveBackupStatus('合言葉が未設定です');
+    return false;
+  }
+  if(pendingDriveBackupRequest){
+    if(options.silent)return false;
+    toast('Google Driveと通信中です');
+    return false;
+  }
+  const frameName=`sedoriDriveGasFrame_${Date.now()}_${++driveBackupSequence}`;
+  const iframe=document.createElement('iframe');
+  iframe.name=frameName;
+  iframe.style.display='none';
+  iframe.setAttribute('aria-hidden','true');
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action=current.url;
+  form.target=frameName;
+  form.style.display='none';
+  const params={key:current.key,action,mode,retention:String(current.retention)};
+  if(action==='backup')params.payload=JSON.stringify(buildDriveBackupPayload(mode));
+  Object.entries(params).forEach(([name,value])=>{
+    const input=document.createElement('input');
+    input.type='hidden';input.name=name;input.value=String(value??'');form.appendChild(input);
+  });
+  document.body.appendChild(iframe);
+  document.body.appendChild(form);
+  const timer=setTimeout(()=>{
+    if(!pendingDriveBackupRequest||pendingDriveBackupRequest.iframe!==iframe)return;
+    cleanupDriveRequest();
+    renderDriveBackupStatus('応答がありませんでした。通信状態を確認してください。');
+    if(!options.silent)toast('Google Driveの応答を確認できませんでした');
+  },25000);
+  pendingDriveBackupRequest={iframe,form,timer,action,mode,silent:Boolean(options.silent)};
+  renderDriveBackupStatus(action==='ping'?'接続確認中…':'Driveへ保存中…');
+  try{form.submit()}catch(errorObject){
+    cleanupDriveRequest();
+    renderDriveBackupStatus('送信に失敗しました。');
+    if(!options.silent)toast('Google Driveへの送信に失敗しました');
+    return false;
+  }
+  return true;
+}
+function handleDriveBackupMessage(event){
+  const data=event?.data;
+  const current=pendingDriveBackupRequest;
+  if(!current||!data||data.type!==DRIVE_BACKUP_MESSAGE_TYPE)return;
+  if(current.iframe?.contentWindow&&event.source!==current.iframe.contentWindow)return;
+  const action=current.action;
+  const mode=current.mode;
+  const silent=current.silent;
+  cleanupDriveRequest();
+  if(!data.ok){
+    renderDriveBackupStatus(`エラー：${data.error||'保存できませんでした'}`);
+    if(!silent)toast(`Driveエラー：${data.error||'保存できませんでした'}`);
+    return;
+  }
+  if(action==='ping'){
+    renderDriveBackupStatus('接続テスト成功');
+    toast('Google Driveバックアップ接続OK');
+    return;
+  }
+  const now=new Date().toISOString();
+  localStorage.setItem(DRIVE_BACKUP_STORAGE.lastSuccess,now);
+  if(data.fileName)localStorage.setItem(DRIVE_BACKUP_STORAGE.lastFile,String(data.fileName));
+  if(mode==='daily-auto')localStorage.setItem(DRIVE_BACKUP_STORAGE.lastDate,today());
+  renderDriveBackupStatus(data.duplicate?'本日分はすでに保存済みです。':`Driveへ保存しました${data.kept?`（${data.kept}件保持）`:''}`);
+  if(!silent)toast(data.duplicate?'本日分はDriveに保存済みです':'Google Driveへバックアップしました');
+}
+function testDriveBackupConnection(){driveGasPost('ping','manual',{silent:false})}
+function manualDriveBackup(){driveGasPost('backup','manual',{silent:false})}
+function ensureDriveDailyBackup(force=false){
+  const current=driveBackupSettings();
+  if(!current.enabled||!driveBackupReady())return false;
+  const lastDate=localStorage.getItem(DRIVE_BACKUP_STORAGE.lastDate)||'';
+  if(!force&&lastDate===today())return false;
+  return driveGasPost('backup','daily-auto',{silent:!force});
+}
+window.addEventListener('message',handleDriveBackupMessage);
+window.addEventListener('online',()=>setTimeout(()=>ensureDriveDailyBackup(false),250));
+
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-09-operation-backup-v16',
+    app:'sedori',
+    environment:'PROD',
+    version:'2026-09-drive-backup-v17',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3916,6 +4143,10 @@ window.runSedoriSelfTests=function(){
     test('旧カテゴリ保持',migratedSource.cat==='古着',migratedSource.cat);
     const backupTest=buildBackupData('self-test');
     test('バックアップ統合データ',Array.isArray(backupTest.items)&&Array.isArray(backupTest.pointEntries)&&Array.isArray(backupTest.packagingMaterials),backupTest.version);
+    test('バックアップ識別子',backupTest.app==='sedori'&&backupTest.environment==='PROD',`${backupTest.app}/${backupTest.environment}`);
+    test('Drive Apps Script URL',driveGasValidUrl(DRIVE_BACKUP_DEFAULT_URL),DRIVE_BACKUP_DEFAULT_URL);
+    const drivePayloadTest=buildDriveBackupPayload('manual');
+    test('Driveバックアップ形式',drivePayloadTest.app==='sedori'&&drivePayloadTest.appsScriptBackup===true&&drivePayloadTest.backupMode==='manual',drivePayloadTest.version);
     test('自動バックアップ保持日数',AUTO_BACKUP_RETENTION===14,String(AUTO_BACKUP_RETENTION));
     test('自動ダウンロードファイル名',backupFileName('2026-09-07')==='せどりバックアップ_2026-09-07.json',backupFileName('2026-09-07'));
     test('保存操作バックアップ保持数',SAVE_BACKUP_RETENTION===30,String(SAVE_BACKUP_RETENTION));
@@ -3979,6 +4210,19 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-16
+- 運転日報と同じGoogle Apps Script方式のGoogle Drive自動バックアップを追加
+- せどり専用Apps ScriptウェブアプリURLを初期設定済みにし、端末ごとに合言葉だけ設定できる構成へ変更
+- Drive自動バックアップは1日1回、手動バックアップは任意のタイミングで実行可能
+- Driveへ残すバックアップ件数を5〜10件から選択可能
+- Apps Scriptの接続テスト、最終成功日時、最新ファイル名、ON/OFF状態をデータ画面に表示
+- Drive送信結果はhidden iframe + postMessageで確認し、CORSに依存しない運転日報方式を採用
+- バックアップ本体に app=sedori / environment=PROD を追加し、運転日報データとの混在を防止
+- Drive用合言葉はlocalStorageの専用領域だけに保存し、JSONバックアップ本体には含めない
+- オフライン後の再接続時にも当日分のDrive自動バックアップを再試行
+- 従来の保存操作30世代・日次14日分・JSON自動ダウンロード・白色申告・楽天ポイント・梱包材・損益分岐点・発送後編集をすべて維持
+- schema v17へ更新
+
 2026-09-12
 - 運転日報方式の「保存操作バックアップ」を追加
 - 商品登録・商品編集・発送後編集・売れた記録・発送完了・商品削除・ポイント登録・梱包材変更・設定保存・確定申告経費など、主要データを保存するたびに自動バックアップ
