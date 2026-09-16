@@ -537,8 +537,8 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
     <div class="help">自動ダウンロードとは別に、必要な時は下のボタンから同じJSONバックアップを再ダウンロードできます。</div>
     <button class="btn btn-blue full" onclick="downloadBackup()">JSONバックアップを保存</button>
     <label class="btn full" style="display:block;text-align:center;margin-top:8px">
-      JSONバックアップを復元
-      <input type="file" accept=".json" onchange="restoreBackup(event)" style="display:none">
+      JSON / Driveバックアップを復元
+      <input type="file" accept=".json,application/json,text/plain,.txt" onchange="restoreBackup(event)" style="display:none">
     </label>
   </div>
 
@@ -1023,7 +1023,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=19;
+const SCHEMA_VERSION=20;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -4258,6 +4258,14 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-16
+- Google Drive上のバックアップが拡張子.jsonでもMIMEタイプtext/plain（Drive上では「TXTドキュメント」表示）になるケースに対応
+- 復元ファイル選択で .json / application/json に加えて text/plain / .txt を選択可能に変更
+- AndroidのGoogle Driveファイル選択画面で灰色になっていたDriveバックアップを直接選択して復元できるよう改善
+- 復元時は従来どおりJSON.parseで内容を検証するため、TXT扱いでもJSON内容でないファイルは復元せずエラー表示
+- 在庫・分析・ポイント・確定申告・Drive自動バックアップ・保存操作30世代・日次14日分など既存機能をすべて維持
+- schema v20へ更新
+
 2026-09-16
 - Google Apps ScriptからpostMessage本文を受信できないブラウザでも、隠しiframeの応答ページ読み込み完了を検知して通信完了判定できるフォールバックを追加
 - 接続テストはApps Script応答ページ到達時に「通信成立」と表示し、従来の誤った「応答がありません」表示を抑制
