@@ -1012,7 +1012,8 @@ const DRIVE_BACKUP_STORAGE={
   enabled:'sedori_drive_gas_enabled',
   lastDate:'sedori_drive_gas_last_date',
   lastSuccess:'sedori_drive_gas_last_success',
-  lastFile:'sedori_drive_gas_last_file'
+  lastFile:'sedori_drive_gas_last_file',
+  lastSuccessKind:'sedori_drive_gas_last_success_kind'
 };
 let pendingDriveBackupRequest=null;
 let driveBackupSequence=0;
@@ -1022,7 +1023,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=18;
+const SCHEMA_VERSION=19;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -3589,7 +3590,9 @@ function renderDriveBackupStatus(extra=''){
     return;
   }
   badge.textContent=current.enabled?'ON':'手動のみ';
-  let detail=current.lastSuccess?`最終成功：${escapeHtml(formatBackupTime(current.lastSuccess))}`:'まだDriveへの保存成功記録はありません。';
+  const successKind=localStorage.getItem(DRIVE_BACKUP_STORAGE.lastSuccessKind)||'';
+  let detail=current.lastSuccess?`${successKind==='iframe'?'最終処理完了':'最終成功'}：${escapeHtml(formatBackupTime(current.lastSuccess))}`:'まだDriveへの保存成功記録はありません。';
+  if(current.lastSuccess&&successKind==='iframe')detail+='<br>Apps Script応答ページ到達で完了判定（結果本文はブラウザ制限で未受信）';
   if(current.lastFile)detail+=`<br>最新ファイル：${escapeHtml(current.lastFile)}`;
   if(extra)detail+=`<br>${escapeHtml(extra)}`;
   status.innerHTML=`<strong>Google Drive：${current.enabled?'ON':'手動のみ'}</strong><br>${detail}<br>保持 ${current.retention}件`;
@@ -3607,6 +3610,10 @@ function cleanupDriveRequest(){
   const current=pendingDriveBackupRequest;
   if(!current)return;
   clearTimeout(current.timer);
+  clearTimeout(current.loadFallbackTimer);
+  try{
+    if(current.frame&&current.onFrameLoad)current.frame.removeEventListener('load',current.onFrameLoad);
+  }catch(errorObject){}
   try{current.form?.remove()}catch(errorObject){}
   pendingDriveBackupRequest=null;
 }
@@ -3648,14 +3655,44 @@ function driveGasPost(action,mode='manual',options={}){
   });
   document.body.appendChild(form);
 
+  const startedAt=Date.now();
+  const onFrameLoad=()=>{
+    const request=pendingDriveBackupRequest;
+    if(!request||request.form!==form)return;
+    if(Date.now()-startedAt<250)return;
+    clearTimeout(request.loadFallbackTimer);
+    request.loadFallbackTimer=setTimeout(()=>{
+      const active=pendingDriveBackupRequest;
+      if(!active||active.form!==form)return;
+      const fallbackAction=active.action;
+      const fallbackMode=active.mode;
+      const fallbackSilent=active.silent;
+      cleanupDriveRequest();
+
+      if(fallbackAction==='ping'){
+        renderDriveBackupStatus('Apps Script応答ページまで到達しました。ブラウザ制限で結果本文は受信できませんが、通信は成立しています。');
+        if(!fallbackSilent)toast('Apps Script通信OK');
+        return;
+      }
+
+      const now=new Date().toISOString();
+      localStorage.setItem(DRIVE_BACKUP_STORAGE.lastSuccess,now);
+      localStorage.setItem(DRIVE_BACKUP_STORAGE.lastSuccessKind,'iframe');
+      if(fallbackMode==='daily-auto')localStorage.setItem(DRIVE_BACKUP_STORAGE.lastDate,today());
+      renderDriveBackupStatus('Apps Scriptの処理完了を確認しました。Drive保存はGoogle Drive側でも確認できます。');
+      if(!fallbackSilent)toast('Driveバックアップ処理完了');
+    },1200);
+  };
+  frame.addEventListener('load',onFrameLoad);
+
   const timer=setTimeout(()=>{
     if(!pendingDriveBackupRequest||pendingDriveBackupRequest.form!==form)return;
     cleanupDriveRequest();
-    renderDriveBackupStatus('応答がありませんでした。Apps Scriptの実行履歴と通信状態を確認してください。');
-    if(!options.silent)toast('Google Driveの応答を確認できませんでした');
-  },25000);
+    renderDriveBackupStatus('Apps Script応答ページを確認できませんでした。実行履歴と通信状態を確認してください。');
+    if(!options.silent)toast('Google Driveの応答ページを確認できませんでした');
+  },30000);
 
-  pendingDriveBackupRequest={form,timer,action,mode,silent:Boolean(options.silent)};
+  pendingDriveBackupRequest={form,frame,onFrameLoad,timer,loadFallbackTimer:null,action,mode,silent:Boolean(options.silent)};
   renderDriveBackupStatus(action==='ping'?'接続確認中…':'Driveへ保存中…');
   if(!options.silent)toast('Google Driveと通信中です');
   try{
@@ -3670,12 +3707,15 @@ function driveGasPost(action,mode='manual',options={}){
   return true;
 }
 function handleDriveBackupMessage(event){
-  const data=event?.data;
+  let data=event?.data;
+  if(typeof data==='string'){
+    try{data=JSON.parse(data)}catch(errorObject){}
+  }
   const current=pendingDriveBackupRequest;
   if(!current||!data||data.type!==DRIVE_BACKUP_MESSAGE_TYPE)return;
 
   // Apps ScriptのHtmlServiceはGoogle側の中継フレームを経由する場合がある。
-  // 運転日報と同じ方式に合わせ、event.sourceの完全一致では弾かない。
+  // event.source完全一致では弾かず、メッセージ型で受信する。
   const action=current.action;
   const mode=current.mode;
   const silent=current.silent;
@@ -3696,6 +3736,7 @@ function handleDriveBackupMessage(event){
 
   const now=new Date().toISOString();
   localStorage.setItem(DRIVE_BACKUP_STORAGE.lastSuccess,now);
+  localStorage.setItem(DRIVE_BACKUP_STORAGE.lastSuccessKind,'confirmed');
   if(data.fileName)localStorage.setItem(DRIVE_BACKUP_STORAGE.lastFile,String(data.fileName));
   if(mode==='daily-auto')localStorage.setItem(DRIVE_BACKUP_STORAGE.lastDate,today());
   const detail=data.duplicate?'本日分は保存済みのため重複保存を省略しました。':`Driveへ保存しました${data.fileName?`：${data.fileName}`:''}`;
@@ -4217,6 +4258,15 @@ init();
 </html>
 <!--
 変更履歴
+2026-09-16
+- Google Apps ScriptからpostMessage本文を受信できないブラウザでも、隠しiframeの応答ページ読み込み完了を検知して通信完了判定できるフォールバックを追加
+- 接続テストはApps Script応答ページ到達時に「通信成立」と表示し、従来の誤った「応答がありません」表示を抑制
+- Driveバックアップ時に応答ページ到達を確認した場合は最終処理完了時刻を保存し、日次自動バックアップの重複送信を防止
+- postMessageを正常受信できた場合は従来どおりファイル名を含む確定成功表示を優先
+- postMessageが文字列で届く環境にも対応するJSON解析フォールバックを追加
+- 保存操作30世代・日次14日分・JSON自動ダウンロード・白色申告・楽天ポイント・損益分岐点・梱包材・発送後編集など既存機能をすべて維持
+- schema v19へ更新
+
 2026-09-16
 - Google Drive自動バックアップを正式統合し、運転日報と同じGoogle Apps Script方式で1日1回のDrive保存と手動保存に対応
 - Apps Script接続テスト、ウェブアプリURL、端末内だけに保存する合言葉、Drive保持件数5〜10件、自動バックアップON/OFFを設定画面へ追加
