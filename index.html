@@ -512,7 +512,29 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
         <button class="btn btn-green" onclick="manualDriveBackup()">今すぐDriveへ保存</button>
       </div>
       <div class="note" style="margin-top:8px">合言葉はこの端末だけに保存し、JSONバックアップやDriveへ送るバックアップ本体には含めません。</div>
+
+      <div style="height:12px"></div>
+      <div class="backup-system-box" style="margin:0;background:#fff">
+        <div class="backup-system-title">
+          <span>2台共有同期</span><span id="driveSyncBadge" class="backup-system-badge">OFF</span>
+        </div>
+        <div class="backup-system-meta">メイン・サブの2台で同じ「せどり_共有データ.json」を使います。アプリ起動時に最新を取り込み、保存操作後は自動で共有データへ反映します。7件バックアップは復旧用として別に残ります。</div>
+        <div id="driveSyncStatus" class="backup-status">
+          <strong>共有同期：OFF</strong><br>有効にすると、2台の変更をDrive上の共有データへまとめます。
+        </div>
+        <div class="form-grid one">
+          <div><label>この端末の名前</label><input id="driveSyncDeviceName" type="text" autocomplete="off" placeholder="例：メインスマホ / サブスマホ" oninput="saveDriveSyncSettings(false)" onblur="saveDriveSyncSettings(true)"></div>
+        </div>
+        <label class="inline-check" style="margin-top:2px"><input id="driveSyncEnabled" type="checkbox" onchange="saveDriveSyncSettings(true)"><span>2台共有同期を有効にする</span></label>
+        <div class="split-buttons">
+          <button class="btn btn-blue" onclick="manualDriveSyncPull()">最新を取り込む</button>
+          <button class="btn btn-green" onclick="manualDriveSyncPush()">共有データへ保存</button>
+        </div>
+        <div class="note" style="margin-top:8px">別の商品を2台で変更した場合は自動で結合します。同じ商品を両方で変更した場合も、項目ごとに可能な範囲で結合し、競合が残る場合は更新時刻を使って安全側にまとめます。</div>
+      </div>
+
       <iframe id="driveBackupFrame" name="sedoriDriveGasFrame" style="display:none;width:0;height:0;border:0" aria-hidden="true"></iframe>
+      <iframe id="driveSyncFrame" name="sedoriDriveSyncFrame" style="display:none;width:0;height:0;border:0" aria-hidden="true"></iframe>
     </div>
 
     <div class="backup-system-box">
@@ -1015,15 +1037,30 @@ const DRIVE_BACKUP_STORAGE={
   lastFile:'sedori_drive_gas_last_file',
   lastSuccessKind:'sedori_drive_gas_last_success_kind'
 };
+const DRIVE_SYNC_STORAGE={
+  enabled:'sedori_drive_sync_enabled',
+  deviceId:'sedori_drive_sync_device_id',
+  deviceName:'sedori_drive_sync_device_name',
+  revision:'sedori_drive_sync_revision',
+  lastSync:'sedori_drive_sync_last_sync',
+  lastStatus:'sedori_drive_sync_last_status',
+  base:'sedori_drive_sync_base'
+};
 let pendingDriveBackupRequest=null;
 let driveBackupSequence=0;
 let driveDailyArmTimer=null;
+let pendingDriveSyncRequest=null;
+let driveSyncSequence=0;
+let driveSyncPushTimer=null;
+let driveSyncPullTimer=null;
+let driveSyncApplyInProgress=false;
+let syncLastLocalSnapshot=null;
 let pendingDailyDownloadRecord=null;
 let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=20;
+const SCHEMA_VERSION=21;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1356,6 +1393,7 @@ function toast(text){
 }
 function setSaveState(text){$('saveState').textContent=text}
 function saveAll(backupReason=''){
+  if(backupReason&&!driveSyncApplyInProgress)stampChangedSyncRecords();
   setSaveState('保存中…');
   localStorage.setItem(STORAGE.items,JSON.stringify(items));
   localStorage.setItem(STORAGE.points,JSON.stringify(pointEntries));
@@ -1365,8 +1403,10 @@ function saveAll(backupReason=''){
   localStorage.setItem(STORAGE.taxExpenses,JSON.stringify(taxExpenses));
   localStorage.setItem(STORAGE.taxSettings,JSON.stringify(taxSettings));
   localStorage.setItem(STORAGE.schema,String(SCHEMA_VERSION));
+  captureSyncLocalSnapshot();
   setSaveState('保存済み');
   if(autoSaveBackupReady&&backupReason)createSaveBackup(backupReason,true);
+  if(backupReason&&!driveSyncApplyInProgress)scheduleDriveSharedSyncPush(backupReason);
 }
 function normalizeItem(raw,index=0){
   const item={...raw};
@@ -1647,6 +1687,7 @@ function init(){
   $('uDate').value=today();$('mPointDate').value=today();
   loadSettingsForm();
   loadDriveBackupSettings();
+  loadDriveSyncSettings();
   renderTaxYearSelect();
   renderAll();
   installAutoDownloadGestureHandler();
@@ -1655,7 +1696,9 @@ function init(){
     ensureDailyBackup(false);
     renderSaveBackupStatus();
     renderDriveBackupStatus();
+    renderDriveSyncStatus();
     armDriveDailyBackup();
+    armDriveSharedSyncPull(2200);
   },0);
 }
 function renderAll(){
@@ -3407,7 +3450,7 @@ function downloadTaxCSV(){
 
 function renderData(){
   $('dataCount').textContent=`商品 ${items.length}件・経費 ${taxExpenses.length}件・ポイント明細 ${pointEntries.length}件・使用履歴 ${pointUsages.length}件・梱包材 ${packagingMaterials.length}種`;
-  loadSettingsForm();renderPackagingInventory();renderSaveBackupStatus();renderDriveBackupStatus();renderAutoBackupStatus();
+  loadSettingsForm();renderPackagingInventory();renderSaveBackupStatus();renderDriveBackupStatus();renderDriveSyncStatus();renderAutoBackupStatus();
 }
 function csvEscape(value){return `"${String(value??'').replace(/"/g,'""')}"`}
 function makeCSV(){
@@ -3454,7 +3497,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-09-drive-backup-v18',
+    version:'2026-10-drive-shared-sync-v21',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3574,6 +3617,7 @@ function loadDriveBackupSettings(){
   if($('driveGasRetention'))$('driveGasRetention').value=String(current.retention);
   if($('driveGasEnabled'))$('driveGasEnabled').checked=current.enabled;
   renderDriveBackupStatus();
+  renderDriveSyncStatus();
 }
 function renderDriveBackupStatus(extra=''){
   const status=$('driveBackupStatus'),badge=$('driveBackupBadge');
@@ -3756,10 +3800,359 @@ function armDriveDailyBackup(){
   },1200);
 }
 document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden)armDriveDailyBackup();
+  if(!document.hidden){armDriveDailyBackup();armDriveSharedSyncPull(500)}
 });
-window.addEventListener('online',armDriveDailyBackup);
+window.addEventListener('online',()=>{armDriveDailyBackup();armDriveSharedSyncPull(500)});
 
+/* =========================================================
+   Google Drive 2台共有同期
+   バックアップとは別に「せどり_共有データ.json」を1つだけ持つ。
+   - 起動/再表示時: pull
+   - 保存操作後: push
+   - revision競合時: 3-way merge後に再push
+========================================================= */
+function getDriveSyncDeviceId(){
+  let id=String(localStorage.getItem(DRIVE_SYNC_STORAGE.deviceId)||'');
+  if(!id){
+    id=uid('device');
+    localStorage.setItem(DRIVE_SYNC_STORAGE.deviceId,id);
+  }
+  return id;
+}
+function driveSyncSettings(){
+  return {
+    enabled:localStorage.getItem(DRIVE_SYNC_STORAGE.enabled)==='1',
+    deviceId:getDriveSyncDeviceId(),
+    deviceName:String(localStorage.getItem(DRIVE_SYNC_STORAGE.deviceName)||'').trim()||'未設定端末',
+    revision:Math.max(0,parseInt(localStorage.getItem(DRIVE_SYNC_STORAGE.revision)||'0',10)||0),
+    lastSync:String(localStorage.getItem(DRIVE_SYNC_STORAGE.lastSync)||''),
+    lastStatus:String(localStorage.getItem(DRIVE_SYNC_STORAGE.lastStatus)||'')
+  };
+}
+function saveDriveSyncSettings(showSaved=true){
+  const enabled=$('driveSyncEnabled'),name=$('driveSyncDeviceName');
+  if(enabled)localStorage.setItem(DRIVE_SYNC_STORAGE.enabled,enabled.checked?'1':'0');
+  if(name)localStorage.setItem(DRIVE_SYNC_STORAGE.deviceName,String(name.value||'').trim());
+  renderDriveSyncStatus();
+  if(showSaved)toast('2台共有同期の設定を保存しました');
+  if(driveSyncSettings().enabled)armDriveSharedSyncPull(300);
+}
+function loadDriveSyncSettings(){
+  const current=driveSyncSettings();
+  if($('driveSyncEnabled'))$('driveSyncEnabled').checked=current.enabled;
+  if($('driveSyncDeviceName'))$('driveSyncDeviceName').value=current.deviceName==='未設定端末'?'':current.deviceName;
+  renderDriveSyncStatus();
+}
+function renderDriveSyncStatus(extra=''){
+  const status=$('driveSyncStatus'),badge=$('driveSyncBadge');
+  if(!status||!badge)return;
+  const sync=driveSyncSettings();
+  const drive=driveBackupSettings();
+  if(!driveGasValidUrl(drive.url)||!drive.key){
+    badge.textContent='設定待ち';
+    status.innerHTML='<strong>共有同期：設定待ち</strong><br>先にApps Script URLと合言葉を設定してください。';
+    return;
+  }
+  badge.textContent=sync.enabled?'ON':'OFF';
+  let detail=sync.lastSync?`最終同期：${escapeHtml(formatBackupTime(sync.lastSync))} / revision ${sync.revision}`:'まだ共有同期していません。';
+  if(sync.lastStatus)detail+=`<br>${escapeHtml(sync.lastStatus)}`;
+  if(extra)detail+=`<br>${escapeHtml(extra)}`;
+  status.innerHTML=`<strong>共有同期：${sync.enabled?'ON':'OFF'}</strong><br>端末：${escapeHtml(sync.deviceName)}<br>${detail}`;
+}
+function setDriveSyncStatus(message,success=false){
+  localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,String(message||''));
+  if(success)localStorage.setItem(DRIVE_SYNC_STORAGE.lastSync,new Date().toISOString());
+  renderDriveSyncStatus();
+}
+function buildDriveSyncPayload(){
+  return {
+    app:'sedori',
+    environment:'PROD',
+    schemaVersion:SCHEMA_VERSION,
+    items:deepClone(items),
+    pointEntries:deepClone(pointEntries),
+    pointUsages:deepClone(pointUsages),
+    packagingMaterials:deepClone(packagingMaterials),
+    settings:deepClone(settings),
+    taxExpenses:deepClone(taxExpenses),
+    taxSettings:deepClone(taxSettings)
+  };
+}
+function emptyDriveSyncPayload(){
+  return {app:'sedori',environment:'PROD',schemaVersion:SCHEMA_VERSION,items:[],pointEntries:[],pointUsages:[],packagingMaterials:[],settings:{},taxExpenses:[],taxSettings:{years:{}}};
+}
+function canonicalSyncValue(value){
+  if(Array.isArray(value))return '['+value.map(canonicalSyncValue).join(',')+']';
+  if(value&&typeof value==='object'){
+    return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonicalSyncValue(value[key])).join(',')+'}';
+  }
+  return JSON.stringify(value);
+}
+function syncSame(a,b){return canonicalSyncValue(a)===canonicalSyncValue(b)}
+function syncComparableRecord(record){
+  if(!record||typeof record!=='object')return record;
+  const copy=deepClone(record);
+  delete copy._syncUpdatedAt;
+  return copy;
+}
+function captureSyncLocalSnapshot(){
+  syncLastLocalSnapshot=buildDriveSyncPayload();
+}
+function stampArrayChanges(currentArray,previousArray,stamp){
+  const previousMap=new Map((Array.isArray(previousArray)?previousArray:[]).map(row=>[String(row?.id||''),row]));
+  (Array.isArray(currentArray)?currentArray:[]).forEach(row=>{
+    if(!row||!row.id)return;
+    const old=previousMap.get(String(row.id));
+    if(!old||!syncSame(syncComparableRecord(row),syncComparableRecord(old)))row._syncUpdatedAt=stamp;
+  });
+}
+function stampChangedSyncRecords(){
+  if(!syncLastLocalSnapshot){captureSyncLocalSnapshot();return}
+  const stamp=new Date().toISOString();
+  stampArrayChanges(items,syncLastLocalSnapshot.items,stamp);
+  stampArrayChanges(pointEntries,syncLastLocalSnapshot.pointEntries,stamp);
+  stampArrayChanges(pointUsages,syncLastLocalSnapshot.pointUsages,stamp);
+  stampArrayChanges(packagingMaterials,syncLastLocalSnapshot.packagingMaterials,stamp);
+  stampArrayChanges(taxExpenses,syncLastLocalSnapshot.taxExpenses,stamp);
+}
+function syncRecordTimestamp(record){
+  if(!record||typeof record!=='object')return 0;
+  const candidates=[record._syncUpdatedAt,record.updatedAt,record.modifiedAt,record.createdAt,record.soldDate,record.actualDate,record.purchaseDate,record.date];
+  for(const value of candidates){
+    if(!value)continue;
+    const parsed=Date.parse(value);
+    if(Number.isFinite(parsed))return parsed;
+  }
+  return 0;
+}
+function isPlainSyncObject(value){return Boolean(value)&&typeof value==='object'&&!Array.isArray(value)}
+function mergeSyncValue(base,local,remote,preferred='remote',conflicts=null,path=''){
+  if(syncSame(local,remote))return deepClone(local);
+  if(syncSame(local,base))return deepClone(remote);
+  if(syncSame(remote,base))return deepClone(local);
+  if(isPlainSyncObject(base)||isPlainSyncObject(local)||isPlainSyncObject(remote)){
+    const b=isPlainSyncObject(base)?base:{};
+    const l=isPlainSyncObject(local)?local:{};
+    const r=isPlainSyncObject(remote)?remote:{};
+    const out={};
+    const keys=new Set([...Object.keys(b),...Object.keys(l),...Object.keys(r)]);
+    keys.forEach(key=>{
+      const hasL=Object.prototype.hasOwnProperty.call(l,key);
+      const hasR=Object.prototype.hasOwnProperty.call(r,key);
+      const hasB=Object.prototype.hasOwnProperty.call(b,key);
+      if(!hasL&&!hasR)return;
+      if(!hasL&&hasB&&syncSame(r[key],b[key]))return;
+      if(!hasR&&hasB&&syncSame(l[key],b[key]))return;
+      out[key]=mergeSyncValue(hasB?b[key]:undefined,hasL?l[key]:undefined,hasR?r[key]:undefined,preferred,conflicts,path?`${path}.${key}`:key);
+    });
+    return out;
+  }
+  if(conflicts)conflicts.push(path||'value');
+  return deepClone(preferred==='local'?local:remote);
+}
+function mergeSyncRecordArrays(baseRows,localRows,remoteRows,key,conflicts){
+  const baseMap=new Map((Array.isArray(baseRows)?baseRows:[]).filter(Boolean).map(row=>[String(row.id||''),row]));
+  const localMap=new Map((Array.isArray(localRows)?localRows:[]).filter(Boolean).map(row=>[String(row.id||''),row]));
+  const remoteMap=new Map((Array.isArray(remoteRows)?remoteRows:[]).filter(Boolean).map(row=>[String(row.id||''),row]));
+  const ids=new Set([...baseMap.keys(),...localMap.keys(),...remoteMap.keys()]);
+  const result=[];
+  ids.forEach(id=>{
+    if(!id)return;
+    const b=baseMap.get(id),l=localMap.get(id),r=remoteMap.get(id);
+    const hasB=baseMap.has(id),hasL=localMap.has(id),hasR=remoteMap.has(id);
+    if(hasL&&hasR){
+      if(syncSame(l,r)){result.push(deepClone(l));return}
+      if(hasB&&syncSame(l,b)){result.push(deepClone(r));return}
+      if(hasB&&syncSame(r,b)){result.push(deepClone(l));return}
+      const preferred=syncRecordTimestamp(l)>syncRecordTimestamp(r)?'local':'remote';
+      result.push(mergeSyncValue(hasB?b:{},l,r,preferred,conflicts,`${key}:${id}`));
+      return;
+    }
+    if(hasL&&!hasR){
+      if(hasB&&syncSame(l,b))return; // remote deleted unchanged local
+      if(hasB&&!syncSame(l,b)){
+        conflicts.push(`${key}:${id}:remote-delete`);
+        result.push(deepClone(l));
+        return;
+      }
+      result.push(deepClone(l));
+      return;
+    }
+    if(!hasL&&hasR){
+      if(hasB&&syncSame(r,b))return; // local deleted unchanged remote
+      if(hasB&&!syncSame(r,b)){
+        conflicts.push(`${key}:${id}:local-delete`);
+        result.push(deepClone(r));
+        return;
+      }
+      result.push(deepClone(r));
+    }
+  });
+  return result;
+}
+function mergeDriveSyncPayloads(basePayload,localPayload,remotePayload){
+  const base=basePayload&&typeof basePayload==='object'?basePayload:emptyDriveSyncPayload();
+  const local=localPayload&&typeof localPayload==='object'?localPayload:emptyDriveSyncPayload();
+  const remote=remotePayload&&typeof remotePayload==='object'?remotePayload:emptyDriveSyncPayload();
+  const conflicts=[];
+  const merged={app:'sedori',environment:'PROD',schemaVersion:SCHEMA_VERSION};
+  ['items','pointEntries','pointUsages','packagingMaterials','taxExpenses'].forEach(key=>{
+    merged[key]=mergeSyncRecordArrays(base[key],local[key],remote[key],key,conflicts);
+  });
+  merged.settings=mergeSyncValue(base.settings||{},local.settings||{},remote.settings||{},'remote',conflicts,'settings');
+  merged.taxSettings=mergeSyncValue(base.taxSettings||{years:{}},local.taxSettings||{years:{}},remote.taxSettings||{years:{}},'remote',conflicts,'taxSettings');
+  return {payload:merged,conflicts:[...new Set(conflicts)]};
+}
+function getDriveSyncBase(){
+  try{
+    const raw=localStorage.getItem(DRIVE_SYNC_STORAGE.base);
+    return raw?JSON.parse(raw):null;
+  }catch{return null}
+}
+function setDriveSyncBase(payload,revision){
+  localStorage.setItem(DRIVE_SYNC_STORAGE.base,JSON.stringify(payload));
+  localStorage.setItem(DRIVE_SYNC_STORAGE.revision,String(Math.max(0,Number(revision)||0)));
+  localStorage.setItem(DRIVE_SYNC_STORAGE.lastSync,new Date().toISOString());
+}
+async function applyDriveSyncPayload(payload,reason='Drive共有同期'){
+  if(!payload||!Array.isArray(payload.items))throw new Error('共有データの商品情報を読み込めません');
+  await createSaveBackup(`${reason}前`,false);
+  driveSyncApplyInProgress=true;
+  try{
+    applyBackupData(payload);
+  }finally{
+    driveSyncApplyInProgress=false;
+    captureSyncLocalSnapshot();
+  }
+}
+function cleanupDriveSyncRequest(){
+  const current=pendingDriveSyncRequest;
+  if(!current)return;
+  clearTimeout(current.timer);
+  try{current.frame?.removeEventListener('load',current.onFrameLoad)}catch(errorObject){}
+  try{current.form?.remove()}catch(errorObject){}
+  pendingDriveSyncRequest=null;
+}
+function driveSyncPost(action,options={}){
+  const drive=driveBackupSettings();
+  const sync=driveSyncSettings();
+  if(!driveGasValidUrl(drive.url)||!drive.key){renderDriveSyncStatus('Apps Script URLまたは合言葉を確認してください。');if(!options.silent)toast('Drive設定を確認してください');return false}
+  if(pendingDriveSyncRequest){if(!options.silent)toast('共有同期中です');return false}
+  const frame=$('driveSyncFrame');
+  if(!frame){renderDriveSyncStatus('共有同期フレームが見つかりません。');return false}
+  const form=document.createElement('form');
+  form.id=`sedoriDriveSyncForm_${Date.now()}_${++driveSyncSequence}`;
+  form.method='POST';form.action=drive.url;form.target='sedoriDriveSyncFrame';form.style.display='none';
+  const sentPayload=options.payload||buildDriveSyncPayload();
+  const params={key:drive.key,action,deviceId:sync.deviceId,deviceName:sync.deviceName};
+  if(action==='sync_push'){
+    params.expectedRevision=String(options.expectedRevision??sync.revision);
+    params.payload=JSON.stringify(sentPayload);
+  }
+  Object.entries(params).forEach(([name,value])=>{const input=document.createElement('input');input.type='hidden';input.name=name;input.value=String(value??'');form.appendChild(input)});
+  document.body.appendChild(form);
+  const onFrameLoad=()=>{
+    const active=pendingDriveSyncRequest;
+    if(!active||active.form!==form)return;
+    // pull/pushは本文が必要なので、postMessageが来なければタイムアウトまで待つ。
+  };
+  frame.addEventListener('load',onFrameLoad);
+  const timer=setTimeout(()=>{
+    if(!pendingDriveSyncRequest||pendingDriveSyncRequest.form!==form)return;
+    cleanupDriveSyncRequest();
+    setDriveSyncStatus('共有同期の結果本文を受信できません。Apps Scriptを最新版へ更新してください。');
+    if(!options.silent)toast('共有同期の応答を受信できませんでした');
+  },30000);
+  pendingDriveSyncRequest={form,frame,onFrameLoad,timer,action,sentPayload,expectedRevision:Number(params.expectedRevision||0),silent:Boolean(options.silent),retry:Number(options.retry||0)};
+  renderDriveSyncStatus(action==='sync_pull'?'Driveの最新データを取得中…':'共有データへ保存中…');
+  try{form.submit();setTimeout(()=>{try{form.remove()}catch(errorObject){}},1500)}catch(errorObject){cleanupDriveSyncRequest();setDriveSyncStatus('共有同期の送信に失敗しました。');return false}
+  return true;
+}
+async function handleDriveSyncMessage(event){
+  let data=event?.data;
+  if(typeof data==='string'){try{data=JSON.parse(data)}catch(errorObject){}}
+  const current=pendingDriveSyncRequest;
+  if(!current||!data||data.type!==DRIVE_BACKUP_MESSAGE_TYPE||!['sync_pull','sync_push'].includes(String(data.action||'')))return;
+  const request={...current};
+  cleanupDriveSyncRequest();
+  try{
+    if(request.action==='sync_pull'){
+      if(!data.ok)throw new Error(String(data.error||'共有データ取得に失敗しました'));
+      if(!data.exists){
+        localStorage.setItem(DRIVE_SYNC_STORAGE.revision,'0');
+        localStorage.removeItem(DRIVE_SYNC_STORAGE.base);
+        const local=buildDriveSyncPayload();
+        setDriveSyncStatus('Driveに共有データがまだ無いため、この端末のデータから作成します。');
+        driveSyncPost('sync_push',{payload:local,expectedRevision:0,silent:request.silent,retry:0});
+        return;
+      }
+      const remote=data.payload;
+      const remoteRevision=Math.max(0,Number(data.revision)||0);
+      if(!remote||!Array.isArray(remote.items))throw new Error('Drive共有データの形式が正しくありません');
+      const local=buildDriveSyncPayload();
+      const base=getDriveSyncBase();
+      const mergedResult=mergeDriveSyncPayloads(base,local,remote);
+      const merged=mergedResult.payload;
+      if(!syncSame(local,merged))await applyDriveSyncPayload(merged,'Drive最新取込');
+      if(!syncSame(merged,remote)){
+        setDriveSyncStatus(`Drive最新を取り込み、端末側の変更も結合しました${mergedResult.conflicts.length?`（競合 ${mergedResult.conflicts.length}件を自動調整）`:''}。共有データを更新します。`);
+        driveSyncPost('sync_push',{payload:merged,expectedRevision:remoteRevision,silent:request.silent,retry:0});
+        return;
+      }
+      setDriveSyncBase(merged,remoteRevision);
+      localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,mergedResult.conflicts.length?`最新データを取得。競合 ${mergedResult.conflicts.length}件を自動調整しました。`:'最新データと同期済みです。');
+      renderDriveSyncStatus();
+      if(!request.silent)toast('Driveの最新データを取り込みました');
+      return;
+    }
+
+    if(request.action==='sync_push'){
+      if(data.ok){
+        const revision=Math.max(0,Number(data.revision)||0);
+        setDriveSyncBase(request.sentPayload,revision);
+        localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,`共有データへ保存済み${data.updatedBy?`（${data.updatedBy}）`:''}`);
+        renderDriveSyncStatus();
+        if(!request.silent)toast('共有データへ保存しました');
+        return;
+      }
+      if(data.conflict&&data.payload&&request.retry<2){
+        const remoteRevision=Math.max(0,Number(data.revision)||0);
+        const base=getDriveSyncBase();
+        const local=buildDriveSyncPayload();
+        const mergedResult=mergeDriveSyncPayloads(base,local,data.payload);
+        const merged=mergedResult.payload;
+        if(!syncSame(local,merged))await applyDriveSyncPayload(merged,'同期競合解決');
+        setDriveSyncStatus(`他端末の更新を検出。変更を結合して再保存します${mergedResult.conflicts.length?`（競合 ${mergedResult.conflicts.length}件）`:''}。`);
+        driveSyncPost('sync_push',{payload:merged,expectedRevision:remoteRevision,silent:request.silent,retry:request.retry+1});
+        return;
+      }
+      throw new Error(String(data.error||'共有データ保存に失敗しました'));
+    }
+  }catch(errorObject){
+    setDriveSyncStatus(`同期エラー：${errorObject.message||errorObject}`);
+    if(!request.silent)toast('Drive共有同期でエラーが発生しました');
+  }
+}
+window.addEventListener('message',handleDriveSyncMessage);
+function manualDriveSyncPull(){driveSyncPost('sync_pull',{silent:false})}
+function manualDriveSyncPush(){driveSyncPost('sync_push',{silent:false,payload:buildDriveSyncPayload(),expectedRevision:driveSyncSettings().revision,retry:0})}
+function scheduleDriveSharedSyncPush(reason='保存'){
+  const sync=driveSyncSettings();
+  if(!sync.enabled||driveSyncApplyInProgress||!driveBackupReady()||!navigator.onLine)return;
+  clearTimeout(driveSyncPushTimer);
+  driveSyncPushTimer=setTimeout(()=>{
+    if(!driveSyncSettings().enabled||driveSyncApplyInProgress||pendingDriveSyncRequest)return;
+    driveSyncPost('sync_push',{silent:true,payload:buildDriveSyncPayload(),expectedRevision:driveSyncSettings().revision,retry:0,reason});
+  },1200);
+}
+function armDriveSharedSyncPull(delay=1800){
+  clearTimeout(driveSyncPullTimer);
+  const sync=driveSyncSettings();
+  if(!sync.enabled||!driveBackupReady()||!navigator.onLine)return;
+  driveSyncPullTimer=setTimeout(()=>{
+    if(driveSyncSettings().enabled&&!pendingDriveSyncRequest)driveSyncPost('sync_pull',{silent:true});
+  },delay);
+}
 function openAutoBackupDB(){
   return new Promise((resolve,reject)=>{
     if(!('indexedDB' in window)){reject(new Error('IndexedDBを利用できません'));return}
@@ -4243,6 +4636,12 @@ window.runSedoriSelfTests=function(){
     items.push(boxShipment);boxShipment.status='shipped';
     consumePackagingSelections(boxShipment,[{materialId:'box80',quantity:1,unitCost:70}]);
     test('選んだ80サイズ段ボールだけ減算',packagingMaterials[0].stock===3&&packagingMaterials[1].stock===3,`60=${packagingMaterials[0].stock} 80=${packagingMaterials[1].stock}`);
+
+    const syncBase={app:'sedori',environment:'PROD',schemaVersion:21,items:[{id:'A',name:'A',status:'listed'},{id:'B',name:'B',status:'listed'}],pointEntries:[],pointUsages:[],packagingMaterials:[],settings:{},taxExpenses:[],taxSettings:{years:{}}};
+    const syncLocal=deepClone(syncBase);syncLocal.items.push({id:'C',name:'サブ追加',status:'listed',_syncUpdatedAt:'2026-10-01T10:00:00.000Z'});
+    const syncRemote=deepClone(syncBase);syncRemote.items[0].status='sold';syncRemote.items[0]._syncUpdatedAt='2026-10-01T10:01:00.000Z';
+    const syncMerged=mergeDriveSyncPayloads(syncBase,syncLocal,syncRemote).payload;
+    test('2台同期で別商品の変更を結合',syncMerged.items.some(row=>row.id==='C')&&syncMerged.items.find(row=>row.id==='A')?.status==='sold',`件数=${syncMerged.items.length}`);
   }catch(errorObject){
     results.push({name:'テスト実行',passed:false,details:errorObject.message});
   }finally{
@@ -4258,6 +4657,17 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-01
+- Google Driveの「2台共有同期」を追加し、メインスマホ・サブスマホで1つの「せどり_共有データ.json」を共有できるよう変更
+- アプリ起動・画面再表示時にDriveの最新共有データを自動取得し、保存操作後は自動で共有データへ反映
+- Drive側にrevision番号を持たせ、古い端末データで新しい共有データを無条件上書きしない競合防止を追加
+- 端末ごとに同期ベースデータを保持する3-way mergeを追加し、サブスマホの商品追加とメインスマホの売れた記録など別商品の変更を自動結合
+- 同じ商品の同時変更も項目単位で可能な範囲を結合し、残る競合はレコード更新時刻を使って自動調整
+- 同期直前に30世代バックアップへ安全スナップショットを作成してからDrive最新データを反映
+- 端末名・同期ON/OFF・最終同期日時・revision・同期状態を設定画面へ追加
+- 従来のDrive7件バックアップ、保存操作30世代、日次14日分、JSON復元、在庫・分析・ポイント・確定申告・梱包材・発送後編集をすべて維持
+- schema v21へ更新
+
 2026-09-16
 - Google Drive上のバックアップが拡張子.jsonでもMIMEタイプtext/plain（Drive上では「TXTドキュメント」表示）になるケースに対応
 - 復元ファイル選択で .json / application/json に加えて text/plain / .txt を選択可能に変更
