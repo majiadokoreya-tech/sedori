@@ -27,7 +27,7 @@ h1 span{color:var(--accent)}
 .save-state{font-size:.7rem;color:var(--muted);font-weight:750;text-align:right}
 nav{
   position:sticky;top:54px;z-index:29;background:#fff;border-bottom:1px solid var(--line);
-  display:grid;grid-template-columns:repeat(5,1fr)
+  display:grid;grid-template-columns:repeat(6,1fr)
 }
 .tab{border:0;background:#fff;padding:12px 2px;color:var(--muted);font-size:.78rem;font-weight:900;border-bottom:3px solid transparent}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
@@ -215,13 +215,38 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 .pack-choice-meta{font-size:.68rem;color:var(--muted);margin-top:3px;line-height:1.45}
 .pack-total{background:#f7f8fa;border:1px solid var(--line);border-radius:13px;padding:11px;margin:10px 0}
 .pack-total strong{font-size:1.15rem}
+
+.packaging-hero{background:linear-gradient(180deg,#f7fbff,#fff);border-color:#dce8f8}
+.packaging-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.packaging-group{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:11px;box-shadow:0 3px 12px rgba(30,35,45,.04)}
+.packaging-group-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.packaging-group-title{font-size:.88rem;font-weight:1000}
+.packaging-group-sub{font-size:.65rem;color:var(--muted);margin-top:2px}
+.packaging-box-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.packaging-box-card{border:1px solid var(--line);border-radius:13px;background:#f9fafc;padding:10px;min-width:0}
+.packaging-box-size{font-size:.82rem;font-weight:1000}
+.packaging-box-name{font-size:.61rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.packaging-stock-line{display:flex;align-items:end;justify-content:space-between;gap:7px;margin-top:8px}
+.packaging-stock-value{font-size:1.45rem;font-weight:1000;line-height:1;font-variant-numeric:tabular-nums}
+.packaging-stock-unit{font-size:.66rem;color:var(--muted);font-weight:800;margin-left:2px}
+.packaging-stock-meta{font-size:.62rem;color:var(--muted);text-align:right;line-height:1.45}
+.packaging-stock-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px}
+.packaging-stock-controls .btn{padding:7px 4px;font-size:.68rem}
+.packaging-material-row{border:1px solid var(--line);border-radius:13px;background:#fff;padding:10px;margin-bottom:8px}
+.packaging-material-row:last-child{margin-bottom:0}
+.packaging-material-top{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.packaging-material-name{font-size:.78rem;font-weight:1000;line-height:1.4}
+.packaging-material-meta{font-size:.65rem;color:var(--muted);line-height:1.5;margin-top:3px}
+.packaging-material-stock{font-size:1.05rem;font-weight:1000;white-space:nowrap}
+.packaging-empty{padding:12px;text-align:center;color:var(--muted);font-size:.72rem;font-weight:800;background:#f8f9fb;border-radius:12px}
+@media(min-width:600px){.packaging-box-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:780px){
   .modal{align-items:center}.modal-box{max-width:740px;margin:auto;border-radius:22px}
   .fixed-add{left:calc(50% + 300px);right:auto}
 }
 @media(max-width:390px){
   .summary-card .value{font-size:1.04rem}.form-grid,.form-grid.three{grid-template-columns:1fr}
-  nav{grid-template-columns:repeat(4,1fr)}.tab{font-size:.72rem}
+  nav{grid-template-columns:repeat(6,1fr)}.tab{font-size:.66rem}
 }
 </style>
 </head>
@@ -235,6 +260,7 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
   <button class="tab active" data-page="stock" onclick="showPage('stock',this)">在庫</button>
   <button class="tab" data-page="analysis" onclick="showPage('analysis',this)">分析</button>
   <button class="tab" data-page="points" onclick="showPage('points',this)">ポイント</button>
+  <button class="tab" data-page="packaging" onclick="showPage('packaging',this)">梱包材</button>
   <button class="tab" data-page="tax" onclick="showPage('tax',this)">確定申告</button>
   <button class="tab" data-page="data" onclick="showPage('data',this)">設定</button>
 </nav>
@@ -348,6 +374,24 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
     <button class="btn btn-small" onclick="clearHistoryFilter()" style="margin-bottom:10px">絞り込み解除</button>
     <div id="pointHistory" class="item-list"></div>
   </div>
+</section>
+
+
+<section id="packaging" class="page">
+  <div class="card packaging-hero">
+    <div class="section-head">
+      <div>
+        <div class="section-title">梱包材 在庫管理</div>
+        <div class="note">種類ごとに分けて、在庫数をすぐ確認・変更できます。</div>
+      </div>
+      <button class="btn btn-small btn-primary" onclick="openPackagingEditor()">＋ 追加</button>
+    </div>
+    <div id="packagingSummary" class="packaging-summary"></div>
+  </div>
+
+  <div class="help">段ボールは60・80・100・120・140・160・170・180・200サイズを段ボールだけの一覧で管理します。発送済みにすると、選択した梱包材の在庫が自動で減ります。</div>
+
+  <div id="packagingList"></div>
 </section>
 
 
@@ -564,17 +608,6 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
     </label>
   </div>
 
-  <div class="card">
-    <div class="section-head">
-      <div class="section-title">梱包材在庫</div>
-      <div class="compact-actions">
-        <button class="btn btn-small" onclick="addCardboardSet()">段ボール一括追加</button>
-        <button class="btn btn-small btn-primary" onclick="openPackagingEditor()">＋ 追加</button>
-      </div>
-    </div>
-    <div class="help">段ボールは60・80・100サイズなどサイズ別に在庫管理できます。発送方法と紐づけると、「発送済みにする」を押した時に該当サイズだけ自動で1個減らします。</div>
-    <div id="packagingList" class="item-list"></div>
-  </div>
 
   <div class="card">
     <div class="section-title" style="margin-bottom:10px">楽天ポイント設定</div>
@@ -964,8 +997,7 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 
 
 <!-- 確定申告 経費編集 -->
-<div class="modal" id="taxExpenseModal">
-  <div class="modal-box">
+<div class="modal" id="taxExpenseModal">  <div class="modal-box">
     <div class="modal-head"><h2 id="taxExpenseModalTitle">経費を登録</h2><button class="close" onclick="closeModal('taxExpenseModal')">×</button></div>
     <input id="taxExpenseId" type="hidden">
     <div class="form-grid">
@@ -1060,7 +1092,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=21;
+const SCHEMA_VERSION=22;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1706,6 +1738,7 @@ function renderAll(){
   renderStock();
   renderAnalysis();
   renderPointPage();
+  renderPackagingInventory();
   renderTax();
   renderData();
 }
@@ -1718,6 +1751,7 @@ function showPage(id,button){
   $('addButton').style.display=id==='stock'?'block':'none';
   if(id==='analysis')renderAnalysis();
   if(id==='points')renderPointPage();
+  if(id==='packaging')renderPackagingInventory();
   if(id==='tax')renderTax();
   if(id==='data')renderData();
 }
@@ -1962,8 +1996,7 @@ function addEstimatedPointDrafts(prefix){
   if(buyAround>0)drafts.push(normalizePointEntry({type:'limited',breakdown:'buyaround',expected:buyAround,status:'planned',plannedDate,note:`買い回り ${settings.buyAroundMultiplier}倍の簡易見積り。要確認`}));
   setCurrentDrafts(prefix,drafts);
   renderPointDrafts(prefix);
-  toast('簡易見積りを追加しました');
-}
+  toast('簡易見積りを追加しました');}
 function readPurchaseForm(prefix){
   const source=$(prefix+'Source').value;
   const sourceGroup=$(prefix+'SourceGroup').value;
@@ -2158,7 +2191,7 @@ function renderShipPackagingNote(prefix){
   const select=$(prefix+'ShipMethod');
   if(!note||!select)return;
   const material=linkedPackagingForShipMethod(select.value);
-  if(!packagingMaterials.length){note.textContent='梱包材在庫が未登録です。設定画面から登録できます。';return}
+  if(!packagingMaterials.length){note.textContent='梱包材在庫が未登録です。梱包材タブから登録できます。';return}
   if(!material){note.textContent='発送済みにする時、登録済み梱包材から実際に使ったアイテムを選択します。';return}
   note.innerHTML=`発送時に梱包材を選択します。おすすめ：<b>${escapeHtml(material.name)}</b> ／ 在庫 <b class="${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</b>`;
 }
@@ -2178,7 +2211,7 @@ function renderSoldPackagingChoices(){
     return String(a.name).localeCompare(String(b.name),'ja');
   });
   if(!sorted.length){
-    target.innerHTML='<div class="empty" style="padding:14px">梱包材が未登録です。設定画面から追加できます。</div>';
+    target.innerHTML='<div class="empty" style="padding:14px">梱包材が未登録です。梱包材タブから追加できます。</div>';
     updateSoldPackagingTotal();
     return;
   }
@@ -2278,7 +2311,7 @@ function renderEditPackagingChoices(){
   });
 
   if(!sorted.length){
-    target.innerHTML='<div class="empty" style="padding:14px">梱包材が未登録です。設定画面から追加できます。</div>';
+    target.innerHTML='<div class="empty" style="padding:14px">梱包材が未登録です。梱包材タブから追加できます。</div>';
     updateEditPackagingTotal();
     return;
   }
@@ -2427,7 +2460,7 @@ function renderShippingMaterialChoices(item){
     return String(a.name).localeCompare(String(b.name),'ja');
   });
   if(!sorted.length){
-    target.innerHTML='<div class="empty" style="padding:16px">梱包材が未登録です。設定画面から追加できます。</div>';
+    target.innerHTML='<div class="empty" style="padding:16px">梱包材が未登録です。梱包材タブから追加できます。</div>';
     updateShippingPackagingTotal();
     return;
   }
@@ -2962,8 +2995,7 @@ function buildPointHistory(){
     }
     if(entry.canceledAmount>0||entry.status==='canceled'){
       events.push({id:`canceled_${entry.id}`,date:entry.actualDate||entry.plannedDate||entry.createdAt.slice(0,10),type:entry.type,event:'canceled',amount:entry.canceledAmount||entry.expected,title:'取消',source,note:entry.note});
-    }
-  });
+    }  });
   pointUsages.forEach(usage=>{
     const item=items.find(current=>String(current.id)===String(usage.relatedItemId));
     events.push({id:`used_${usage.id}`,date:usage.date,type:usage.type,event:'used',amount:usage.amount,title:'使用',
@@ -3034,22 +3066,80 @@ function saveManualPoint(){
   saveAll('ポイント調整');closeModal('manualPointModal');renderAll();toast('繰越・調整ポイントを登録しました');
 }
 
+function packagingStockClass(material){
+  return material.stock<=material.lowStockAt?'red':'green';
+}
+function renderPackagingSummary(){
+  const target=$('packagingSummary');
+  if(!target)return;
+  const totalStock=packagingMaterials.reduce((sum,material)=>sum+material.stock,0);
+  const boxStock=packagingMaterials.filter(material=>material.materialType==='box').reduce((sum,material)=>sum+material.stock,0);
+  const lowCount=packagingMaterials.filter(material=>material.stock<=material.lowStockAt).length;
+  target.innerHTML=`
+    <div class="summary-card"><div class="label">総在庫</div><div class="value">${totalStock}個</div><div class="sub">全梱包材の合計</div></div>
+    <div class="summary-card"><div class="label">登録種類</div><div class="value">${packagingMaterials.length}種</div><div class="sub">サイズ違いも1種類として計上</div></div>
+    <div class="summary-card"><div class="label">段ボール</div><div class="value">${boxStock}個</div><div class="sub">全サイズ合計</div></div>
+    <div class="summary-card"><div class="label">要補充</div><div class="value ${lowCount?'red':'green'}">${lowCount}種</div><div class="sub">警告在庫以下</div></div>`;
+}
+function packagingBoxCard(material){
+  const size=material.boxSize?`${material.boxSize}サイズ`:'サイズ未設定';
+  return `<div class="packaging-box-card">
+    <div class="packaging-box-size">${escapeHtml(size)}</div>
+    <div class="packaging-box-name">${escapeHtml(material.name)}</div>
+    <div class="packaging-stock-line">
+      <div><span class="packaging-stock-value ${packagingStockClass(material)}">${material.stock}</span><span class="packaging-stock-unit">個</span></div>
+      <div class="packaging-stock-meta">単価 ${yen(material.unitCost)}<br>警告 ${material.lowStockAt}個以下</div>
+    </div>
+    <div class="packaging-stock-controls">
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',-1)">－1</button>
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',1)">＋1</button>
+      <button class="btn" onclick="openPackagingEditor('${material.id}')">編集</button>
+    </div>
+  </div>`;
+}
+function packagingMaterialRow(material){
+  return `<div class="packaging-material-row">
+    <div class="packaging-material-top">
+      <div>
+        <div class="packaging-material-name">${escapeHtml(material.name)}</div>
+        <div class="packaging-material-meta">単価 ${yen(material.unitCost)} ／ 発送時おすすめ：${escapeHtml(packagingLinkName(material.linkKey))}<br>在庫警告：${material.lowStockAt}個以下</div>
+      </div>
+      <div class="packaging-material-stock ${packagingStockClass(material)}">${material.stock}個</div>
+    </div>
+    <div class="packaging-stock-controls">
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',-1)">－1</button>
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',1)">＋1</button>
+      <button class="btn" onclick="openPackagingEditor('${material.id}')">編集</button>
+    </div>
+  </div>`;
+}
+function packagingGroupHtml(type){
+  const title=PACKAGING_TYPE_NAME[type]||'その他';
+  const list=packagingMaterials.filter(material=>material.materialType===type).sort((a,b)=>{
+    if(type==='box')return safeNum(a.boxSize)-safeNum(b.boxSize)||String(a.name).localeCompare(String(b.name),'ja');
+    return String(a.name).localeCompare(String(b.name),'ja');
+  });
+  const sub=type==='box'?'サイズ別の在庫':`${list.length}種類`;
+  const action=type==='box'
+    ?`<div class="compact-actions"><button class="btn btn-small" onclick="addCardboardSet()">全サイズ追加</button><button class="btn btn-small btn-primary" onclick="openPackagingEditor('','box')">＋追加</button></div>`
+    :`<button class="btn btn-small" onclick="openPackagingEditor('','${type}')">＋追加</button>`;
+  const body=list.length
+    ?(type==='box'?`<div class="packaging-box-grid">${list.map(packagingBoxCard).join('')}</div>`:list.map(packagingMaterialRow).join(''))
+    :`<div class="packaging-empty">まだ登録されていません</div>`;
+  return `<div class="packaging-group">
+    <div class="packaging-group-head">
+      <div><div class="packaging-group-title">${escapeHtml(title)}</div><div class="packaging-group-sub">${escapeHtml(sub)}</div></div>
+      ${action}
+    </div>
+    ${body}
+  </div>`;
+}
 function renderPackagingInventory(){
   const target=$('packagingList');
+  renderPackagingSummary();
   if(!target)return;
-  if(!packagingMaterials.length){target.innerHTML='<div class="empty" style="padding:15px">梱包材が未登録です</div>';return}
-  target.innerHTML=packagingMaterials.map(material=>`
-    <div class="item">
-      <div class="item-top">
-        <div><div class="item-name">${escapeHtml(material.name)}</div><div class="item-meta">${escapeHtml(PACKAGING_TYPE_NAME[material.materialType]||'その他')}${material.boxSize?` ／ ${material.boxSize}サイズ`:''} ／ 単価 ${yen(material.unitCost)}<br>発送時おすすめ：${escapeHtml(packagingLinkName(material.linkKey))} ／ 警告 ${material.lowStockAt}個以下</div></div>
-        <div class="item-price ${material.stock<=material.lowStockAt?'red':'green'}">${material.stock}個</div>
-      </div>
-      <div class="compact-actions" style="margin-top:9px">
-        <button class="btn btn-small" onclick="adjustPackagingStock('${material.id}',-1)">－1</button>
-        <button class="btn btn-small" onclick="adjustPackagingStock('${material.id}',1)">＋1</button>
-        <button class="btn btn-small" onclick="openPackagingEditor('${material.id}')">編集</button>
-      </div>
-    </div>`).join('');
+  const knownTypes=['box','special','bag','tape','other'];
+  target.innerHTML=knownTypes.map(packagingGroupHtml).join('');
 }
 function adjustPackagingStock(id,delta){
   const material=packagingMaterials.find(current=>String(current.id)===String(id));if(!material)return;
@@ -3098,11 +3188,11 @@ function addCardboardSet(){
   saveAll('段ボール一括追加');renderPackagingInventory();renderData();
   toast('段ボールをサイズ別に追加しました');
 }
-function openPackagingEditor(id=''){
+function openPackagingEditor(id='',presetKind=''){
   const material=id?packagingMaterials.find(current=>String(current.id)===String(id)):null;
   $('packagingModalTitle').textContent=material?'梱包材を編集':'梱包材を追加';
   $('packId').value=material?.id||'';
-  $('packKind').value=material?.materialType||'special';
+  $('packKind').value=material?.materialType||presetKind||'special';
   $('packBoxSize').innerHTML=BOX_SIZES.map(size=>`<option value="${size}">${size}サイズ</option>`).join('');
   $('packBoxSize').value=material?.boxSize||'60';
   $('packName').value=material?.name||'';
@@ -3129,6 +3219,10 @@ function savePackagingMaterial(){
   if(!name)name=packagingDefaultName(materialType,boxSize);
   let linkKey=$('packLinkKey').value;
   if(materialType==='box'&&boxSize)linkKey=`size${boxSize}`;
+  if(materialType==='box'&&boxSize){
+    const duplicateSize=packagingMaterials.find(material=>String(material.id)!==String(id)&&material.materialType==='box'&&String(material.boxSize)===String(boxSize));
+    if(duplicateSize){toast(`${boxSize}サイズの段ボールは登録済みです。「${duplicateSize.name}」を編集してください`);return}
+  }
   const conflict=packagingMaterials.find(material=>String(material.id)!==String(id)&&material.linkKey===linkKey&&linkKey!=='none');
   if(conflict){
     if(!confirm(`${packagingLinkName(linkKey)}は「${conflict.name}」に連動中です。こちらへ連動先を変更しますか？`))return;
@@ -3147,7 +3241,7 @@ function savePackagingMaterial(){
   }else{
     packagingMaterials.push(normalizePackagingMaterial({id:uid('pack'),...values}));
   }
-  saveAll('梱包材保存');closeModal('packagingModal');renderData();renderShipPackagingNote('s');renderShipPackagingNote('e');
+  saveAll('梱包材保存');closeModal('packagingModal');renderPackagingInventory();renderData();renderShipPackagingNote('s');renderShipPackagingNote('e');
   toast(materialType==='box'?`${boxSize}サイズ段ボールを保存しました`:'梱包材を保存しました');
 }
 function deletePackagingMaterial(){
@@ -3157,7 +3251,7 @@ function deletePackagingMaterial(){
     (Array.isArray(item.packagingSelections)&&item.packagingSelections.some(c=>String(c.materialId)===String(id)))
   )){toast('販売記録または発送履歴で使用中の梱包材は削除できません');return}
   if(!confirm('この梱包材を削除しますか？'))return;
-  packagingMaterials=packagingMaterials.filter(material=>String(material.id)!==String(id));saveAll('梱包材削除');closeModal('packagingModal');renderData();toast('梱包材を削除しました');
+  packagingMaterials=packagingMaterials.filter(material=>String(material.id)!==String(id));saveAll('梱包材削除');closeModal('packagingModal');renderPackagingInventory();renderData();toast('梱包材を削除しました');
 }
 
 function loadSettingsForm(){
@@ -3497,7 +3591,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-10-drive-shared-sync-v21',
+    version:'2026-10-packaging-tab-v22',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3900,8 +3994,7 @@ function captureSyncLocalSnapshot(){
 }
 function stampArrayChanges(currentArray,previousArray,stamp){
   const previousMap=new Map((Array.isArray(previousArray)?previousArray:[]).map(row=>[String(row?.id||''),row]));
-  (Array.isArray(currentArray)?currentArray:[]).forEach(row=>{
-    if(!row||!row.id)return;
+  (Array.isArray(currentArray)?currentArray:[]).forEach(row=>{    if(!row||!row.id)return;
     const old=previousMap.get(String(row.id));
     if(!old||!syncSame(syncComparableRecord(row),syncComparableRecord(old)))row._syncUpdatedAt=stamp;
   });
@@ -4637,7 +4730,7 @@ window.runSedoriSelfTests=function(){
     consumePackagingSelections(boxShipment,[{materialId:'box80',quantity:1,unitCost:70}]);
     test('選んだ80サイズ段ボールだけ減算',packagingMaterials[0].stock===3&&packagingMaterials[1].stock===3,`60=${packagingMaterials[0].stock} 80=${packagingMaterials[1].stock}`);
 
-    const syncBase={app:'sedori',environment:'PROD',schemaVersion:21,items:[{id:'A',name:'A',status:'listed'},{id:'B',name:'B',status:'listed'}],pointEntries:[],pointUsages:[],packagingMaterials:[],settings:{},taxExpenses:[],taxSettings:{years:{}}};
+    const syncBase={app:'sedori',environment:'PROD',schemaVersion:22,items:[{id:'A',name:'A',status:'listed'},{id:'B',name:'B',status:'listed'}],pointEntries:[],pointUsages:[],packagingMaterials:[],settings:{},taxExpenses:[],taxSettings:{years:{}}};
     const syncLocal=deepClone(syncBase);syncLocal.items.push({id:'C',name:'サブ追加',status:'listed',_syncUpdatedAt:'2026-10-01T10:00:00.000Z'});
     const syncRemote=deepClone(syncBase);syncRemote.items[0].status='sold';syncRemote.items[0]._syncUpdatedAt='2026-10-01T10:01:00.000Z';
     const syncMerged=mergeDriveSyncPayloads(syncBase,syncLocal,syncRemote).payload;
@@ -4657,6 +4750,16 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-17
+- 設定画面内にあった梱包材在庫管理を独立した「梱包材」タブへ移動
+- 梱包材を「段ボール／専用資材／袋・封筒／テープ・シール／その他」の種類ごとに分けて表示
+- 段ボールは60・80・100・120・140・160・170・180・200サイズを専用グリッドで一覧表示し、サイズごとの在庫数を－1／＋1で直接管理可能に変更
+- 梱包材タブ上部に総在庫・登録種類・段ボール在庫・要補充種類のサマリーを追加
+- 各種類からその種類を初期選択した状態で梱包材を追加できるボタンを追加
+- 同じ段ボールサイズの重複登録を防ぐチェックを追加
+- 発送時の梱包材選択、発送済み時の自動在庫減算、発送取消時の在庫復元、利益計算、Drive共有同期、全バックアップ機能を維持
+- schema v22へ更新
+
 2026-10-01
 - Google Driveの「2台共有同期」を追加し、メインスマホ・サブスマホで1つの「せどり_共有データ.json」を共有できるよう変更
 - アプリ起動・画面再表示時にDriveの最新共有データを自動取得し、保存操作後は自動で共有データへ反映
