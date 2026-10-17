@@ -997,7 +997,8 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 
 
 <!-- 確定申告 経費編集 -->
-<div class="modal" id="taxExpenseModal">  <div class="modal-box">
+<div class="modal" id="taxExpenseModal">
+  <div class="modal-box">
     <div class="modal-head"><h2 id="taxExpenseModalTitle">経費を登録</h2><button class="close" onclick="closeModal('taxExpenseModal')">×</button></div>
     <input id="taxExpenseId" type="hidden">
     <div class="form-grid">
@@ -1996,7 +1997,8 @@ function addEstimatedPointDrafts(prefix){
   if(buyAround>0)drafts.push(normalizePointEntry({type:'limited',breakdown:'buyaround',expected:buyAround,status:'planned',plannedDate,note:`買い回り ${settings.buyAroundMultiplier}倍の簡易見積り。要確認`}));
   setCurrentDrafts(prefix,drafts);
   renderPointDrafts(prefix);
-  toast('簡易見積りを追加しました');}
+  toast('簡易見積りを追加しました');
+}
 function readPurchaseForm(prefix){
   const source=$(prefix+'Source').value;
   const sourceGroup=$(prefix+'SourceGroup').value;
@@ -2995,7 +2997,8 @@ function buildPointHistory(){
     }
     if(entry.canceledAmount>0||entry.status==='canceled'){
       events.push({id:`canceled_${entry.id}`,date:entry.actualDate||entry.plannedDate||entry.createdAt.slice(0,10),type:entry.type,event:'canceled',amount:entry.canceledAmount||entry.expected,title:'取消',source,note:entry.note});
-    }  });
+    }
+  });
   pointUsages.forEach(usage=>{
     const item=items.find(current=>String(current.id)===String(usage.relatedItemId));
     events.push({id:`used_${usage.id}`,date:usage.date,type:usage.type,event:'used',amount:usage.amount,title:'使用',
@@ -3994,7 +3997,8 @@ function captureSyncLocalSnapshot(){
 }
 function stampArrayChanges(currentArray,previousArray,stamp){
   const previousMap=new Map((Array.isArray(previousArray)?previousArray:[]).map(row=>[String(row?.id||''),row]));
-  (Array.isArray(currentArray)?currentArray:[]).forEach(row=>{    if(!row||!row.id)return;
+  (Array.isArray(currentArray)?currentArray:[]).forEach(row=>{
+    if(!row||!row.id)return;
     const old=previousMap.get(String(row.id));
     if(!old||!syncSame(syncComparableRecord(row),syncComparableRecord(old)))row._syncUpdatedAt=stamp;
   });
