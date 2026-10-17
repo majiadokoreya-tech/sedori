@@ -389,7 +389,7 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
     <div id="packagingSummary" class="packaging-summary"></div>
   </div>
 
-  <div class="help">段ボールは60・80・100・120・140・160・170・180・200サイズを段ボールだけの一覧で管理します。発送済みにすると、選択した梱包材の在庫が自動で減ります。</div>
+  <div class="help">段ボールは20・30・40・50・60・80・100・120・140・160・170・180・200サイズを段ボールだけの一覧で管理します。発送済みにすると、選択した梱包材の在庫が自動で減ります。</div>
 
   <div id="packagingList"></div>
 </section>
@@ -1093,7 +1093,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=22;
+const SCHEMA_VERSION=23;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1112,7 +1112,7 @@ const DEFAULT_SETTINGS={
 const DEFAULT_PACKAGING=[
   {id:'pack_mini_default',name:'ゆうパケットポストmini 専用封筒',stock:0,unitCost:0,linkKey:'mini',materialType:'special',boxSize:'',lowStockAt:3,createdAt:'2026-08-12T00:00:00.000Z'}
 ];
-const BOX_SIZES=[60,80,100,120,140,160,170,180,200];
+const BOX_SIZES=[20,30,40,50,60,80,100,120,140,160,170,180,200];
 const PACKAGING_TYPE_NAME={special:'専用資材',box:'段ボール',bag:'袋・封筒',tape:'テープ・シール',other:'その他'};
 const CATEGORY_TREE={
   'レディースファッション':['ワンピース','コート','ジャケット','パンツ','デニム','スカート','ニット','トップス','セットアップ','その他'],
@@ -1281,7 +1281,7 @@ function normalizePackagingMaterial(raw){
   material.unitCost=Math.max(0,safeNum(material.unitCost));
   material.linkKey=PACKAGING_LINKS.some(link=>link.key===material.linkKey)?material.linkKey:'none';
   const linkedSize=String(material.linkKey).match(/^size(\d+)$/);
-  const nameSize=String(material.name).match(/(?:段ボール|ダンボール|箱).*?(60|80|100|120|140|160|170|180|200)/);
+  const nameSize=String(material.name).match(/(?:段ボール|ダンボール|箱).*?(20|30|40|50|60|80|100|120|140|160|170|180|200)/);
   material.boxSize=String(material.boxSize||linkedSize?.[1]||nameSize?.[1]||'');
   material.materialType=PACKAGING_TYPE_NAME[material.materialType]?material.materialType:
     (material.boxSize?'box':String(material.name).includes('封筒')||String(material.name).includes('袋')?'bag':'special');
@@ -3221,7 +3221,10 @@ function savePackagingMaterial(){
   let name=$('packName').value.trim();
   if(!name)name=packagingDefaultName(materialType,boxSize);
   let linkKey=$('packLinkKey').value;
-  if(materialType==='box'&&boxSize)linkKey=`size${boxSize}`;
+  if(materialType==='box'&&boxSize){
+    const sizeKey=`size${boxSize}`;
+    linkKey=PACKAGING_LINKS.some(link=>link.key===sizeKey)?sizeKey:'none';
+  }
   if(materialType==='box'&&boxSize){
     const duplicateSize=packagingMaterials.find(material=>String(material.id)!==String(id)&&material.materialType==='box'&&String(material.boxSize)===String(boxSize));
     if(duplicateSize){toast(`${boxSize}サイズの段ボールは登録済みです。「${duplicateSize.name}」を編集してください`);return}
@@ -4754,6 +4757,13 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-17
+- 段ボールのサイズ別在庫に20・30・40・50サイズを追加し、60サイズ未満の小型段ボールも個別管理できるよう変更
+- 「全サイズ追加」で20〜200サイズの未登録段ボールをまとめて追加できるよう拡張
+- 20・30・40・50サイズは配送方法の自動連動対象外とし、発送時に梱包材として選択した場合のみ在庫減算する安全な動作を維持
+- 既存の60〜200サイズ、その他梱包材、発送時在庫減算、Drive共有同期、バックアップ、利益計算など全機能を維持
+- schema v23へ更新
+
 2026-10-17
 - 設定画面内にあった梱包材在庫管理を独立した「梱包材」タブへ移動
 - 梱包材を「段ボール／専用資材／袋・封筒／テープ・シール／その他」の種類ごとに分けて表示
