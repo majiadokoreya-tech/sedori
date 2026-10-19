@@ -230,8 +230,8 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 .packaging-stock-value{font-size:1.45rem;font-weight:1000;line-height:1;font-variant-numeric:tabular-nums}
 .packaging-stock-unit{font-size:.66rem;color:var(--muted);font-weight:800;margin-left:2px}
 .packaging-stock-meta{font-size:.62rem;color:var(--muted);text-align:right;line-height:1.45}
-.packaging-stock-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:9px}
-.packaging-stock-controls .btn{padding:7px 4px;font-size:.68rem}
+.packaging-stock-controls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:9px}
+.packaging-stock-controls .btn{padding:7px 2px;font-size:.64rem;min-width:0}
 .packaging-material-row{border:1px solid var(--line);border-radius:13px;background:#fff;padding:10px;margin-bottom:8px}
 .packaging-material-row:last-child{margin-bottom:0}
 .packaging-material-top{display:flex;justify-content:space-between;gap:10px;align-items:start}
@@ -1093,7 +1093,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=23;
+const SCHEMA_VERSION=24;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -3094,8 +3094,10 @@ function packagingBoxCard(material){
       <div class="packaging-stock-meta">単価 ${yen(material.unitCost)}<br>警告 ${material.lowStockAt}個以下</div>
     </div>
     <div class="packaging-stock-controls">
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',-5)">－5</button>
       <button class="btn" onclick="adjustPackagingStock('${material.id}',-1)">－1</button>
       <button class="btn" onclick="adjustPackagingStock('${material.id}',1)">＋1</button>
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',5)">＋5</button>
       <button class="btn" onclick="openPackagingEditor('${material.id}')">編集</button>
     </div>
   </div>`;
@@ -3110,8 +3112,10 @@ function packagingMaterialRow(material){
       <div class="packaging-material-stock ${packagingStockClass(material)}">${material.stock}個</div>
     </div>
     <div class="packaging-stock-controls">
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',-5)">－5</button>
       <button class="btn" onclick="adjustPackagingStock('${material.id}',-1)">－1</button>
       <button class="btn" onclick="adjustPackagingStock('${material.id}',1)">＋1</button>
+      <button class="btn" onclick="adjustPackagingStock('${material.id}',5)">＋5</button>
       <button class="btn" onclick="openPackagingEditor('${material.id}')">編集</button>
     </div>
   </div>`;
@@ -3597,7 +3601,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-10-small-cardboard-v23',
+    version:'2026-10-packaging-step-buttons-v24',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -4757,6 +4761,12 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-19
+- 梱包材の在庫数量を素早く変更できる「－5」「＋5」ボタンを追加
+- 従来の「－1」「＋1」「編集」ボタンも維持し、段ボール・専用資材・袋/封筒・テープ/シール・その他すべてで5個単位の増減に対応
+- 在庫が0個未満にならない従来の安全チェック、発送時の自動在庫減算、Drive共有同期、バックアップ、利益計算など既存機能を維持
+- schema v24へ更新
+
 2026-10-17
 - 段ボールのサイズ別在庫に20・30・40・50サイズを追加し、60サイズ未満の小型段ボールも個別管理できるよう変更
 - 「全サイズ追加」で20〜200サイズの未登録段ボールをまとめて追加できるよう拡張
