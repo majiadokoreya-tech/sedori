@@ -1094,7 +1094,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=26;
+const SCHEMA_VERSION=27;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1253,9 +1253,30 @@ function parseStorage(key,fallback){
   try{const value=JSON.parse(localStorage.getItem(key));return value??fallback}catch{return fallback}
 }
 function loadUiPrefs(){
+  const raw=localStorage.getItem(UI_PREF_STORAGE);
   const prefs=parseStorage(UI_PREF_STORAGE,{});
-  stockType=['sedori','fuyohin'].includes(prefs.stockType)?prefs.stockType:'sedori';
-  stockStatus=['selling','waiting','history'].includes(prefs.stockStatus)?prefs.stockStatus:'selling';
+  if(raw!==null&&['sedori','fuyohin'].includes(prefs.stockType)){
+    stockType=prefs.stockType;
+    stockStatus=['selling','waiting','history'].includes(prefs.stockStatus)?prefs.stockStatus:'selling';
+    return;
+  }
+  const latest=[...items].sort((a,b)=>{
+    const time=row=>{
+      const idMatch=String(row?.id||'').match(/^item_(\d+)_/);
+      if(idMatch)return Number(idMatch[1])||0;
+      const values=[row?._syncUpdatedAt,row?.soldDate,row?.purchaseDate,row?.date];
+      for(const value of values){const parsed=Date.parse(value||'');if(Number.isFinite(parsed))return parsed}
+      return 0;
+    };
+    return time(b)-time(a);
+  })[0];
+  if(latest){
+    stockType=['sedori','fuyohin'].includes(latest.type)?latest.type:'sedori';
+    stockStatus=latest.status==='sold'?'waiting':latest.status==='shipped'?'history':'selling';
+    saveUiPrefs();
+  }else{
+    stockType='sedori';stockStatus='selling';
+  }
 }
 function saveUiPrefs(){
   localStorage.setItem(UI_PREF_STORAGE,JSON.stringify({stockType,stockStatus}));
@@ -3624,7 +3645,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-10-ui-state-v26',
+    version:'2026-10-ui-state-migration-v27',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -4824,6 +4845,13 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-28
+- v26導入前に登録済みだった商品でも初回更新で見失わないよう、表示設定未保存端末は最新の商品種別・状態から初期表示を自動復元
+- 今回の「麒麟 コップ」4件のように最新商品が不用品の場合、初回の更新後から自動で「不用品／販売中」を表示
+- 一度表示を選択した後はv26の端末別表示設定を優先し、以後の更新でも同じ表示を維持
+- Drive共有同期・未送信保護・バックアップ・梱包材・利益計算など既存機能を維持
+- schema v27へ更新
+
 2026-10-28
 - 「麒麟 コップ」4件が更新後に消えたように見える原因を修正。データ自体はDrive・端末双方に残っており、更新後に表示が「せどり」へ戻っていたことを確認
 - 「せどり / 不用品」の選択状態を端末localStorageへ保存し、下に引っ張って更新・再起動しても直前の表示を維持
