@@ -1094,7 +1094,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=25;
+const SCHEMA_VERSION=26;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1226,6 +1226,7 @@ let pointEntries=[];
 let pointUsages=[];
 let packagingMaterials=[];
 let settings={...DEFAULT_SETTINGS};
+const UI_PREF_STORAGE='sedori_ui_prefs';
 let stockType='sedori';
 let stockStatus='selling';
 let analysisType='all';
@@ -1250,6 +1251,14 @@ function uid(prefix='id'){return `${prefix}_${Date.now()}_${Math.random().toStri
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function parseStorage(key,fallback){
   try{const value=JSON.parse(localStorage.getItem(key));return value??fallback}catch{return fallback}
+}
+function loadUiPrefs(){
+  const prefs=parseStorage(UI_PREF_STORAGE,{});
+  stockType=['sedori','fuyohin'].includes(prefs.stockType)?prefs.stockType:'sedori';
+  stockStatus=['selling','waiting','history'].includes(prefs.stockStatus)?prefs.stockStatus:'selling';
+}
+function saveUiPrefs(){
+  localStorage.setItem(UI_PREF_STORAGE,JSON.stringify({stockType,stockStatus}));
 }
 function feeRate(platform){return PLATFORM_FEE[platform]??.10}
 function feeOf(item){
@@ -1717,6 +1726,7 @@ function handleSourceChange(prefix){
 }
 function init(){
   loadAll();
+  loadUiPrefs();
   fillCategorySelect('a',settings.lastCategory);fillSubCategorySelect('a',settings.lastCategory,settings.lastSubCategory);
   fillCategorySelect('e','その他');fillSubCategorySelect('e','その他','');
   fillSourceGroupSelect('a',settings.lastSourceGroup);fillSourceSelect('a',settings.lastSourceGroup,settings.lastSource);
@@ -1728,6 +1738,7 @@ function init(){
   loadDriveBackupSettings();
   loadDriveSyncSettings();
   renderTaxYearSelect();
+  syncStockTabs();
   renderAll();
   installAutoDownloadGestureHandler();
   autoSaveBackupReady=true;
@@ -1766,8 +1777,8 @@ function activate(parent,button){
   document.querySelectorAll(`#${parent} button`).forEach(element=>element.classList.remove('active'));
   button.classList.add('active');
 }
-function setStockType(type,button){stockType=type;activate('stockTypeTabs',button);renderStock()}
-function setStockStatus(status,button){stockStatus=status;activate('stockStatusTabs',button);renderStock()}
+function setStockType(type,button){stockType=type;saveUiPrefs();activate('stockTypeTabs',button);renderStock()}
+function setStockStatus(status,button){stockStatus=status;saveUiPrefs();activate('stockStatusTabs',button);renderStock()}
 function setAnalysisType(type,button){analysisType=type;activate('analysisTypeTabs',button);renderAnalysis()}
 function toggleFilter(){$('filterBox').classList.toggle('open')}
 function resetFilter(){
@@ -2156,7 +2167,7 @@ function addItem(){
       throw new Error('端末への保存確認に失敗しました。もう一度登録してください');
     }
     closeModal('addModal');refreshStockCategoryFilter();
-    stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録して端末へ保存しました');
+    stockType=item.type;stockStatus='selling';saveUiPrefs();syncStockTabs();renderAll();toast('登録して端末へ保存しました');
   }catch(errorObject){
     items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
     try{saveAll()}catch(saveError){}
@@ -2418,7 +2429,7 @@ function saveSold(){
   item.packagingSelections=selections.map(selection=>({...selection}));
   item.packagingCost=item.packagingSelections.reduce((sum,selection)=>sum+(selection.unitCost*selection.quantity),0);
   item.packagingConsumptions=[];
-  saveAll('売れた記録');closeModal('soldModal');stockStatus='waiting';syncStockTabs();renderAll();
+  saveAll('売れた記録');closeModal('soldModal');stockStatus='waiting';saveUiPrefs();syncStockTabs();renderAll();
   toast(selections.length?`売れた記録を保存：梱包費 ${yen(item.packagingCost)}`:'売れた記録を保存しました');
 }
 function restorePackagingConsumptions(item){
@@ -3613,7 +3624,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-10-refresh-safe-sync-v25',
+    version:'2026-10-ui-state-v26',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -4796,6 +4807,8 @@ window.runSedoriSelfTests=function(){
     const refreshLocal=deepClone(syncBase);refreshLocal.items.push({id:'NEW_AFTER_SAVE',name:'更新前に登録',status:'listed',_syncUpdatedAt:'2026-10-28T10:00:00.000Z'});
     const refreshMerged=mergeDriveSyncPayloads(syncBase,refreshLocal,syncBase).payload;
     test('更新直前の新規商品をDrive旧データとの結合で保持',refreshMerged.items.some(row=>row.id==='NEW_AFTER_SAVE'),`件数=${refreshMerged.items.length}`);
+    const uiPrefTest={stockType:'fuyohin',stockStatus:'selling'};
+    test('不用品表示を更新後も維持できる設定形式',uiPrefTest.stockType==='fuyohin'&&uiPrefTest.stockStatus==='selling',JSON.stringify(uiPrefTest));
   }catch(errorObject){
     results.push({name:'テスト実行',passed:false,details:errorObject.message});
   }finally{
@@ -4811,6 +4824,15 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-28
+- 「麒麟 コップ」4件が更新後に消えたように見える原因を修正。データ自体はDrive・端末双方に残っており、更新後に表示が「せどり」へ戻っていたことを確認
+- 「せどり / 不用品」の選択状態を端末localStorageへ保存し、下に引っ張って更新・再起動しても直前の表示を維持
+- 「販売中 / 未発送 / 販売履歴」の選択状態も端末ごとに保存して更新後も維持
+- 商品登録後は登録した商品の種別、売れた記録後は未発送表示を保存して、次回更新時も同じ画面へ戻るよう改善
+- Drive共有データには2026-10-28時点で「麒麟 コップ」4件が存在することを確認
+- v25の更新安全同期、2台同期、梱包材、利益計算、確定申告、ポイント、バックアップ機能を維持
+- schema v26へ更新
+
 2026-10-28
 - 新商品登録直後に画面更新すると商品が消える可能性があるDrive共有同期の競合タイミングを修正
 - 商品登録など端末側の保存操作を「未送信変更」としてlocalStorageへ記録し、画面更新後もDriveの古いデータ取得より端末変更の送信を優先する仕組みを追加
