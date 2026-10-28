@@ -1077,7 +1077,8 @@ const DRIVE_SYNC_STORAGE={
   revision:'sedori_drive_sync_revision',
   lastSync:'sedori_drive_sync_last_sync',
   lastStatus:'sedori_drive_sync_last_status',
-  base:'sedori_drive_sync_base'
+  base:'sedori_drive_sync_base',
+  dirty:'sedori_drive_sync_dirty'
 };
 let pendingDriveBackupRequest=null;
 let driveBackupSequence=0;
@@ -1093,7 +1094,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=24;
+const SCHEMA_VERSION=25;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1426,7 +1427,8 @@ function toast(text){
 }
 function setSaveState(text){$('saveState').textContent=text}
 function saveAll(backupReason=''){
-  if(backupReason&&!driveSyncApplyInProgress)stampChangedSyncRecords();
+  const localEdit=Boolean(backupReason)&&!driveSyncApplyInProgress;
+  if(localEdit)stampChangedSyncRecords();
   setSaveState('保存中…');
   localStorage.setItem(STORAGE.items,JSON.stringify(items));
   localStorage.setItem(STORAGE.points,JSON.stringify(pointEntries));
@@ -1436,10 +1438,14 @@ function saveAll(backupReason=''){
   localStorage.setItem(STORAGE.taxExpenses,JSON.stringify(taxExpenses));
   localStorage.setItem(STORAGE.taxSettings,JSON.stringify(taxSettings));
   localStorage.setItem(STORAGE.schema,String(SCHEMA_VERSION));
+  if(localEdit){
+    markDriveSyncDirty();
+    clearTimeout(driveSyncPullTimer);
+  }
   captureSyncLocalSnapshot();
   setSaveState('保存済み');
   if(autoSaveBackupReady&&backupReason)createSaveBackup(backupReason,true);
-  if(backupReason&&!driveSyncApplyInProgress)scheduleDriveSharedSyncPush(backupReason);
+  if(localEdit)scheduleDriveSharedSyncPush(backupReason);
 }
 function normalizeItem(raw,index=0){
   const item={...raw};
@@ -2144,10 +2150,16 @@ function addItem(){
     settings.lastSubCategory=item.subCat||'';
     settings.lastSourceGroup=item.sourceGroup;
     settings.lastSource=item.source;
-    saveAll('商品登録');closeModal('addModal');refreshStockCategoryFilter();
-    stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録しました');
+    saveAll('商品登録');
+    const persistedItems=parseStorage(STORAGE.items,[]);
+    if(!Array.isArray(persistedItems)||!persistedItems.some(saved=>String(saved?.id)===String(item.id))){
+      throw new Error('端末への保存確認に失敗しました。もう一度登録してください');
+    }
+    closeModal('addModal');refreshStockCategoryFilter();
+    stockType=item.type;stockStatus='selling';syncStockTabs();renderAll();toast('登録して端末へ保存しました');
   }catch(errorObject){
     items=snapshot.items;pointEntries=snapshot.points;pointUsages=snapshot.usages;packagingMaterials=snapshot.packaging;
+    try{saveAll()}catch(saveError){}
     toast(errorObject.message||'登録できませんでした');
   }
 }
@@ -3601,7 +3613,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-10-packaging-step-buttons-v24',
+    version:'2026-10-refresh-safe-sync-v25',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3939,7 +3951,10 @@ function saveDriveSyncSettings(showSaved=true){
   if(name)localStorage.setItem(DRIVE_SYNC_STORAGE.deviceName,String(name.value||'').trim());
   renderDriveSyncStatus();
   if(showSaved)toast('2台共有同期の設定を保存しました');
-  if(driveSyncSettings().enabled)armDriveSharedSyncPull(300);
+  if(driveSyncSettings().enabled){
+    if(driveSyncHasPendingLocalChanges())scheduleDriveSharedSyncPush('未送信変更');
+    else armDriveSharedSyncPull(300);
+  }
 }
 function loadDriveSyncSettings(){
   const current=driveSyncSettings();
@@ -3960,6 +3975,7 @@ function renderDriveSyncStatus(extra=''){
   badge.textContent=sync.enabled?'ON':'OFF';
   let detail=sync.lastSync?`最終同期：${escapeHtml(formatBackupTime(sync.lastSync))} / revision ${sync.revision}`:'まだ共有同期していません。';
   if(sync.lastStatus)detail+=`<br>${escapeHtml(sync.lastStatus)}`;
+  if(driveSyncHasPendingLocalChanges())detail+='<br>未送信の端末変更あり（Driveへ送信待ち）';
   if(extra)detail+=`<br>${escapeHtml(extra)}`;
   status.innerHTML=`<strong>共有同期：${sync.enabled?'ON':'OFF'}</strong><br>端末：${escapeHtml(sync.deviceName)}<br>${detail}`;
 }
@@ -3967,6 +3983,15 @@ function setDriveSyncStatus(message,success=false){
   localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,String(message||''));
   if(success)localStorage.setItem(DRIVE_SYNC_STORAGE.lastSync,new Date().toISOString());
   renderDriveSyncStatus();
+}
+function driveSyncHasPendingLocalChanges(){
+  return localStorage.getItem(DRIVE_SYNC_STORAGE.dirty)==='1';
+}
+function markDriveSyncDirty(){
+  localStorage.setItem(DRIVE_SYNC_STORAGE.dirty,'1');
+}
+function clearDriveSyncDirty(){
+  localStorage.removeItem(DRIVE_SYNC_STORAGE.dirty);
 }
 function buildDriveSyncPayload(){
   return {
@@ -4214,9 +4239,18 @@ async function handleDriveSyncMessage(event){
       if(data.ok){
         const revision=Math.max(0,Number(data.revision)||0);
         setDriveSyncBase(request.sentPayload,revision);
-        localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,`共有データへ保存済み${data.updatedBy?`（${data.updatedBy}）`:''}`);
+        const latestLocal=buildDriveSyncPayload();
+        const hasNewerLocal=!syncSame(latestLocal,request.sentPayload);
+        if(hasNewerLocal){
+          markDriveSyncDirty();
+          localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,`共有データへ保存済み。保存中に追加変更があったため続けて同期します${data.updatedBy?`（${data.updatedBy}）`:''}`);
+        }else{
+          clearDriveSyncDirty();
+          localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,`共有データへ保存済み${data.updatedBy?`（${data.updatedBy}）`:''}`);
+        }
         renderDriveSyncStatus();
-        if(!request.silent)toast('共有データへ保存しました');
+        if(hasNewerLocal)scheduleDriveSharedSyncPush('追加変更');
+        if(!request.silent)toast(hasNewerLocal?'追加変更も続けて同期します':'共有データへ保存しました');
         return;
       }
       if(data.conflict&&data.payload&&request.retry<2){
@@ -4243,17 +4277,30 @@ function manualDriveSyncPush(){driveSyncPost('sync_push',{silent:false,payload:b
 function scheduleDriveSharedSyncPush(reason='保存'){
   const sync=driveSyncSettings();
   if(!sync.enabled||driveSyncApplyInProgress||!driveBackupReady()||!navigator.onLine)return;
+  clearTimeout(driveSyncPullTimer);
   clearTimeout(driveSyncPushTimer);
   driveSyncPushTimer=setTimeout(()=>{
-    if(!driveSyncSettings().enabled||driveSyncApplyInProgress||pendingDriveSyncRequest)return;
+    if(!driveSyncSettings().enabled||driveSyncApplyInProgress)return;
+    if(pendingDriveSyncRequest){
+      scheduleDriveSharedSyncPush(reason);
+      return;
+    }
     driveSyncPost('sync_push',{silent:true,payload:buildDriveSyncPayload(),expectedRevision:driveSyncSettings().revision,retry:0,reason});
-  },1200);
+  },700);
 }
 function armDriveSharedSyncPull(delay=1800){
   clearTimeout(driveSyncPullTimer);
   const sync=driveSyncSettings();
   if(!sync.enabled||!driveBackupReady()||!navigator.onLine)return;
+  if(driveSyncHasPendingLocalChanges()){
+    scheduleDriveSharedSyncPush('未送信変更');
+    return;
+  }
   driveSyncPullTimer=setTimeout(()=>{
+    if(driveSyncHasPendingLocalChanges()){
+      scheduleDriveSharedSyncPush('未送信変更');
+      return;
+    }
     if(driveSyncSettings().enabled&&!pendingDriveSyncRequest)driveSyncPost('sync_pull',{silent:true});
   },delay);
 }
@@ -4746,6 +4793,9 @@ window.runSedoriSelfTests=function(){
     const syncRemote=deepClone(syncBase);syncRemote.items[0].status='sold';syncRemote.items[0]._syncUpdatedAt='2026-10-01T10:01:00.000Z';
     const syncMerged=mergeDriveSyncPayloads(syncBase,syncLocal,syncRemote).payload;
     test('2台同期で別商品の変更を結合',syncMerged.items.some(row=>row.id==='C')&&syncMerged.items.find(row=>row.id==='A')?.status==='sold',`件数=${syncMerged.items.length}`);
+    const refreshLocal=deepClone(syncBase);refreshLocal.items.push({id:'NEW_AFTER_SAVE',name:'更新前に登録',status:'listed',_syncUpdatedAt:'2026-10-28T10:00:00.000Z'});
+    const refreshMerged=mergeDriveSyncPayloads(syncBase,refreshLocal,syncBase).payload;
+    test('更新直前の新規商品をDrive旧データとの結合で保持',refreshMerged.items.some(row=>row.id==='NEW_AFTER_SAVE'),`件数=${refreshMerged.items.length}`);
   }catch(errorObject){
     results.push({name:'テスト実行',passed:false,details:errorObject.message});
   }finally{
@@ -4761,6 +4811,15 @@ init();
 </html>
 <!--
 変更履歴
+2026-10-28
+- 新商品登録直後に画面更新すると商品が消える可能性があるDrive共有同期の競合タイミングを修正
+- 商品登録など端末側の保存操作を「未送信変更」としてlocalStorageへ記録し、画面更新後もDriveの古いデータ取得より端末変更の送信を優先する仕組みを追加
+- Drive同期中で自動送信が一度見送られた場合も、通信終了後まで再試行して未送信変更を取りこぼさないよう改善
+- Driveへの送信中にさらに編集した場合は未送信状態を維持し、追加変更を続けて自動送信するよう改善
+- 新商品登録時にlocalStorageへ実際に保存されたことを確認してから「登録完了」と表示する保存確認を追加
+- 既存の2台3-way merge、梱包材、利益計算、確定申告、ポイント、各種バックアップ機能を維持
+- schema v25へ更新
+
 2026-10-19
 - 梱包材の在庫数量を素早く変更できる「－5」「＋5」ボタンを追加
 - 従来の「－1」「＋1」「編集」ボタンも維持し、段ボール・専用資材・袋/封筒・テープ/シール・その他すべてで5個単位の増減に対応
