@@ -1094,7 +1094,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=27;
+const SCHEMA_VERSION=28;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1456,8 +1456,9 @@ function toast(text){
   toast.timer=setTimeout(()=>element.classList.remove('show'),2200);
 }
 function setSaveState(text){$('saveState').textContent=text}
-function saveAll(backupReason=''){
+function saveAll(backupReason='',options={}){
   const localEdit=Boolean(backupReason)&&!driveSyncApplyInProgress;
+  const skipSaveBackup=Boolean(options&&options.skipSaveBackup);
   if(localEdit)stampChangedSyncRecords();
   setSaveState('保存中…');
   localStorage.setItem(STORAGE.items,JSON.stringify(items));
@@ -1474,7 +1475,7 @@ function saveAll(backupReason=''){
   }
   captureSyncLocalSnapshot();
   setSaveState('保存済み');
-  if(autoSaveBackupReady&&backupReason)createSaveBackup(backupReason,true);
+  if(autoSaveBackupReady&&backupReason&&!skipSaveBackup)createSaveBackup(backupReason,true);
   if(localEdit)scheduleDriveSharedSyncPush(backupReason);
 }
 function normalizeItem(raw,index=0){
@@ -3196,7 +3197,7 @@ function adjustPackagingStock(id,delta){
   const material=packagingMaterials.find(current=>String(current.id)===String(id));if(!material)return;
   const next=material.stock+delta;
   if(next<0){toast('在庫は0個未満にできません');return}
-  material.stock=next;saveAll('梱包材在庫変更');renderPackagingInventory();renderShipPackagingNote('s');renderShipPackagingNote('e');
+  material.stock=next;saveAll('梱包材在庫変更',{skipSaveBackup:true});renderPackagingInventory();renderShipPackagingNote('s');renderShipPackagingNote('e');
 }
 function packagingDefaultName(kind,boxSize){
   if(kind==='box'&&boxSize)return `ダンボール ${boxSize}サイズ`;
@@ -3645,7 +3646,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-10-ui-state-migration-v27',
+    version:'2026-11-packaging-adjust-no-backup-v28',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -4845,6 +4846,13 @@ init();
 </html>
 <!--
 変更履歴
+2026-11-07
+- 梱包材タブの「－5／－1／＋1／＋5」で在庫数を調整するたびに保存操作バックアップを作成する動作を停止
+- 梱包材在庫のlocalStorage保存とGoogle Drive 2台共有同期は従来どおり継続し、別端末にも在庫変更を反映
+- 梱包材の新規追加・編集・削除、商品登録、売れた記録、発送処理など重要な保存操作のバックアップは従来どおり維持
+- saveAllに操作単位で保存操作バックアップだけを抑止できるオプションを追加
+- schema v28へ更新
+
 2026-10-28
 - v26導入前に登録済みだった商品でも初回更新で見失わないよう、表示設定未保存端末は最新の商品種別・状態から初期表示を自動復元
 - 今回の「麒麟 コップ」4件のように最新商品が不用品の場合、初回の更新後から自動で「不用品／販売中」を表示
