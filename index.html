@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./app-icon.svg" type="image/svg+xml">
 <meta name="apple-mobile-web-app-title" content="せどり管理">
 <title>せどり利益・楽天ポイント管理</title>
 <style>
@@ -1094,7 +1097,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=28;
+const SCHEMA_VERSION=29;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -3646,7 +3649,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-11-packaging-adjust-no-backup-v28',
+    version:'2026-11-pwa-v29',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -4842,10 +4845,52 @@ window.runSedoriSelfTests=function(){
 document.querySelectorAll('.modal').forEach(modal=>modal.addEventListener('click',event=>{if(event.target===modal)modal.classList.remove('open')}));
 init();
 </script>
+<script>
+(function(){
+  if(!('serviceWorker' in navigator))return;
+
+  async function registerSedoriServiceWorker(){
+    try{
+      const registration=await navigator.serviceWorker.register('./sw.js',{
+        scope:'./',
+        updateViaCache:'none'
+      });
+      try{await registration.update()}catch(errorObject){}
+      if(registration.waiting){
+        registration.waiting.postMessage({type:'SKIP_WAITING'});
+      }
+    }catch(errorObject){
+      console.warn('PWA Service Worker registration failed',errorObject);
+    }
+  }
+
+  window.addEventListener('load',registerSedoriServiceWorker,{once:true});
+
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState!=='visible')return;
+    navigator.serviceWorker.getRegistration('./').then(registration=>{
+      if(registration)registration.update().catch(()=>{});
+    }).catch(()=>{});
+  });
+
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    document.documentElement.dataset.pwaReady='1';
+  });
+})();
+</script>
 </body>
 </html>
 <!--
 変更履歴
+2026-11-09
+- ホーム画面からの起動を安定させるためPWA対応を追加
+- manifest.webmanifestを追加し、アプリ名・ホーム画面アイコン・standalone表示・起動URLを定義
+- sw.js（Service Worker）を追加し、オンライン時は常に最新のindex.htmlを優先し、通信できない時のみキャッシュから起動できるよう対応
+- Service Workerは起動時とアプリ再表示時に更新確認を行い、古いキャッシュに固定されにくい構成へ変更
+- Androidのホーム画面からブラウザタブではなく独立したアプリ画面として起動できるPWA構成を追加
+- 既存のDrive 2台同期、端末保存、梱包材、利益計算、確定申告、ポイント、バックアップ、表示状態保存をすべて維持
+- schema v29へ更新
+
 2026-11-07
 - 梱包材タブの「－5／－1／＋1／＋5」で在庫数を調整するたびに保存操作バックアップを作成する動作を停止
 - 梱包材在庫のlocalStorage保存とGoogle Drive 2台共有同期は従来どおり継続し、別端末にも在庫変更を反映
