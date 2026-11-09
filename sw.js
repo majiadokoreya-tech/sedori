@@ -1,6 +1,6 @@
-const CACHE_NAME='sedori-shell-v1';
+const CACHE_NAME='sedori-shell-v2';
 const OFFLINE_URL='./index.html';
-const APP_SHELL=['./','./index.html','./manifest.webmanifest','./app-icon.svg'];
+const APP_SHELL=['./','./index.html','./manifest.webmanifest','./app-icon.svg','./app-icon-192.svg','./app-icon-512.svg'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
