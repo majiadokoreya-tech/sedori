@@ -27,7 +27,17 @@ header{
 }
 h1{margin:0;font-size:1.08rem;font-weight:950}
 h1 span{color:var(--accent)}
-.save-state{font-size:.7rem;color:var(--muted);font-weight:750;text-align:right}
+.save-state{font-size:.7rem;color:var(--muted);font-weight:750;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.sync-state{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 8px;font-size:.68rem;font-weight:950;line-height:1;white-space:nowrap;background:#eef0f4;color:var(--muted)}
+.sync-state .sync-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:0 0 auto}
+.sync-state.checking{background:#eaf2ff;color:var(--blue)}
+.sync-state.checking .sync-dot{animation:syncPulse 1s ease-in-out infinite}
+.sync-state.latest{background:#e8f7f1;color:var(--green)}
+.sync-state.pending{background:#fff4df;color:var(--orange)}
+.sync-state.offline,.sync-state.off{background:#f0f1f3;color:var(--muted)}
+.sync-state.error{background:#fdeceb;color:var(--red)}
+.sync-meta{font-size:.61rem;color:var(--muted);font-weight:750;line-height:1.15}
+@keyframes syncPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
 nav{
   position:sticky;top:54px;z-index:29;background:#fff;border-bottom:1px solid var(--line);
   display:grid;grid-template-columns:repeat(6,1fr)
@@ -256,7 +266,10 @@ details.tax-help .inside{padding:0 12px 12px;font-size:.69rem;line-height:1.7;co
 <body>
 <header>
   <h1>せどり<span>利益管理</span></h1>
-  <div class="save-state"><div id="schemaState">データ保護中</div><div id="saveState">保存済み</div></div>
+  <div class="save-state">
+    <div id="syncState" class="sync-state checking"><span class="sync-dot"></span><span id="syncStateText">同期確認中…</span></div>
+    <div class="sync-meta"><span id="schemaState">データ保護中</span>・<span id="saveState">保存済み</span></div>
+  </div>
 </header>
 
 <nav>
@@ -1097,7 +1110,7 @@ let pendingSaveDownloadRecord=null;
 let autoDownloadHandlerInstalled=false;
 let autoSaveBackupReady=false;
 let lastSaveBackupDownloadAt=0;
-const SCHEMA_VERSION=29;
+const SCHEMA_VERSION=30;
 const DEFAULT_SETTINGS={
   spuMultiplier:5,
   buyAroundMultiplier:1,
@@ -1762,6 +1775,8 @@ function init(){
   loadSettingsForm();
   loadDriveBackupSettings();
   loadDriveSyncSettings();
+  if(navigator.onLine&&driveSyncSettings().enabled&&driveBackupReady())setHeaderSyncState('checking','同期確認中…');
+  else refreshHeaderSyncState();
   renderTaxYearSelect();
   syncStockTabs();
   renderAll();
@@ -3649,7 +3664,7 @@ function downloadPointCSV(){
 }
 function buildBackupData(reason='manual'){
   return {
-    version:'2026-11-pwa-v29',
+    version:'2026-11-sync-visibility-v30',
     schemaVersion:SCHEMA_VERSION,
     items:deepClone(items),
     pointEntries:deepClone(pointEntries),
@@ -3952,9 +3967,18 @@ function armDriveDailyBackup(){
   },1200);
 }
 document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden){armDriveDailyBackup();armDriveSharedSyncPull(500)}
+  if(!document.hidden){
+    armDriveDailyBackup();
+    setHeaderSyncState('checking','同期確認中…');
+    armDriveSharedSyncPull(500);
+  }
 });
-window.addEventListener('online',()=>{armDriveDailyBackup();armDriveSharedSyncPull(500)});
+window.addEventListener('online',()=>{
+  armDriveDailyBackup();
+  setHeaderSyncState('checking','同期確認中…');
+  armDriveSharedSyncPull(500);
+});
+window.addEventListener('offline',()=>setHeaderSyncState('offline','オフライン'));
 
 /* =========================================================
    Google Drive 2台共有同期
@@ -4019,6 +4043,26 @@ function setDriveSyncStatus(message,success=false){
   localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,String(message||''));
   if(success)localStorage.setItem(DRIVE_SYNC_STORAGE.lastSync,new Date().toISOString());
   renderDriveSyncStatus();
+}
+function setHeaderSyncState(state,text){
+  const box=$('syncState'),label=$('syncStateText');
+  if(!box||!label)return;
+  box.className=`sync-state ${state||'off'}`;
+  label.textContent=String(text||'同期状態不明');
+}
+function refreshHeaderSyncState(){
+  const sync=driveSyncSettings();
+  const drive=driveBackupSettings();
+  if(!navigator.onLine){setHeaderSyncState('offline','オフライン');return}
+  if(!driveGasValidUrl(drive.url)||!drive.key){setHeaderSyncState('off','同期設定待ち');return}
+  if(!sync.enabled){setHeaderSyncState('off','共有同期 OFF');return}
+  if(driveSyncHasPendingLocalChanges()){setHeaderSyncState('pending','未送信あり');return}
+  if(pendingDriveSyncRequest){
+    setHeaderSyncState('checking',pendingDriveSyncRequest.action==='sync_push'?'共有保存中…':'同期確認中…');
+    return;
+  }
+  if(sync.lastSync){setHeaderSyncState('latest','最新です ✓');return}
+  setHeaderSyncState('checking','同期確認中…');
 }
 function driveSyncHasPendingLocalChanges(){
   return localStorage.getItem(DRIVE_SYNC_STORAGE.dirty)==='1';
@@ -4229,6 +4273,7 @@ function driveSyncPost(action,options={}){
     if(!options.silent)toast('共有同期の応答を受信できませんでした');
   },30000);
   pendingDriveSyncRequest={form,frame,onFrameLoad,timer,action,sentPayload,expectedRevision:Number(params.expectedRevision||0),silent:Boolean(options.silent),retry:Number(options.retry||0)};
+  setHeaderSyncState('checking',action==='sync_pull'?'同期確認中…':'共有保存中…');
   renderDriveSyncStatus(action==='sync_pull'?'Driveの最新データを取得中…':'共有データへ保存中…');
   try{form.submit();setTimeout(()=>{try{form.remove()}catch(errorObject){}},1500)}catch(errorObject){cleanupDriveSyncRequest();setDriveSyncStatus('共有同期の送信に失敗しました。');return false}
   return true;
@@ -4267,6 +4312,7 @@ async function handleDriveSyncMessage(event){
       setDriveSyncBase(merged,remoteRevision);
       localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,mergedResult.conflicts.length?`最新データを取得。競合 ${mergedResult.conflicts.length}件を自動調整しました。`:'最新データと同期済みです。');
       renderDriveSyncStatus();
+      setHeaderSyncState('latest','最新です ✓');
       if(!request.silent)toast('Driveの最新データを取り込みました');
       return;
     }
@@ -4285,7 +4331,12 @@ async function handleDriveSyncMessage(event){
           localStorage.setItem(DRIVE_SYNC_STORAGE.lastStatus,`共有データへ保存済み${data.updatedBy?`（${data.updatedBy}）`:''}`);
         }
         renderDriveSyncStatus();
-        if(hasNewerLocal)scheduleDriveSharedSyncPush('追加変更');
+        if(hasNewerLocal){
+          setHeaderSyncState('pending','追加変更を同期中…');
+          scheduleDriveSharedSyncPush('追加変更');
+        }else{
+          setHeaderSyncState('latest','最新です ✓');
+        }
         if(!request.silent)toast(hasNewerLocal?'追加変更も続けて同期します':'共有データへ保存しました');
         return;
       }
@@ -4304,6 +4355,7 @@ async function handleDriveSyncMessage(event){
     }
   }catch(errorObject){
     setDriveSyncStatus(`同期エラー：${errorObject.message||errorObject}`);
+    setHeaderSyncState('error','同期エラー');
     if(!request.silent)toast('Drive共有同期でエラーが発生しました');
   }
 }
@@ -4327,13 +4379,18 @@ function scheduleDriveSharedSyncPush(reason='保存'){
 function armDriveSharedSyncPull(delay=1800){
   clearTimeout(driveSyncPullTimer);
   const sync=driveSyncSettings();
-  if(!sync.enabled||!driveBackupReady()||!navigator.onLine)return;
+  if(!navigator.onLine){setHeaderSyncState('offline','オフライン');return}
+  if(!driveBackupReady()){refreshHeaderSyncState();return}
+  if(!sync.enabled){setHeaderSyncState('off','共有同期 OFF');return}
   if(driveSyncHasPendingLocalChanges()){
+    setHeaderSyncState('pending','未送信を同期中…');
     scheduleDriveSharedSyncPush('未送信変更');
     return;
   }
+  setHeaderSyncState('checking','同期確認中…');
   driveSyncPullTimer=setTimeout(()=>{
     if(driveSyncHasPendingLocalChanges()){
+      setHeaderSyncState('pending','未送信を同期中…');
       scheduleDriveSharedSyncPush('未送信変更');
       return;
     }
@@ -4882,6 +4939,15 @@ init();
 </html>
 <!--
 変更履歴
+2026-11-09
+- アプリ起動時・再表示時に2台共有同期の状態が一目で分かるヘッダー表示を追加
+- 起動直後は青色「同期確認中…」、Driveとの確認完了後は緑色「最新です ✓」を表示
+- 端末側に未送信変更がある場合はオレンジ色、オフライン時はグレー、同期エラー時は赤色で表示
+- PWAをホーム画面から開き直した場合も自動同期確認を開始し、最新版確認が完了したことを視覚的に確認可能
+- 保存中表示・データ形式表示をコンパクトにまとめ、同期状態をヘッダー右上で最優先表示
+- 既存の3-way merge、Drive 2台同期、PWA、梱包材、利益計算、確定申告、ポイント、バックアップ機能を維持
+- schema v30へ更新
+
 2026-11-09
 - ホーム画面からの起動を安定させるためPWA対応を追加
 - manifest.webmanifestを追加し、アプリ名・ホーム画面アイコン・standalone表示・起動URLを定義
