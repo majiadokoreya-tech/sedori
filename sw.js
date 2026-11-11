@@ -1,6 +1,6 @@
-const CACHE_NAME='sedori-shell-v2';
+const CACHE_NAME='sedori-shell-v3';
 const OFFLINE_URL='./index.html';
-const APP_SHELL=['./','./index.html','./manifest.webmanifest','./app-icon.svg','./app-icon-192.svg','./app-icon-512.svg'];
+const APP_SHELL=['./','./index.html','./manifest.webmanifest','./app-icon.svg','./app-icon-192.svg','./app-icon-512.svg','./assets/mercari_shipping.webp','./assets/other_shipping.webp'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
@@ -40,7 +40,7 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  if(url.pathname.endsWith('/manifest.webmanifest')||url.pathname.endsWith('/app-icon.svg')){
+  if(url.pathname.endsWith('/manifest.webmanifest')||url.pathname.endsWith('/app-icon.svg')||url.pathname.endsWith('/app-icon-192.svg')||url.pathname.endsWith('/app-icon-512.svg')||url.pathname.endsWith('/assets/mercari_shipping.webp')||url.pathname.endsWith('/assets/other_shipping.webp')){
     event.respondWith(
       fetch(request,{cache:'no-store'})
         .then(response=>{
